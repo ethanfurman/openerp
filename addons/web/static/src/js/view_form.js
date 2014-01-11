@@ -1235,7 +1235,7 @@ instance.web.form.FormRenderingEngine = instance.web.form.FormRenderingEngineInt
             }
             var obj = self.fields_registry.get_any([$elem.attr('widget'), self.fvg.fields[name].type]);
             if (!obj) {
-                throw new Error(_.str.sprintf(_t("Widget type '%s' is not implemented"), name));
+                throw new Error(_.str.sprintf(_t("Widget type '%s' is not implemented"), $elem.attr('widget')));
             }
             var w = new (obj)(self.view, instance.web.xml_to_json($elem[0]));
             var $label = self.labels[$elem.attr("name")];
@@ -5090,57 +5090,6 @@ instance.web.form.FieldBinaryFile = instance.web.form.FieldBinary.extend({
     }
 });
 
-
-instance.web.form.FieldBinaryFileName = instance.web.form.FieldBinary.extend({
-    template: 'FieldBinaryFileName',
-    initialize_content: function() {
-        this.binary_value = false;
-        this._super();
-        if (this.get("effective_readonly")) {
-            var self = this;
-            this.$el.find('b').click(function(ev) {
-                if (self.get('value')) {
-                    self.on_save_as(ev);                    
-                }
-                return false;
-            });
-        }
-    },
-    render_value: function() {
-        this.binary_value = false;
-        if (!this.get("effective_readonly")) {
-            var show_value;
-            if (this.node.attrs.filename) {
-                show_value = "(a)" + (this.view.datarecord[this.node.attrs.filename] || '');
-            } else {
-                show_value = "(b)" + ((this.get('value') != null && this.get('value') !== false) ? this.get('value') : '');
-            }
-            this.$el.find('input').eq(0).val("1-"+show_value);
-        } else {
-            if (this.get('value')) {
-                var show_value = this.get('value')
-                if (this.view)
-                    show_value += " " + (this.view.datarecord[this.node.attrs.filename] || '');
-                this.$el.find('b').text("2-"+show_value+"-"+this.get('value'));
-            }
-        }
-    },
-    on_file_uploaded_and_valid: function(size, name, content_type, file_base64) {
-        this.binary_value = false;
-        this.internal_set_value(name);
-        var show_value = name;
-        this.$el.find('input').eq(0).val("3-"+show_value);
-        this.internal_set_value(name);
-        this.set_filename(name);
-    },
-    on_clear: function() {
-        this.binary_value = false;
-        this._super.apply(this, arguments);
-        this.$el.find('input').eq(0).val('');
-        this.set_filename('');
-    }
-});
-
 instance.web.form.FieldBinaryImage = instance.web.form.FieldBinary.extend({
     template: 'FieldBinaryImage',
     placeholder: "/web/static/src/img/placeholder.png",
@@ -5570,7 +5519,6 @@ instance.web.form.widgets = new instance.web.Registry({
     'progressbar': 'instance.web.form.FieldProgressBar',
     'image': 'instance.web.form.FieldBinaryImage',
     'binary': 'instance.web.form.FieldBinaryFile',
-    'binaryname': 'instance.web.form.FieldBinaryFileName',
     'many2many_binary': 'instance.web.form.FieldMany2ManyBinaryMultiFiles',
     'statusbar': 'instance.web.form.FieldStatus',
     'monetary': 'instance.web.form.FieldMonetary',

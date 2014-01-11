@@ -100,15 +100,12 @@ class WebRequest(object):
             threading.current_thread().dbname = self.session._db
         if self.session._uid:
             threading.current_thread().uid = self.session._uid
-        if self.httprequest.environ.get('HTTP_X_FORWARDED_FOR',None):
-            threading.current_thread().clientip = self.httprequest.environ.get('HTTP_X_FORWARDED_FOR')
-        self.session.__client_address__ = self.httprequest.environ.get('HTTP_X_FORWARDED_FOR',None) or self.httprequest.remote_addr
-        #import pdb; pdb.set_trace()
+        forwarded = self.httprequest.environ.get('HTTP_X_FORWARDED_FOR', None)
+        if forwarded:
+            threading.current_thread().clientip = forwarded
+        self.session.__client_address__ = forwarded or self.httprequest.remote_addr
         self.context = self.params.pop('context', {})
-        self.context['HTTP_X_FORWARDED_FOR'] = self.httprequest.environ.get('HTTP_X_FORWARDED_FOR', None)
-        #self.params['__HTTP_X_FORWARDED_FOR__'] = self.httprequest.environ.get('HTTP_X_FORWARDED_FOR', None)
-        #import sys
-        #sys.SESSIONS.
+        self.context['HTTP_X_FORWARDED_FOR'] = forwarded
         self.debug = self.params.pop('debug', False) is not False
         # Determine self.lang
         lang = self.params.get('lang', None)

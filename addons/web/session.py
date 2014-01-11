@@ -170,7 +170,6 @@ class OpenERPSession(object):
         assert self._uid, "The user needs to be logged-in to initialize his context"
         self.context = self.model('res.users').context_get() or {}
         self.context['uid'] = self._uid
-        #import pdb; pdb.set_trace()
         self.context['__client_address__'] = self.__client_address__
         self._fix_lang(self.context)
         return self.context
