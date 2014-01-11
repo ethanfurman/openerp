@@ -1,0 +1,13 @@
+.*\.png
+.*\.jpeg
+.*\.jpg
+.*\.bmp
+.*\.gif
+.*\.ico
+.*\.ttf
+.*\.svg
+.*\.eot
+.*\.woff
+.*\.swp
+.*\.pyc
+PKG-INFO
