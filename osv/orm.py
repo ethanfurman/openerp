@@ -557,6 +557,7 @@ FIELDS_TO_PGTYPES = {
     fields.date: 'date',
     fields.datetime: 'timestamp',
     fields.binary: 'bytea',
+    fields.binaryname: 'text',
     fields.many2one: 'int4',
     fields.serialized: 'text',
 }
@@ -1920,7 +1921,7 @@ class BaseModel(object):
         for k in fields.keys():
             if k not in fields_def:
                 del fields[k]
-        for field in fields_def:
+        for field in fields_def.keys():
             if field == 'id':
                 # sometime, the view may contain the (invisible) field 'id' needed for a domain (when 2 objects have cross references)
                 fields['id'] = {'readonly': True, 'type': 'integer', 'string': 'ID'}
