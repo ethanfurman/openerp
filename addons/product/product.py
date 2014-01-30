@@ -318,12 +318,12 @@ class product_template(osv.osv):
             ('end','End of Lifecycle'),
             ('obsolete','Obsolete')], 'Status'),
         'uom_id': fields.many2one('product.uom', 'Unit of Measure', required=True, help="Default Unit of Measure used for all stock operation."),
-        'uom_po_id': fields.many2one('product.uom', 'Purchase Unit of Measure', required=True, help="Default Unit of Measure used for purchase orders. It must be in the same category than the default unit of measure."),
+        'uom_po_id': fields.many2one('product.uom', 'Unit of Purchase', required=True, help="Default Unit of Measure used for purchase orders. It must be in the same category as the default unit of measure."),
         'uos_id' : fields.many2one('product.uom', 'Unit of Sale',
             help='Sepcify a unit of measure here if invoicing is made in another unit of measure than inventory. Keep empty to use the default unit of measure.'),
-        'uos_coeff': fields.float('Unit of Measure -> UOS Coeff', digits_compute= dp.get_precision('Product UoS'),
+        'uos_coeff': fields.float('UoM --> UoS ', digits_compute= dp.get_precision('Product UoS'),
             help='Coefficient to convert default Unit of Measure to Unit of Sale\n'
-            ' uos = uom * coeff'),
+            ' UoS = UoM * Ratio'),
         'mes_type': fields.selection((('fixed', 'Fixed'), ('variable', 'Variable')), 'Measure Type'),
         'seller_ids': fields.one2many('product.supplierinfo', 'product_id', 'Supplier'),
         'company_id': fields.many2one('res.company', 'Company', select=1),
@@ -352,14 +352,16 @@ class product_template(osv.osv):
             return {'value': {'uom_po_id': uom_id}}
         return {}
 
-    def write(self, cr, uid, ids, vals, context=None):
-        if 'uom_po_id' in vals:
-            new_uom = self.pool.get('product.uom').browse(cr, uid, vals['uom_po_id'], context=context)
-            for product in self.browse(cr, uid, ids, context=context):
-                old_uom = product.uom_po_id
-                if old_uom.category_id.id != new_uom.category_id.id:
-                    raise osv.except_osv(_('Unit of Measure categories Mismatch!'), _("New Unit of Measure '%s' must belong to same Unit of Measure category '%s' as of old Unit of Measure '%s'. If you need to change the unit of measure, you may deactivate this product from the 'Procurements' tab and create a new one.") % (new_uom.name, old_uom.category_id.name, old_uom.name,))
-        return super(product_template, self).write(cr, uid, ids, vals, context=context)
+    #def write(self, cr, uid, ids, vals, context=None):
+    #    # TODO: show Unit of Measure category on screen, allow that to change
+    #    #       and only show UoMs in that category
+    #    if 'uom_po_id' in vals:
+    #        new_uom = self.pool.get('product.uom').browse(cr, uid, vals['uom_po_id'], context=context)
+    #        for product in self.browse(cr, uid, ids, context=context):
+    #            old_uom = product.uom_po_id
+    #            if old_uom.category_id.id != new_uom.category_id.id:
+    #                raise osv.except_osv(_('Unit of Measure categories Mismatch!'), _("New Unit of Measure '%s' must belong to same Unit of Measure category '%s' as of old Unit of Measure '%s'. If you need to change the unit of measure, you may deactivate this product from the 'Procurements' tab and create a new one.") % (new_uom.name, old_uom.category_id.name, old_uom.name,))
+    #    return super(product_template, self).write(cr, uid, ids, vals, context=context)
 
     _defaults = {
         'company_id': lambda s,cr,uid,c: s.pool.get('res.company')._company_default_get(cr, uid, 'product.template', context=c),
