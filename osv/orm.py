@@ -55,6 +55,7 @@ import simplejson
 import time
 import traceback
 import types
+from functools import partial
 
 import psycopg2
 from lxml import etree
@@ -100,7 +101,7 @@ def transfer_field_to_modifiers(field, modifiers):
 # Don't deal with groups, it is done by check_group().
 # Need the context to evaluate the invisible attribute on tree views.
 # For non-tree views, the context shouldn't be given.
-def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False):
+def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False, commands=None):
     if node.get('attrs'):
         modifiers.update(eval(node.get('attrs')))
 
@@ -113,7 +114,7 @@ def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False
 
     for a in ('invisible', 'readonly', 'required'):
         if node.get(a):
-            v = bool(eval(node.get(a), {'context': context or {}}))
+            v = bool(eval(node.get(a), {'context': context or {}}, commands))
             if in_tree_view and a == 'invisible':
                 # Invisible in a tree view has a specific meaning, make it a
                 # new key in the modifiers attribute.
@@ -1714,6 +1715,7 @@ class BaseModel(object):
 
                :return: True if field should be included in the result of fields_view_get
             """
+            # check for group override in table
             if node.tag == 'field' and node.get('name') in self._all_columns:
                 column = self._all_columns[node.get('name')].column
                 if column.groups and not self.user_has_groups(cr, user,
@@ -1723,6 +1725,7 @@ class BaseModel(object):
                     fields.pop(node.get('name'), None)
                     # no point processing view-level ``groups`` anymore, return
                     return False
+            # check for group override in view
             if node.get('groups'):
                 can_see = self.user_has_groups(cr, user,
                                                groups=node.get('groups'),
@@ -1823,8 +1826,11 @@ class BaseModel(object):
             return fields
 
         # The view architeture overrides the python model.
-        # Get the attrs before they are (possibly) deleted by check_group below
-        transfer_node_to_modifiers(node, modifiers, context, in_tree_view)
+        # support commands for 'invisible', 'readonly', and 'required'
+        commands = {
+                'groups': partial(self.user_has_groups, cr, user, context=context),
+                }
+        transfer_node_to_modifiers(node, modifiers, context, in_tree_view, commands)
 
         # TODO remove attrs couterpart in modifiers when invisible is true ?
 
