@@ -112,21 +112,26 @@ def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False
         else:
             modifiers['invisible'] = [('state', 'not in', node.get('states').split(','))]
 
-    for a in ('invisible', 'readonly', 'required'):
-        if node.get(a):
-            v = bool(eval(node.get(a), {'context': context or {}}, commands))
+    for a, b in (('invisible', 'visible'), ('readonly', 'readwrite'), ('required', 'optional')):
+        neg, pos = node.get(a), node.get(b)
+        if neg and pos:
+            raise ValueError('cannot specify both %r and %r' % (neg, pos))
+        if neg or pos:
+            v = bool(eval(neg or pos, {'context': context or {}}, commands))
+            if pos:
+                v = not v
             if in_tree_view and a == 'invisible':
                 # Invisible in a tree view has a specific meaning, make it a
                 # new key in the modifiers attribute.
                 modifiers['tree_invisible'] = v
-            elif v or (a not in modifiers or not isinstance(modifiers[a], list)):
+            elif v or ((a or b) not in modifiers or not isinstance(modifiers[a or b], list)):
                 # Don't set the attribute to False if a dynamic value was
                 # provided (i.e. a domain from attrs or states).
                 modifiers[a] = v
 
 
 def simplify_modifiers(modifiers):
-    for a in ('invisible', 'readonly', 'required'):
+    for a in ('invisible', 'readonly', 'required', 'visible', 'readwrite', 'optional'):
         if a in modifiers and not modifiers[a]:
             del modifiers[a]
 
