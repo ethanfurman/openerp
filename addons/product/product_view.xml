@@ -405,6 +405,7 @@
             <field name="arch" type="xml">
                 <tree string="Units of Measure">
                     <field name="name"/>
+                    <field name="full_name"/>
                     <field name="category_id"/>
                 </tree>
             </field>
@@ -418,6 +419,7 @@
                     <group>
                         <group>
                             <field name="name"/>
+                            <field name="full_name"/>
                             <field name="category_id"/>
                             <field name="uom_type" on_change="onchange_type(uom_type)"/>
                             <label for="factor"/>

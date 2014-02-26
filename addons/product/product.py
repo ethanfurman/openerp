@@ -146,6 +146,7 @@ class product_uom(osv.osv):
         'uom_type': fields.selection([('bigger','Bigger than the reference Unit of Measure'),
                                       ('reference','Reference Unit of Measure for this category'),
                                       ('smaller','Smaller than the reference Unit of Measure')],'Type', required=1),
+        'full_name': fields.char('Full Name', size=32),
     }
 
     _defaults = {
