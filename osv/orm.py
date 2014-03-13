@@ -1834,6 +1834,8 @@ class BaseModel(object):
         # support commands for 'invisible', 'readonly', and 'required'
         commands = {
                 'groups': partial(self.user_has_groups, cr, user, context=context),
+                'check_context_readonly': lambda : context.get('readonly', not context.get('readwrite', True)),
+                'check_context_readwrite': lambda : context.get('readwrite', not context.get('readonly', False)),
                 }
         transfer_node_to_modifiers(node, modifiers, context, in_tree_view, commands)
 
