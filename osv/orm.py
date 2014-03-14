@@ -52,6 +52,7 @@ import operator
 import pickle
 import re
 import simplejson
+import sys
 import time
 import traceback
 import types
@@ -117,7 +118,11 @@ def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False
         if neg and pos:
             raise ValueError('cannot specify both %r and %r' % (neg, pos))
         if neg or pos:
-            v = bool(eval(neg or pos, {'context': context or {}}, commands))
+            if neg:
+                checking = a
+            else:
+                checking = b
+            v = bool(eval(neg or pos, {'context': context or {}, 'checking': checking}, commands))
             if pos:
                 v = not v
             if in_tree_view and a == 'invisible':
@@ -1832,10 +1837,26 @@ class BaseModel(object):
 
         # The view architeture overrides the python model.
         # support commands for 'invisible', 'readonly', and 'required'
+        def _check_context():
+            "check context for a setting, return False if not found"
+            reverse = False
+            name = sys._getframe(1).f_globals['checking']
+            for neg, pos in (
+                    ('readonly', 'readwrite'),
+                    ('invisible', 'visible'),
+                    ('required', 'optional'),
+                    ):
+                if name == pos:
+                    reverse = True
+                    name = neg
+                    break
+            result = context.get(name, False)
+            if reverse:
+                result = not result
+            return result
         commands = {
+                'check_context': _check_context,
                 'groups': partial(self.user_has_groups, cr, user, context=context),
-                'check_context_readonly': lambda : context.get('readonly', not context.get('readwrite', True)),
-                'check_context_readwrite': lambda : context.get('readwrite', not context.get('readonly', False)),
                 }
         transfer_node_to_modifiers(node, modifiers, context, in_tree_view, commands)
 
