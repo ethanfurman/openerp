@@ -5111,17 +5111,17 @@ instance.web.form.FieldBinaryFileName = instance.web.form.FieldBinary.extend({
         if (!this.get("effective_readonly")) {
             var show_value;
             if (this.node.attrs.filename) {
-                show_value = "(a)" + (this.view.datarecord[this.node.attrs.filename] || '');
+                show_value = this.view.datarecord[this.node.attrs.filename] || '';
             } else {
-                show_value = "(b)" + ((this.get('value') != null && this.get('value') !== false) ? this.get('value') : '');
+                show_value = (this.get('value') != null && this.get('value') !== false) ? this.get('value') : '';
             }
-            this.$el.find('input').eq(0).val("1-"+show_value);
+            this.$el.find('input').eq(0).val(show_value);
         } else {
             if (this.get('value')) {
                 var show_value = this.get('value')
                 if (this.view)
                     show_value += " " + (this.view.datarecord[this.node.attrs.filename] || '');
-                this.$el.find('b').text("2-"+show_value+"-"+this.get('value'));
+                this.$el.find('b').text(show_value);
             }
         }
     },
@@ -5129,7 +5129,7 @@ instance.web.form.FieldBinaryFileName = instance.web.form.FieldBinary.extend({
         this.binary_value = false;
         this.internal_set_value(name);
         var show_value = name;
-        this.$el.find('input').eq(0).val("3-"+show_value);
+        this.$el.find('input').eq(0).val(show_value);
         this.internal_set_value(name);
         this.set_filename(name);
     },
