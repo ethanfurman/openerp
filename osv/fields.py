@@ -429,33 +429,8 @@ class binary(_column):
         return res
 
 
-class binaryname(_column):
+class binaryname(char):
     _type = 'binaryname'
-    _symbol_c = '%s'
-    _symbol_f = lambda symb: symb and Binary(str(symb)) or None
-    _symbol_set = (_symbol_c, _symbol_f)
-    _symbol_get = lambda self, x: x and str(x)
-    _classic_read = False
-    _prefetch = False
-
-    def __init__(self, string='unknown', filters=None, **args):
-        _column.__init__(self, string=string, **args)
-        self.filters = filters
-
-    def get(self, cr, obj, ids, name, user=None, context=None, values=None):
-        if not context:
-            context = {}
-        if not values:
-            values = []
-        res = {}
-        for i in ids:
-            val = None
-            for v in values:
-                if v['id'] == i:
-                    val = v[name]
-                    break
-            res[i] = val
-        return res
 
 
 class selection(_column):
@@ -856,7 +831,9 @@ def sanitize_binary_value(value):
     # are not something else that won't pass via XML-RPC
     if isinstance(value, (xmlrpclib.Binary, tuple, list, dict)):
         # these builtin types are meant to pass untouched
+        print "\nsafe value\n=========\n%r\n===========\n" % value
         return value
+    print "\nunsafe value\n=========\n%r\n=========\n" % value
 
     # Handle invalid bytes values that will cause problems
     # for XML-RPC. See for more info:
