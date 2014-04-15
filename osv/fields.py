@@ -831,9 +831,7 @@ def sanitize_binary_value(value):
     # are not something else that won't pass via XML-RPC
     if isinstance(value, (xmlrpclib.Binary, tuple, list, dict)):
         # these builtin types are meant to pass untouched
-        print "\nsafe value\n=========\n%r\n===========\n" % value
         return value
-    print "\nunsafe value\n=========\n%r\n=========\n" % value
 
     # Handle invalid bytes values that will cause problems
     # for XML-RPC. See for more info:
