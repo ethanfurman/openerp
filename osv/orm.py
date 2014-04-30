@@ -249,6 +249,9 @@ POSTGRES_CONFDELTYPES = {
 def intersect(la, lb):
     return filter(lambda x: x in lb, la)
 
+def not_found(la, lb):
+    return filter(lambda x: x not in lb, la)
+
 def fix_import_export_id_paths(fieldname):
     """
     Fixes the id fields in import and exports, and splits field paths
@@ -3654,6 +3657,13 @@ class BaseModel(object):
             return []
         if fields_to_read is None:
             fields_to_read = self._columns.keys()
+        if not self._name.endswith('.alias'):
+            missing_fields = not_found(
+                    [f for f in fields_to_read if not f.startswith(('__', 'alias_'))],
+                    self._columns.keys() + self._inherit_fields.keys() + ['id'],
+                    )
+            if missing_fields:
+                raise except_orm('Error','field(s) not found in %s: %r' % (self._name, missing_fields))
 
         # Construct a clause for the security rules.
         # 'tables' hold the list of tables necessary for the SELECT including the ir.rule clauses,
@@ -3709,6 +3719,7 @@ class BaseModel(object):
 
         for table in self._inherits:
             col = self._inherits[table]
+
             cols = [x for x in intersect(self._inherit_fields.keys(), fields_to_read) if x not in self._columns.keys()]
             if not cols:
                 continue
