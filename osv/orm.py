@@ -3658,8 +3658,10 @@ class BaseModel(object):
         if fields_to_read is None:
             fields_to_read = self._columns.keys()
         if not self._name.endswith('.alias'):
+            # fields_to_read can, under some circumstances, contain boolean and not string
+            # values
             missing_fields = not_found(
-                    [f for f in fields_to_read if not f.startswith(('__', 'alias_'))],
+                    [f for f in fields_to_read if f and not f.startswith(('__', 'alias_'))],
                     self._columns.keys() + self._inherit_fields.keys() + ['id'],
                     )
             if missing_fields:
