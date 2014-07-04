@@ -32,10 +32,15 @@
                             <!-- Put here related buttons -->
                         </div>
                         <notebook>
-                            <page string="Public Information">
+                            <page name="Public" string="Public Information">
                                 <group>
                                     <group string="Contact Information">
-                                        <field name="address_id" on_change="onchange_address_id(address_id)" context="{'show_address': 1}" options='{"always_reload": True, "highlight_first_line": True}'/>
+                                        <field
+                                            name="partner_id"
+                                            on_change="onchange_partner_id(partner_id, name)"
+                                            context="{'show_address':1, 'default_customer':0, 'default_employee':1}"
+                                            options='{"always_reload": True, "highlight_first_line": True}'
+                                            />
                                         <field name="work_email" widget="email"/>
                                         <field name="work_phone"/>
                                         <field name="mobile_phone"/>
@@ -48,13 +53,13 @@
                                         <field name="coach_id"/>
                                     </group>
                                     <group>
-                                        <field name="company_id" groups="base.group_multi_company" on_change="onchange_company(company_id)"/>
-                                        <field name="user_id" on_change="onchange_user(user_id)" string="Related User"/>
+                                        <field name="company_id" groups="base.group_multi_company"/> <!-- on_change="onchange_company(company_id)"/> -->
+                                        <field name="user_id" string="User Record" invisible="1"/>
                                     </group>
                                 </group>
                                 <field name="notes" placeholder="Other Information ..." colspan="4"/>
                             </page>
-                            <page string="Personal Information" groups="base.group_hr_user">
+                            <page name="Personal" string="Personal Information" groups="base.group_hr_user">
                                 <group>
                                     <group string="Citizenship &amp; Other Info">
                                         <field name="country_id" options='{"no_open": True}'/>
@@ -62,20 +67,36 @@
                                         <field name="passport_id" groups="base.group_hr_user"/>
                                         <field name="bank_account_id"/>
                                         <field name="otherid" groups="base.group_hr_user"/>
-                                    </group>
-                                    <group string="Contact Information">
-                                        <field name="address_home_id" context="{'show_address': 1}" options='{"always_reload": True, "highlight_first_line": True}'/>
-                                    </group>
-                                    <group string="Status">
+                                        <separator colspan="2" string="Status"/>
                                         <field name="gender"/>
                                         <field name="marital"/>
-                                    </group>
-                                    <group string="Birth">
+                                        <separator colspan="2" string="Birth"/>
                                         <field name="birthday"/>
+                                    </group>
+                                    <group string="Contact Information">
+                                        <!--
+                                        <field name="address_home_id" context="{'show_address':1, 'form_view_ref':'base.action_partner_employee_form'}" options='{"always_reload": True, "highlight_first_line": True}'/>
+                                        -->
+                                        <field name="home_phone"/>
+                                        <field name="home_email"/>
+                                        <label for="home_street" string="Address"/>
+                                        <div>
+                                            <field name="home_street" placeholder="Street..."/>
+                                            <field name="home_street2"/>
+                                            <div class="address_format">
+                                                <field name="home_city" placeholder="City" style="width: 40%%"/>
+                                                <field name="home_state_id" class="oe_no_button" placeholder="State" style="width: 37%%" options='{"no_open": True}' on_change="onchange_state(home_state_id)"/>
+                                                <field name="home_zip" placeholder="ZIP" style="width: 20%%"/>
+                                            </div>
+                                            <field name="home_country_id" placeholder="Country" class="oe_no_button" options='{"no_open": True}'/>
+                                        </div>
+                                        <separator colspan="2" string="Emergency Contact"/>
+                                        <field name="emergency_contact" string="Name"/>
+                                        <field name="emergency_number" string="Phone"/>
                                     </group>
                                 </group>
                             </page>
-                            <page string="HR Settings" groups="base.group_hr_user">
+                            <page name="Settings" string="HR Settings" groups="base.group_hr_user">
                                 <group>
                                     <group string="Active" name="active_group">
                                         <field name="active"/>
@@ -430,6 +451,20 @@
 
         <menuitem name="Recruitment" id="base.menu_crm_case_job_req_main" parent="menu_hr_root" groups="base.group_hr_user"/>
         <menuitem parent="hr.menu_hr_configuration" id="menu_hr_job" action="action_hr_job" sequence="6"/>
+
+        <!-- Fix parter forms to not display employee records -->
+
+        <record model="ir.actions.act_window" id="base.action_partner_form">
+            <field name="domain">[('customer','=',1)]</field>
+        </record>
+
+        <record model="ir.actions.act_window" id="base.action_partner_supplier_form">
+            <field name="domain">[('supplier','=',1)]</field>
+        </record>
+
+        <record model="ir.actions.act_window" id="base.action_partner_supplier_form">
+            <field name="domain">[('customer','!=',1),('supplier','!=',1),('employee','!=',1)]</field>
+        </record>
 
     </data>
 </openerp>

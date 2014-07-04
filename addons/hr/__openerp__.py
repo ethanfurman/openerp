@@ -48,7 +48,7 @@ You can manage:
         'images/hr_job_position.jpeg',
         'static/src/img/default_image.png',
     ],
-    'depends': ['base_setup','mail', 'resource', 'board'],
+    'depends': ['base_setup', 'base', 'mail', 'resource', 'board'],
     'data': [
         'security/hr_security.xml',
         'security/ir.model.access.csv',

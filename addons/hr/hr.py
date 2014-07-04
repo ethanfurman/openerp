@@ -22,7 +22,8 @@
 from openerp import addons
 import logging
 from openerp.osv import fields, osv
-from openerp import tools
+from openerp.osv.osv import except_osv as ERPError
+from openerp import tools, SUPERUSER_ID
 _logger = logging.getLogger(__name__)
 
 class hr_employee_category(osv.osv):
@@ -168,9 +169,19 @@ class hr_employee(osv.osv):
         'gender': fields.selection([('male', 'Male'),('female', 'Female')], 'Gender'),
         'marital': fields.selection([('single', 'Single'), ('married', 'Married'), ('widower', 'Widower'), ('divorced', 'Divorced')], 'Marital Status'),
         'department_id':fields.many2one('hr.department', 'Department'),
-        'address_id': fields.many2one('res.partner', 'Working Address'),
-        'address_home_id': fields.many2one('res.partner', 'Home Address'),
-        'bank_account_id':fields.many2one('res.partner.bank', 'Bank Account Number', domain="[('partner_id','=',address_home_id)]", help="Employee bank salary account"),
+        'partner_id': fields.many2one('res.partner', 'Partner Record'),
+        #'address_home_id': fields.many2one('res.partner', 'Home Address'),
+        'home_phone': fields.char('Phone', size=32),
+        'home_email': fields.char('Email', size=240),
+        'home_street': fields.char('Street', size=128),
+        'home_street2': fields.char('Street2', size=128),
+        'home_zip': fields.char('Zip', change_default=True, size=24),
+        'home_city': fields.char('City', size=128),
+        'home_state_id': fields.many2one("res.country.state", 'State'),
+        'home_country_id': fields.many2one('res.country', 'Country'),
+        'emergency_contact': fields.char('Emergency Contact', size=240),
+        'emergency_number': fields.char('Emergency Number', size=32),
+        'bank_account_id':fields.many2one('res.partner.bank', 'Bank Account Number', domain="[('partner_id','=',partner_id)]", help="Employee bank salary account"),
         'work_phone': fields.char('Work Phone', size=32, readonly=False),
         'mobile_phone': fields.char('Work Mobile', size=32, readonly=False),
         'work_email': fields.char('Work Email', size=240),
@@ -203,7 +214,7 @@ class hr_employee(osv.osv):
                  "Use this field anywhere a small image is required."),
         'passport_id':fields.char('Passport No', size=64),
         'color': fields.integer('Color Index'),
-        'city': fields.related('address_id', 'city', type='char', string='City'),
+        'city': fields.related('partner_id', 'city', type='char', string='City'),
         'login': fields.related('user_id', 'login', type='char', string='Login', readonly=1),
         'last_login': fields.related('user_id', 'date', type='datetime', string='Latest Connection', readonly=1),
     }
@@ -220,7 +231,21 @@ class hr_employee(osv.osv):
                 subtype='mail.mt_comment', context=context)
         except:
             pass # group deleted: do not push a message
+        partner_id = data.get('partner_id')
+        if partner_id:
+            self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id}, context=context)
         return employee_id
+
+    def write(self, cr, uid, ids, values, context=None):
+        partner_id = values.get('partner_id')
+        if partner_id:
+            if isinstance(ids, (int, long)):
+                ids = [ids]
+            if len(ids) > 1:
+                ERPError('Error', 'Only one partner per employee.')
+            employee_id = ids[0]
+            self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id}, context=context)
+        return super(hr_employee, self).write(cr, uid, ids, values, context=context)
 
     def unlink(self, cr, uid, ids, context=None):
         resource_ids = []
@@ -228,19 +253,40 @@ class hr_employee(osv.osv):
             resource_ids.append(employee.resource_id.id)
         return self.pool.get('resource.resource').unlink(cr, uid, resource_ids, context=context)
 
-    def onchange_address_id(self, cr, uid, ids, address, context=None):
-        if address:
-            address = self.pool.get('res.partner').browse(cr, uid, address, context=context)
-            return {'value': {'work_phone': address.phone, 'mobile_phone': address.mobile}}
-        return {'value': {}}
+    def onchange_state(self, cr, uid, ids, state_id, context=None):
+        if state_id:
+            country_id = self.pool.get('res.country.state').browse(cr, uid, state_id, context).country_id.id
+            return {'value':{'home_country_id':country_id}}
+        return {}
+
+    def onchange_partner_id(self, cr, uid, ids, partner, name, context=None):
+        res = {}
+        if partner:
+            user_id = False
+            partner = self.pool.get('res.partner').browse(cr, uid, partner, context=context)
+            related_users = partner.user_ids
+            if related_users:
+                user_id = related_users[0].id
+            email = partner.email
+            if not email and related_users[0].email:
+                email = related_users[0].email
+            res = {
+                'work_phone': partner.phone,
+                'mobile_phone': partner.mobile,
+                'work_email': email,
+                'user_id': user_id,
+                }
+            if not name:
+                res['name'] = partner.name
+        return {'value': res}
 
     def onchange_company(self, cr, uid, ids, company, context=None):
-        address_id = False
+        partner_id = False
         if company:
             company_id = self.pool.get('res.company').browse(cr, uid, company, context=context)
             address = self.pool.get('res.partner').address_get(cr, uid, [company_id.partner_id.id], ['default'])
-            address_id = address and address['default'] or False
-        return {'value': {'address_id' : address_id}}
+            partner_id = address and address['default'] or False
+        return {'value': {'partner_id' : partner_id}}
 
     def onchange_department_id(self, cr, uid, ids, department_id, context=None):
         value = {'parent_id': False}
@@ -248,12 +294,6 @@ class hr_employee(osv.osv):
             department = self.pool.get('hr.department').browse(cr, uid, department_id)
             value['parent_id'] = department.manager_id.id
         return {'value': value}
-
-    def onchange_user(self, cr, uid, ids, user_id, context=None):
-        work_email = False
-        if user_id:
-            work_email = self.pool.get('res.users').browse(cr, uid, user_id, context=context).email
-        return {'value': {'work_email' : work_email}}
 
     def _get_default_image(self, cr, uid, context=None):
         image_path = addons.get_module_resource('hr', 'static/src/img', 'default_image.png')
@@ -295,33 +335,15 @@ class hr_department(osv.osv):
         default = default.copy()
         default['member_ids'] = []
         return super(hr_department, self).copy(cr, uid, ids, default, context=context)
+hr_department()
 
-class res_users(osv.osv):
-    _name = 'res.users'
-    _inherit = 'res.users'
-
-    def create(self, cr, uid, data, context=None):
-        user_id = super(res_users, self).create(cr, uid, data, context=context)
-
-        # add shortcut unless 'noshortcut' is True in context
-        if not(context and context.get('noshortcut', False)):
-            data_obj = self.pool.get('ir.model.data')
-            try:
-                data_id = data_obj._get_id(cr, uid, 'hr', 'ir_ui_view_sc_employee')
-                view_id  = data_obj.browse(cr, uid, data_id, context=context).res_id
-                self.pool.get('ir.ui.view_sc').copy(cr, uid, view_id, default = {
-                                            'user_id': user_id}, context=context)
-            except:
-                # Tolerate a missing shortcut. See product/product.py for similar code.
-                _logger.debug('Skipped meetings shortcut for user "%s".', data.get('name','<new'))
-
-        return user_id
+class res_partner(osv.Model):
+    _name = 'res.partner'
+    _inherit = 'res.partner'
 
     _columns = {
-        'employee_ids': fields.one2many('hr.employee', 'user_id', 'Related employees'),
+        'employee_id': fields.many2one('hr.employee', 'Employee Record'),
         }
-
-res_users()
-
+res_partner()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
