@@ -410,22 +410,36 @@ class fleet_vehicle(osv.Model):
         """
         for vehicle in self.browse(cr, uid, ids, context):
             changes = []
-            if 'model_id' in vals and vehicle.model_id.id != vals['model_id']:
-                value = self.pool.get('fleet.vehicle.model').browse(cr,uid,vals['model_id'],context=context).name
+            model_id = vals.get('model_id')
+            if 'model_id' in vals and vehicle.model_id.id != model_id:
+                if model_id:
+                    value = self.pool.get('fleet.vehicle.model').browse(cr,uid,model_id,context=context).name
+                else:
+                    value = _('None')
                 oldmodel = vehicle.model_id.name or _('None')
                 changes.append(_("Model: from '%s' to '%s'") %(oldmodel, value))
-            if 'driver_id' in vals and vehicle.driver_id.id != vals['driver_id']:
-                value = self.pool.get('res.partner').browse(cr,uid,vals['driver_id'],context=context).name
+            driver_id = vals.get('driver_id')
+            if 'driver_id' in vals and vehicle.driver_id.id != driver_id:
+                if driver_id:
+                    value = self.pool.get('res.partner').browse(cr,uid,driver_id,context=context).name
+                else:
+                    value = _('None')
                 olddriver = (vehicle.driver_id.name) or _('None')
                 changes.append(_("Driver: from '%s' to '%s'") %(olddriver, value))
-            if 'state_id' in vals and vehicle.state_id.id != vals['state_id']:
-                value = self.pool.get('fleet.vehicle.state').browse(cr,uid,vals['state_id'],context=context).name
+            state_id = vals.get('state_id')
+            if 'state_id' in vals and vehicle.state_id.id != state_id:
+                if state_id:
+                    value = self.pool.get('fleet.vehicle.state').browse(cr,uid,state_id,context=context).name
+                else:
+                    value = _('None')
                 oldstate = vehicle.state_id.name or _('None')
                 changes.append(_("State: from '%s' to '%s'") %(oldstate, value))
-            if 'license_plate' in vals and vehicle.license_plate != vals['license_plate']:
+            license_plate = vals.get('license_plate')
+            if 'license_plate' in vals and vehicle.license_plate != license_plate:
+                if not license_plate:
+                    license_plate = _('None')
                 old_license_plate = vehicle.license_plate or _('None')
-                changes.append(_("License Plate: from '%s' to '%s'") %(old_license_plate, vals['license_plate']))
-
+                changes.append(_("License Plate: from '%s' to '%s'") %(old_license_plate, license_plate))
             if len(changes) > 0:
                 self.message_post(cr, uid, [vehicle.id], body=", ".join(changes), context=context)
 
