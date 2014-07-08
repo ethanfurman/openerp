@@ -42,3 +42,15 @@ class res_partner(osv.Model):
                         )
             res.append((record.id, name))
         return res
+
+class fleet_vehicle(osv.Model):
+    _name = 'fleet.vehicle'
+    _inherit = 'fleet.vehicle'
+    _columns = {
+        'driver_id': fields.many2one(
+            'res.partner',
+            'Driver',
+            domain=[('employee_id','!=',False)],
+            help="Driver of the vehicle",
+            ),
+        }
