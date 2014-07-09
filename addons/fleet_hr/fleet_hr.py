@@ -52,8 +52,6 @@ class fleet_vehicle(osv.Model):
     _inherit = 'fleet.vehicle'
 
     def _get_license_expiries(self, cr, uid, ids, field_names, unknown_none, context=None):
-        print
-        print 'fleet.vehicle._get_license_expiries'
         res = {}
         for vehicle in self.browse(cr, uid, ids, context=context):
             dl_soon = dl_over = False
@@ -61,13 +59,11 @@ class fleet_vehicle(osv.Model):
             if vehicle.driver_id and vehicle.driver_id.employee_id:
                 employee = vehicle.driver_id.employee_id
                 today = Date.today()
-                print type(today), today
-                print type(employee.driver_license_exp), employee.driver_license_exp
-                if today > Date(employee.driver_license_exp):
+                if not employee.driver_license_exp or today > Date(employee.driver_license_exp):
                     dl_over = True
                 elif today.replace(delta_day=30) > Date(employee.driver_license_exp):
                     dl_soon = True
-                if today > employee.driver_medical_exp:
+                if not employee.driver_medical_exp or today > Date(employee.driver_medical_exp):
                     md_over = True
                 elif today.replace(delta_day=30) > Date(employee.driver_medical_exp):
                     md_soon = True
@@ -77,9 +73,6 @@ class fleet_vehicle(osv.Model):
                     'driver_medical_renewal_due_soon': md_soon,
                     'driver_medical_renewal_overdue': md_over,
                     }
-        print
-        print res
-        print
         return res
 
     _columns = {
