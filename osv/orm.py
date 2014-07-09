@@ -60,6 +60,7 @@ from functools import partial
 
 import psycopg2
 from lxml import etree
+from lxml.etree import XPathEvalError
 
 import fields
 import openerp
@@ -2122,7 +2123,11 @@ class BaseModel(object):
 
             """
             if spec.tag == 'xpath':
-                nodes = source.xpath(spec.get('expr'))
+                try:
+                    nodes = source.xpath(spec.get('expr'))
+                except XPathEvalError, exc:
+                    _logger.warning(spec.get('expr'))
+                    raise
                 return nodes[0] if nodes else None
             elif spec.tag == 'field':
                 # Only compare the field name: a field can be only once in a given view
