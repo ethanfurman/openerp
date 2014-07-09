@@ -526,21 +526,22 @@ class ir_model_constraint(Model):
                 # as installed modules have defined this element we must not delete it!
                 continue
 
-            if typ == 'f':
-                # test if FK exists on this table (it could be on a related m2m table, in which case we ignore it)
-                cr.execute("""SELECT 1 from pg_constraint cs JOIN pg_class cl ON (cs.conrelid = cl.oid)
-                              WHERE cs.contype=%s and cs.conname=%s and cl.relname=%s""", ('f', name, model_obj._table))
-                if cr.fetchone():
-                    cr.execute('ALTER TABLE "%s" DROP CONSTRAINT "%s"' % (model_obj._table, name),)
-                    _logger.info('Dropped FK CONSTRAINT %s@%s', name, model)
+            if model_obj is not None:
+                if typ == 'f':
+                    # test if FK exists on this table (it could be on a related m2m table, in which case we ignore it)
+                    cr.execute("""SELECT 1 from pg_constraint cs JOIN pg_class cl ON (cs.conrelid = cl.oid)
+                                  WHERE cs.contype=%s and cs.conname=%s and cl.relname=%s""", ('f', name, model_obj._table))
+                    if cr.fetchone():
+                        cr.execute('ALTER TABLE "%s" DROP CONSTRAINT "%s"' % (model_obj._table, name),)
+                        _logger.info('Dropped FK CONSTRAINT %s@%s', name, model)
 
-            if typ == 'u':
-                # test if constraint exists
-                cr.execute("""SELECT 1 from pg_constraint cs JOIN pg_class cl ON (cs.conrelid = cl.oid)
-                              WHERE cs.contype=%s and cs.conname=%s and cl.relname=%s""", ('u', name, model_obj._table))
-                if cr.fetchone():
-                    cr.execute('ALTER TABLE "%s" DROP CONSTRAINT "%s"' % (model_obj._table, name),)
-                    _logger.info('Dropped CONSTRAINT %s@%s', name, model)
+                if typ == 'u':
+                    # test if constraint exists
+                    cr.execute("""SELECT 1 from pg_constraint cs JOIN pg_class cl ON (cs.conrelid = cl.oid)
+                                  WHERE cs.contype=%s and cs.conname=%s and cl.relname=%s""", ('u', name, model_obj._table))
+                    if cr.fetchone():
+                        cr.execute('ALTER TABLE "%s" DROP CONSTRAINT "%s"' % (model_obj._table, name),)
+                        _logger.info('Dropped CONSTRAINT %s@%s', name, model)
 
         self.unlink(cr, uid, ids, context)
 
