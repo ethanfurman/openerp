@@ -35,7 +35,8 @@ and expiration dates.
     'depends' : [
         'base',
         'hr',
-        'fleet'
+        'fleet',
+        'fnx',
         ],
     'update_xml' : [
         'fleet_hr_view.xml',
