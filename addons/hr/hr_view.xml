@@ -455,11 +455,11 @@
         <!-- Fix parter forms to not display employee records -->
 
         <record model="ir.actions.act_window" id="base.action_partner_form">
-            <field name="domain">[('customer','=',1)]</field>
+            <field name="domain">['|',('customer','=',1),('employee','!=',1)]</field>
         </record>
 
         <record model="ir.actions.act_window" id="base.action_partner_supplier_form">
-            <field name="domain">[('supplier','=',1)]</field>
+            <field name="domain">['|',('supplier','=',1),('employee','!=',1)]</field>
         </record>
 
         <record model="ir.actions.act_window" id="base.action_partner_supplier_form">
