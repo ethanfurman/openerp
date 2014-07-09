@@ -274,7 +274,7 @@ class hr_employee(osv.osv):
             if related_users:
                 user_id = related_users[0].id
             email = partner.email
-            if not email and related_users[0].email:
+            if not email and related_users and related_users[0].email:
                 email = related_users[0].email
             res = {
                 'work_phone': partner.phone,
