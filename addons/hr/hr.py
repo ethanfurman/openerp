@@ -237,14 +237,20 @@ class hr_employee(osv.osv):
         return employee_id
 
     def write(self, cr, uid, ids, values, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_id = values.get('partner_id')
         if partner_id:
-            if isinstance(ids, (int, long)):
-                ids = [ids]
             if len(ids) > 1:
                 ERPError('Error', 'Only one partner per employee.')
             employee_id = ids[0]
             self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id}, context=context)
+        else:
+            # clear already linked parter_ids
+            res_partner = self.pool.get('res.partner')
+            for employee in self.browse(cr, uid, ids, context=context):
+                if employee.partner_id:
+                    res_partner.write(cr, uid, employee.partner_id.id, {'employee_id':False}, context=context)
         return super(hr_employee, self).write(cr, uid, ids, values, context=context)
 
     def unlink(self, cr, uid, ids, context=None):
