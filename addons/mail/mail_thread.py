@@ -1149,6 +1149,8 @@ class mail_thread(osv.AbstractModel):
             provided, subscribe uid instead. """
         if user_ids is None:
             user_ids = [uid]
+        if isinstance(user_ids, (int, long)):
+            user_ids = [user_ids]
         partner_ids = [user.partner_id.id for user in self.pool.get('res.users').browse(cr, uid, user_ids, context=context)]
         return self.message_subscribe(cr, uid, ids, partner_ids, subtype_ids=subtype_ids, context=context)
 
