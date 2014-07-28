@@ -42,6 +42,10 @@
                         red:contract_renewal_overdue or driver_license_renewal_overdue or driver_medical_renewal_overdue
                     </attribute>
                 </xpath>
+                <xpath expr="//field[@name='driver_id']" position="after">
+                    <field name="driver_license_exp"/>
+                    <field name="driver_medical_exp"/>
+                </xpath>
                 <xpath expr="//field[@name='location']" position="after">
                     <field name="driver_license_renewal_due_soon" invisible="1"/>
                     <field name="driver_license_renewal_overdue" invisible="1" />

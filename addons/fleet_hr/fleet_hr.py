@@ -68,6 +68,8 @@ class fleet_vehicle(osv.Model):
                 elif today.replace(delta_day=30) > Date(employee.driver_medical_exp):
                     md_soon = True
             res[vehicle.id] = {
+                    'driver_license_exp': employee.driver_license_exp,
+                    'driver_medical_exp': employee.driver_medical_exp,
                     'driver_license_renewal_due_soon': dl_soon,
                     'driver_license_renewal_overdue': dl_over,
                     'driver_medical_renewal_due_soon': md_soon,
@@ -81,6 +83,18 @@ class fleet_vehicle(osv.Model):
             'Driver',
             domain=[('employee_id','!=',False)],
             help="Driver of the vehicle",
+            ),
+        'driver_license_exp': fields.function(
+            _get_license_expiries,
+            type='date',
+            string='License expires on',
+            multi='driver',
+            ),
+        'driver_medical_exp': fields.function(
+            _get_license_expiries,
+            type='date',
+            string='Medical expires on',
+            multi='driver',
             ),
         'driver_license_renewal_due_soon': fields.function(
             _get_license_expiries,
@@ -105,5 +119,5 @@ class fleet_vehicle(osv.Model):
             type='boolean',
             string="Medical clearance expired",
             multi='driver',
-            )
+            ),
         }
