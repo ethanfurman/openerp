@@ -26,6 +26,19 @@
             </field>
         </record>
 
+        <record model="ir.ui.view" id="fleet_hr_driver_tree">
+            <field name="name">hr.employee.tree</field>
+            <field name="model">hr.employee</field>
+            <field name="inherit_id" ref="hr.view_employee_tree"/>
+            <field name="priority" eval="10"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='job_id']" position="after">
+                    <field name="driver_license_exp"/>
+                    <field name="driver_medical_exp"/>
+                </xpath>
+            </field>
+        </record>
+
         <record model="ir.actions.act_window" id="fleet.fleet_vehicle_act">
             <field name="context">{'show_driver':1}</field>
         </record>
@@ -41,10 +54,6 @@
                         orange:contract_renewal_due_soon or driver_license_renewal_due_soon or driver_medical_renewal_due_soon;
                         red:contract_renewal_overdue or driver_license_renewal_overdue or driver_medical_renewal_overdue
                     </attribute>
-                </xpath>
-                <xpath expr="//field[@name='driver_id']" position="after">
-                    <field name="driver_license_exp"/>
-                    <field name="driver_medical_exp"/>
                 </xpath>
                 <xpath expr="//field[@name='location']" position="after">
                     <field name="driver_license_renewal_due_soon" invisible="1"/>
