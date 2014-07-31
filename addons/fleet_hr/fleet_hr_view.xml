@@ -32,9 +32,19 @@
             <field name="inherit_id" ref="hr.view_employee_tree"/>
             <field name="priority" eval="10"/>
             <field name="arch" type="xml">
+                <xpath expr="//tree[@string='Employees']" position="attributes">
+                    <attribute name="colors">
+                        orange:driver_license_renewal_due_soon or driver_medical_renewal_due_soon;
+                        red:driver_license_renewal_overdue or driver_medical_renewal_overdue
+                    </attribute>
+                </xpath>
                 <xpath expr="//field[@name='job_id']" position="after">
                     <field name="driver_license_exp"/>
                     <field name="driver_medical_exp"/>
+                    <field name="driver_license_renewal_due_soon" invisible="1"/>
+                    <field name="driver_license_renewal_overdue" invisible="1" />
+                    <field name="driver_medical_renewal_due_soon" invisible="1"/>
+                    <field name="driver_medical_renewal_overdue" invisible="1" />
                 </xpath>
             </field>
         </record>

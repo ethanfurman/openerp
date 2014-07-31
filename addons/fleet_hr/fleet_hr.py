@@ -5,10 +5,36 @@ from fnx import Date
 _logger = logging.getLogger(__name__)
 
 
+
 class hr_employee(osv.Model):
     "fleet driver information fields"
     _name = 'hr.employee'
     _inherit = 'hr.employee'
+
+    def _get_license_expiries(self, cr, uid, ids, field_names, unknown_none, context=None):
+        res = {}
+        today = Date.today()
+        for employee in self.browse(cr, uid, ids, context=context):
+            dl_soon = dl_over = False
+            md_soon = md_over = False
+            
+            if employee.driver_license_exp:
+                if today > Date(employee.driver_license_exp):
+                    dl_over = True
+                elif today.replace(delta_day=30) > Date(employee.driver_license_exp):
+                    dl_soon = True
+            if employee.driver_medical_exp:
+                if today > Date(employee.driver_medical_exp):
+                    md_over = True
+                elif today.replace(delta_day=30) > Date(employee.driver_medical_exp):
+                    md_soon = True
+            res[employee.id] = {
+                    'driver_license_renewal_due_soon': dl_soon,
+                    'driver_license_renewal_overdue': dl_over,
+                    'driver_medical_renewal_due_soon': md_soon,
+                    'driver_medical_renewal_overdue': md_over,
+                    }
+        return res
 
     _columns = {
         'driver_employee_num': fields.char('Employee #', size=12),
@@ -17,6 +43,30 @@ class hr_employee(osv.Model):
         'driver_license_class': fields.selection([('A','A'),('B','B'),('C','C'),('M','M')], 'License Class'),
         'driver_license_exp': fields.date('License Expiration'),
         'driver_medical_exp': fields.date('Medical Expiration'),
+        'driver_license_renewal_due_soon': fields.function(
+            _get_license_expiries,
+            type='boolean',
+            string='License expires soon',
+            multi='driver',
+            ),
+        'driver_license_renewal_overdue': fields.function(
+            _get_license_expiries,
+            type='boolean',
+            string='License has expired',
+            multi='driver',
+            ),
+        'driver_medical_renewal_due_soon': fields.function(
+            _get_license_expiries,
+            type='boolean',
+            string='Medical clearance expires soon',
+            multi='driver',
+            ),
+        'driver_medical_renewal_overdue': fields.function(
+            _get_license_expiries,
+            type='boolean',
+            string="Medical clearance expired",
+            multi='driver',
+            ),
         }
 
 
@@ -68,8 +118,6 @@ class fleet_vehicle(osv.Model):
                 elif today.replace(delta_day=30) > Date(employee.driver_medical_exp):
                     md_soon = True
             res[vehicle.id] = {
-                    'driver_license_exp': employee.driver_license_exp,
-                    'driver_medical_exp': employee.driver_medical_exp,
                     'driver_license_renewal_due_soon': dl_soon,
                     'driver_license_renewal_overdue': dl_over,
                     'driver_medical_renewal_due_soon': md_soon,
@@ -83,18 +131,6 @@ class fleet_vehicle(osv.Model):
             'Driver',
             domain=[('employee_id','!=',False)],
             help="Driver of the vehicle",
-            ),
-        'driver_license_exp': fields.function(
-            _get_license_expiries,
-            type='date',
-            string='License expires on',
-            multi='driver',
-            ),
-        'driver_medical_exp': fields.function(
-            _get_license_expiries,
-            type='date',
-            string='Medical expires on',
-            multi='driver',
             ),
         'driver_license_renewal_due_soon': fields.function(
             _get_license_expiries,
