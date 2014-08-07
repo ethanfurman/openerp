@@ -485,21 +485,35 @@ class res_users(osv.osv):
             'target': 'new',
         }
 
-    def has_group(self, cr, uid, group_ext_id):
+    def has_group(self, cr, uid, ids, group_ext_id=None, context=None):
         """Checks whether user belongs to given group.
 
         :param str group_ext_id: external ID (XML ID) of the group.
            Must be provided in fully-qualified form (``module.ext_id``), as there
-           is no implicit module to use..
-        :return: True if the current user is a member of the group with the
+           is no implicit module to use.
+        :return: True if the current user, or all users in ids, is a member of the group with the
            given external ID (XML ID), else False.
+
+        bugfix: ids and context added so this method can be called from a browse_record;
+                to support direct table calls we check if ids is a string, and if so
+                move it to group_ext_id.
         """
-        assert group_ext_id and '.' in group_ext_id, "External ID must be fully qualified"
+        if isinstance(ids, basestring):
+            if group_ext_id is not None:
+                raise except_osv(_('Error'), _('group_ext_id cannot be a string if ids is'))
+            ids, group_ext_id = [uid], ids
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        if not isinstance(group_ext_id, basestring) or group_ext_id.count('.') != 1:
+           raise except_osv(_('Error'), _('External ID must be fully qualified ("module.ext_id")'))
         module, ext_id = group_ext_id.split('.')
-        cr.execute("""SELECT 1 FROM res_groups_users_rel WHERE uid=%s AND gid IN
+        for uid in ids:
+            cr.execute("""SELECT 1 FROM res_groups_users_rel WHERE uid=%s AND gid IN
                         (SELECT res_id FROM ir_model_data WHERE module=%s AND name=%s)""",
                    (uid, module, ext_id))
-        return bool(cr.fetchone())
+            if not bool(cr.fetchone()):
+                return False
+        return True
 
 
 #
