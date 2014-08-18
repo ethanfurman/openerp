@@ -50,6 +50,7 @@ from openerp.tools import float_round, float_repr
 from openerp.tools import html_sanitize
 import simplejson
 from openerp import SUPERUSER_ID
+import osv
 
 _logger = logging.getLogger(__name__)
 
@@ -1160,6 +1161,8 @@ class function(_column):
 
     def get(self, cr, obj, ids, name, uid=False, context=None, values=None):
         result = self._fnct(obj, cr, uid, ids, name, self._arg, context)
+        if result is None and ids:
+            raise osv.except_osv('Programming Error', 'Possibly no return for a functional field?')
         for id in ids:
             if self._multi and id in result:
                 for field, value in result[id].iteritems():
