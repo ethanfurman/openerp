@@ -546,6 +546,11 @@ class browse_record(object):
             self._cache[model].clear()
             self._cache[model].update(cached_ids)
 
+    def write(self, values, context=None):
+        if context is None:
+            context = self._context
+        return self._model.write(self._cr, self._uid, self._id, values, context=context)
+
 def pg_varchar(size=0):
     """ Returns the VARCHAR declaration for the provided size:
 
