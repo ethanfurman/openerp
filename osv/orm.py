@@ -4546,7 +4546,7 @@ class BaseModel(object):
         self._workflow_trigger(cr, user, [id_new], 'trg_create', context=context)
         return id_new
 
-    def browse(self, cr, uid, select, context=None, list_class=None, fields_process=None):
+    def browse(self, cr, uid, select=[None], context=None, list_class=None, fields_process=None):
         """Fetch records as objects allowing to use dot notation to browse fields and relations
 
         :param cr: database cursor
@@ -4563,6 +4563,11 @@ class BaseModel(object):
         if isinstance(select, (int, long)):
             return browse_record(cr, uid, select, self, cache, context=context, list_class=self._list_class, fields_process=fields_process)
         elif isinstance(select, list):
+            # either a list of integers, or a domain selection list
+            if select and not isinstance(select[0], (int, long)):
+                if select == [None]:
+                    select = []
+                select = self.search(cr, uid, select, context=context)
             return self._list_class([browse_record(cr, uid, id, self, cache, context=context, list_class=self._list_class, fields_process=fields_process) for id in select], context=context)
         else:
             return browse_null()
