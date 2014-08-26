@@ -435,6 +435,14 @@ class configmanager(object):
         self.options['translate_modules'] = opt.translate_modules and map(lambda m: m.strip(), opt.translate_modules.split(',')) or ['all']
         self.options['translate_modules'].sort()
 
+        # check that parameters requiring '-d' have '-d' specified
+        #if self.options['without_demo']:
+        #    die(not (self.options['init'] and self.options['db_name']), 'without_demo requires both init and a database to be specified')
+        #if self.options['init']:
+        #    die(not self.options['db_name'], 'init requires a database to be specified')
+        #if self.options['update']:
+        #    die(not self.options['db_name'], 'update requires a database to be specified')
+        
         # TODO checking the type of the parameters should be done for every
         # parameters, not just the timezone.
         # The call to get_server_timezone() sets the timezone; this should
