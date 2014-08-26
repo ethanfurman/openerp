@@ -233,7 +233,7 @@ class hr_employee(osv.osv):
             pass # group deleted: do not push a message
         partner_id = data.get('partner_id')
         if partner_id:
-            self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id}, context=context)
+            self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id, 'employee':True}, context=context)
         return employee_id
 
     def write(self, cr, uid, ids, values, context=None):
@@ -244,13 +244,13 @@ class hr_employee(osv.osv):
             if len(ids) > 1:
                 ERPError('Error', 'Only one partner per employee.')
             employee_id = ids[0]
-            self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id}, context=context)
+            self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id, 'employee':True}, context=context)
         else:
             # clear already linked parter_ids
             res_partner = self.pool.get('res.partner')
             for employee in self.browse(cr, uid, ids, context=context):
                 if employee.partner_id:
-                    res_partner.write(cr, uid, employee.partner_id.id, {'employee_id':False}, context=context)
+                    res_partner.write(cr, uid, employee.partner_id.id, {'employee_id':False, 'employee':False}, context=context)
         return super(hr_employee, self).write(cr, uid, ids, values, context=context)
 
     def unlink(self, cr, uid, ids, context=None):

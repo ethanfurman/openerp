@@ -505,7 +505,7 @@ class res_users(osv.osv):
         if isinstance(ids, (int, long)):
             ids = [ids]
         if not isinstance(group_ext_id, basestring) or group_ext_id.count('.') != 1:
-           raise except_osv(_('Error'), _('External ID must be fully qualified ("module.ext_id")'))
+            raise except_osv(_('Error'), _('External ID must be fully qualified ("module.ext_id")'))
         module, ext_id = group_ext_id.split('.')
         for uid in ids:
             cr.execute("""SELECT 1 FROM res_groups_users_rel WHERE uid=%s AND gid IN
