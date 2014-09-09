@@ -53,11 +53,10 @@ class groups(osv.osv):
         operand = args[0][2]
         operator = args[0][1]
         values = operand.split('/')
-        group_name = values[0]
+        group_name = values[-1].strip()
         where = [('name', operator, group_name)]
         if len(values) > 1:
-            application_name = values[0]
-            group_name = values[1]
+            application_name = values[0].strip()
             where = ['|',('category_id.name', operator, application_name)] + where
         return where
 
