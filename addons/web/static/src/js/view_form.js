@@ -2145,7 +2145,7 @@ instance.web.form.AbstractField = instance.web.form.FormWidget.extend(instance.w
     */
     render_value: function() {},
     is_valid: function() {
-        return this.is_syntax_valid() && !(this.get('required') && this.is_false());
+        return this.is_syntax_valid() && !(this.get('required') && this.is_false() && !this.get('invisible'));
     },
     is_syntax_valid: function() {
         return true;
