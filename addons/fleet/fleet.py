@@ -158,7 +158,7 @@ class fleet_vehicle_model(osv.Model):
     _columns = {
         'name': fields.function(_model_name_get_fnc, type="char", string='Name', store=True),
         'modelname': fields.char('Model name', size=32, required=True), 
-        'brand_id': fields.many2one('fleet.vehicle.model.brand', 'Model Brand', required=True, help='Brand of the vehicle'),
+        'brand_id': fields.many2one('fleet.vehicle.model.brand', 'Model Brand', help='Brand of the vehicle'),
         'vendors': fields.many2many('res.partner', 'fleet_vehicle_model_vendors', 'model_id', 'partner_id', string='Vendors'),
         'image': fields.related('brand_id', 'image', type="binary", string="Logo"),
         'image_medium': fields.related('brand_id', 'image_medium', type="binary", string="Logo"),
