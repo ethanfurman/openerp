@@ -242,7 +242,8 @@ class mail_thread(osv.AbstractModel):
         thread_id = super(mail_thread, self).create(cr, uid, values, context=context)
 
         # subscribe uid unless asked not to
-        if not context.get('mail_create_nosubscribe'):
+        # do not subscribe Administrator (ever!)
+        if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
             self.message_subscribe_users(cr, uid, [thread_id], [uid], context=context)
         self.message_auto_subscribe(cr, uid, [thread_id], values.keys(), context=context)
 
