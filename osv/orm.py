@@ -3192,6 +3192,9 @@ class BaseModel(object):
 
                             if isinstance(f, fields.many2one):
                                 dest_model = self.pool.get(f._obj)
+                                if dest_model is None:
+                                    raise except_orm('Programming Error', "'%s.%s' links to %r, but %r has not been loaded...  dependency issue?" %
+                                            (self._table, k, f._obj, f._obj.split('.')[0]))
                                 if dest_model._table != 'ir_actions':
                                     self._m2o_fix_foreign_key(cr, self._table, k, dest_model, f.ondelete)
 
