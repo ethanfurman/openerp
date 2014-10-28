@@ -970,7 +970,7 @@ class Menu(openerpweb.Controller):
                                                  req.context)[0]['menu_id']
 
         menu_domain = [('parent_id', '=', False)]
-        if user_menu_id:
+        if user_menu_id and s._uid != openerp.SUPERUSER_ID:
             domain_string = s.model('ir.actions.act_window').read(
                 [user_menu_id[0]], ['domain'],req.context)[0]['domain']
             if domain_string:

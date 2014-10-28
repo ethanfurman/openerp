@@ -1249,6 +1249,17 @@ instance.web.WebClient = instance.web.Client.extend({
         self.user_menu.replace(this.$el.find('.oe_user_menu_placeholder'));
         self.user_menu.on('user_logout', self, self.on_logout);
         self.user_menu.do_update();
+        self.user_action_id = false;
+        // thanks to Prajul P T for action_id fix
+        instance.web.blockUI();
+        var func = new instance.web.Model("res.users").get_func("read");
+        func(self.session.uid, ['action_id']).then(function(result){
+            action_id = result['action_id'];
+            if (action_id){
+                self.user_action_id = action_id[0];
+            }
+        });
+        instance.web.unblockUI();
         self.bind_hashchange();
         self.set_title();
         self.check_timezone();
@@ -1346,9 +1357,14 @@ instance.web.WebClient = instance.web.Client.extend({
         var state = $.bbq.getState(true);
         if (_.isEmpty(state) || state.action == "login") {
             self.menu.has_been_loaded.done(function() {
-                var first_menu_id = self.menu.$el.find("a:first").data("menu");
-                if(first_menu_id) {
-                    self.menu.menu_click(first_menu_id);
+                if (self.user_action_id){
+                    self.action_manager.do_action(self.user_action_id, {'clear_breadcrumbs': true})
+                }
+                else{
+                    var first_menu_id = self.menu.$el.find("a:first").data("menu");
+                    if(first_menu_id) {
+                        self.menu.menu_click(first_menu_id);
+                    }
                 }
             });
         } else {

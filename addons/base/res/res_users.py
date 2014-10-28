@@ -151,8 +151,13 @@ class res_users(osv.osv):
                  "a change of password, the user has to login again."),
         'signature': fields.text('Signature'),
         'active': fields.boolean('Active'),
-        'action_id': fields.many2one('ir.actions.actions', 'Home Action', help="If specified, this action will be opened at logon for this user, in addition to the standard menu."),
-        'menu_id': fields.many2one('ir.actions.actions', 'Menu Action', help="If specified, the action will replace the standard menu for this user."),
+        'action_id': fields.many2one('ir.actions.actions', 'Login Action', help="If specified, this action will be opened at logon for this user, in addition to the standard menu."),
+        'menu_id': fields.many2one(
+            'ir.actions.actions',
+            'Menu Action',
+            # domain=['|',('parent_id','=',False),('parent_id.parent_id','=',False)],
+            help="If specified, restricts the user to that menu.",
+            ),
         'groups_id': fields.many2many('res.groups', 'res_groups_users_rel', 'uid', 'gid', 'Groups'),
         # Special behavior for this field: res.company.search() will only return the companies
         # available to the current user (should be the user's companies?), when the user_preference
@@ -243,7 +248,7 @@ class res_users(osv.osv):
         'password': '',
         'active': True,
         'customer': False,
-        'menu_id': _get_menu,
+        # 'menu_id': _get_menu,
         'company_id': _get_company,
         'company_ids': _get_companies,
         'groups_id': _get_group,

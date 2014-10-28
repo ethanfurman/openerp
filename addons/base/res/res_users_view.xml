@@ -165,7 +165,10 @@
                                     </group>
                                     <group groups="base.group_no_one">
                                         <field name="action_id"/>
+                                        <field name="menu_id"/>
+                                        <!--
                                         <field domain="[('usage','=','menu')]" name="menu_id" required="True"/>
+                                        -->
                                     </group>
                                 </group>
                                 <group>
