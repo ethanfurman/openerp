@@ -656,6 +656,7 @@ def is_reified_group(name):
 def get_boolean_group(name): return int(name[9:])
 def get_boolean_groups(name): return map(int, name[10:].split('_'))
 def get_selection_groups(name): return map(int, name[11:].split('_'))
+def get_reified_groups(name): return map(int, name.split('_', 2)[2].split('_'))
 
 def partition(f, xs):
     "return a pair equivalent to (filter(f, xs), filter(lambda x: not f(x), xs))"
@@ -854,5 +855,22 @@ class users_view(osv.osv):
                         'help': g.comment,
                     }
         return res
+
+    def search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False):
+        adjusted_args = []
+        for arg in args:
+            if not isinstance(arg, basestring) and is_reified_group(arg[0]):
+                field, op, condition = arg
+                group_ids = get_reified_groups(field)
+                field = 'groups_id'
+                if condition in (True, False, 'false'):
+                    if condition != True:
+                        op = ('!=', '=')[op != '=']
+                    condition = group_ids
+                else:
+                    condition = int(condition)
+                arg = [field, op, condition]
+            adjusted_args.append(arg)
+        return super(users_view, self).search(cr, user, adjusted_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
