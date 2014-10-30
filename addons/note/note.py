@@ -21,6 +21,7 @@
 
 from openerp.osv import osv, fields
 from openerp.tools import html2plaintext
+from openerp import SUPERUSER_ID
 
 class note_stage(osv.osv):
     """ Category of Note """
@@ -190,6 +191,6 @@ class res_users(osv.Model):
             for note_xml_id in ['note_stage_01','note_stage_02','note_stage_03','note_stage_04']:
                 data_id = data_obj._get_id(cr, uid, 'note', note_xml_id)
                 stage_id  = data_obj.browse(cr, uid, data_id, context=context).res_id
-                note_obj.copy(cr, uid, stage_id, default = { 
+                note_obj.copy(cr, SUPERUSER_ID, stage_id, default = { 
                                         'user_id': user_id}, context=context)
         return user_id
