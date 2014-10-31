@@ -149,7 +149,7 @@ class board_create(osv.osv_memory):
             'action': 'ir.actions.act_window,%s' % (action_id,)
         }, context=context)
 
-        self.pool.get('board.board')._clear_list_cache()
+        # self.pool.get('board.board')._clear_list_cache()
 
         return {
             'type': 'ir.actions.client',
