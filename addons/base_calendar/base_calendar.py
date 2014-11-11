@@ -32,8 +32,8 @@ import time
 from openerp import tools, SUPERUSER_ID
 
 months = {
-    1: "January", 2: "February", 3: "March", 4: "April", \
-    5: "May", 6: "June", 7: "July", 8: "August", 9: "September", \
+    1: "January", 2: "February", 3: "March", 4: "April",
+    5: "May", 6: "June", 7: "July", 8: "August", 9: "September",
     10: "October", 11: "November", 12: "December"
 }
 
@@ -79,7 +79,7 @@ def base_calendar_id2real_id(base_calendar_id=None, with_date=False):
         if len(res) >= 2:
             real_id = res[0]
             if with_date:
-                real_date = time.strftime("%Y-%m-%d %H:%M:%S", \
+                real_date = time.strftime("%Y-%m-%d %H:%M:%S",
                                  time.strptime(res[1], "%Y%m%d%H%M%S"))
                 start = datetime.strptime(real_date, "%Y-%m-%d %H:%M:%S")
                 end = start + timedelta(hours=with_date)
@@ -108,7 +108,7 @@ def real_id2base_calendar_id(real_id, recurrent_date):
     @return: string containing the real id and the recurrent date
     """
     if real_id and recurrent_date:
-        recurrent_date = time.strftime("%Y%m%d%H%M%S", \
+        recurrent_date = time.strftime("%Y%m%d%H%M%S",
                             time.strptime(recurrent_date, "%Y-%m-%d %H:%M:%S"))
         return '%d-%s' % (real_id, recurrent_date)
     return real_id
@@ -256,7 +256,7 @@ class calendar_attendee(osv.osv):
                     result[id][name] = ''
                     continue
                 else:
-                    result[id][name] = self._get_address(attdata.sent_by_uid.name, \
+                    result[id][name] = self._get_address(attdata.sent_by_uid.name,
                                         attdata.sent_by_uid.email)
 
             if name == 'cn':
@@ -334,55 +334,59 @@ class calendar_attendee(osv.osv):
         return res
 
     _columns = {
-        'cutype': fields.selection([('individual', 'Individual'), \
-                    ('group', 'Group'), ('resource', 'Resource'), \
-                    ('room', 'Room'), ('unknown', 'Unknown') ], \
+        'cutype': fields.selection([('individual', 'Individual'),
+                    ('group', 'Group'), ('resource', 'Resource'),
+                    ('room', 'Room'), ('unknown', 'Unknown') ],
                     'Invite Type', help="Specify the type of Invitation"),
         'member': fields.char('Member', size=124,
                     help="Indicate the groups that the attendee belongs to"),
-        'role': fields.selection([('req-participant', 'Participation required'), \
-                    ('chair', 'Chair Person'), \
-                    ('opt-participant', 'Optional Participation'), \
-                    ('non-participant', 'For information Purpose')], 'Role', \
+        'role': fields.selection([('req-participant', 'Participation required'),
+                    ('chair', 'Chair Person'),
+                    ('opt-participant', 'Optional Participation'),
+                    ('non-participant', 'For information Purpose')], 'Role',
                     help='Participation role for the calendar user'),
         'state': fields.selection([('needs-action', 'Needs Action'),
                         ('tentative', 'Uncertain'),
                         ('declined', 'Declined'),
                         ('accepted', 'Accepted'),
-                        ('delegated', 'Delegated')], 'Status', readonly=True, \
+                        ('delegated', 'Delegated')], 'Status', readonly=True, 
                         help="Status of the attendee's participation"),
         'rsvp':  fields.boolean('Required Reply?',
                     help="Indicats whether the favor of a reply is requested"),
-        'delegated_to': fields.function(_compute_data, \
-                string='Delegated To', type="char", size=124, store=True, \
-                multi='delegated_to', help="The users that the original \
-request was delegated to"),
-        'delegated_from': fields.function(_compute_data, string=\
-            'Delegated From', type="char", store=True, size=124, multi='delegated_from'),
-        'parent_ids': fields.many2many('calendar.attendee', 'calendar_attendee_parent_rel', \
+        'delegated_to': fields.function(
+                _compute_data,
+                string='Delegated To', type="char", size=124, store=True,
+                multi='delegated_to',
+                help="The users that the original request was delegated to",
+                ),
+        'delegated_from': fields.function(
+            _compute_data,
+            string='Delegated From',
+            type="char", store=True, size=124, multi='delegated_from'),
+        'parent_ids': fields.many2many('calendar.attendee', 'calendar_attendee_parent_rel',
                                     'attendee_id', 'parent_id', 'Delegrated From'),
-        'child_ids': fields.many2many('calendar.attendee', 'calendar_attendee_child_rel', \
+        'child_ids': fields.many2many('calendar.attendee', 'calendar_attendee_child_rel',
                                       'attendee_id', 'child_id', 'Delegrated To'),
-        'sent_by': fields.function(_compute_data, string='Sent By', \
-                        type="char", multi='sent_by', store=True, size=124, \
+        'sent_by': fields.function(_compute_data, string='Sent By',
+                        type="char", multi='sent_by', store=True, size=124,
                         help="Specify the user that is acting on behalf of the calendar user"),
-        'sent_by_uid': fields.function(_compute_data, string='Sent By User', \
+        'sent_by_uid': fields.function(_compute_data, string='Sent By User',
                             type="many2one", relation="res.users", multi='sent_by_uid'),
-        'cn': fields.function(_compute_data, string='Common name', \
+        'cn': fields.function(_compute_data, string='Common name',
                             type="char", size=124, multi='cn', store=True),
-        'dir': fields.char('URI Reference', size=124, help="Reference to the URI\
-that points to the directory information corresponding to the attendee."),
-        'language': fields.function(_compute_data, string='Language', \
-                    type="selection", selection=_lang_get, multi='language', \
-                    store=True, help="To specify the language for text values in a\
-property or property parameter."),
+        'dir': fields.char('URI Reference', size=124,
+        help="Reference to the URI that points to the directory information corresponding to the attendee."),
+        'language': fields.function(_compute_data, string='Language',
+                    type="selection", selection=_lang_get, multi='language',
+                    store=True,
+                    help="To specify the language for text values in a property or property parameter."),
         'user_id': fields.many2one('res.users', 'User'),
         'partner_id': fields.many2one('res.partner', 'Contact'),
         'email': fields.char('Email', size=124, help="Email of Invited Person"),
-        'event_date': fields.function(_compute_data, string='Event Date', \
+        'event_date': fields.function(_compute_data, string='Event Date',
                             type="datetime", multi='event_date'),
-        'event_end_date': fields.function(_compute_data, \
-                            string='Event End Date', type="datetime", \
+        'event_end_date': fields.function(_compute_data,
+                            string='Event End Date', type="datetime",
                             multi='event_end_date'),
         'ref': fields.reference('Event Ref', selection=_links_get, size=128),
         'availability': fields.selection([('free', 'Free'), ('busy', 'Busy')], 'Free/Busy', readonly="True"),
@@ -469,8 +473,7 @@ property or property parameter."),
             # Compute trigger data
             interval = alarm_data['trigger_interval']
             occurs = alarm_data['trigger_occurs']
-            duration = (occurs == 'after' and alarm_data['trigger_duration']) \
-                                            or -(alarm_data['trigger_duration'])
+            duration = (occurs == 'after' and alarm_data['trigger_duration']) or -(alarm_data['trigger_duration'])
             related = alarm_data['trigger_related']
             trigger = valarm.add('TRIGGER')
             trigger.params['related'] = [related.upper()]
@@ -510,8 +513,8 @@ property or property parameter."),
                 other_invitation_ids = self.search(cr, uid, [('ref', '=', res_obj._name + ',' + str(res_obj.id))])
 
                 for att2 in self.browse(cr, uid, other_invitation_ids):
-                    att_infos.append(((att2.user_id and att2.user_id.name) or \
-                                 (att2.partner_id and att2.partner_id.name) or \
+                    att_infos.append(((att2.user_id and att2.user_id.name) or
+                                 (att2.partner_id and att2.partner_id.name) or
                                     att2.email) + ' - Status: ' + att2.state.title())
                 #dates and times are gonna be expressed in `tz` time (local timezone of the `uid`)
                 tz = context.get('tz', pytz.timezone('UTC'))
@@ -640,22 +643,22 @@ class res_alarm(osv.osv):
 
     _columns = {
         'name':fields.char('Name', size=256, required=True),
-        'trigger_occurs': fields.selection([('before', 'Before'), \
-                                            ('after', 'After')], \
+        'trigger_occurs': fields.selection([('before', 'Before'),
+                                            ('after', 'After')],
                                         'Triggers', required=True),
-        'trigger_interval': fields.selection([('minutes', 'Minutes'), \
-                                                ('hours', 'Hours'), \
-                                                ('days', 'Days')], 'Interval', \
+        'trigger_interval': fields.selection([('minutes', 'Minutes'),
+                                                ('hours', 'Hours'),
+                                                ('days', 'Days')], 'Interval',
                                                 required=True),
         'trigger_duration': fields.integer('Duration', required=True),
-        'trigger_related': fields.selection([('start', 'The event starts'), \
-                                            ('end', 'The event ends')], \
+        'trigger_related': fields.selection([('start', 'The event starts'),
+                                            ('end', 'The event ends')],
                                             'Related to', required=True),
-        'duration': fields.integer('Duration', help="""Duration' and 'Repeat' \
-are both optional, but if one occurs, so MUST the other"""),
+        'duration': fields.integer('Duration',
+            help="""Duration' and 'Repeat' are both optional, but if one occurs, so MUST the other"""),
         'repeat': fields.integer('Repeat'),
-        'active': fields.boolean('Active', help="If the active field is set to \
-true, it will allow you to hide the event alarm information without removing it.")
+        'active': fields.boolean('Active',
+        help="If the active field is set to true, it will allow you to hide the event alarm information without removing it.")
     }
     _defaults = {
         'trigger_interval': 'minutes',
@@ -708,8 +711,8 @@ true, it will allow you to hide the event alarm information without removing it.
                     new_res_alarm = res_alarm_obj.create(cr, uid, val, context=context)
                 else:
                     new_res_alarm = alarm_ids[0]
-                cr.execute('UPDATE %s ' % model_obj._table + \
-                            ' SET base_calendar_alarm_id=%s, alarm_id=%s ' \
+                cr.execute('UPDATE %s ' % model_obj._table +
+                            ' SET base_calendar_alarm_id=%s, alarm_id=%s '
                             ' WHERE id=%s',
                             (cal_alarm.id, new_res_alarm, data.id))
 
@@ -733,9 +736,9 @@ true, it will allow you to hide the event alarm information without removing it.
                     'user_id': uid
                  }
                 alarm_id = alarm_obj.create(cr, uid, vals)
-                cr.execute('UPDATE %s ' % model_obj._table + \
+                cr.execute('UPDATE %s ' % model_obj._table +
                             ' SET base_calendar_alarm_id=%s, alarm_id=%s '
-                            ' WHERE id=%s', \
+                            ' WHERE id=%s',
                             ( alarm_id, basic_alarm.id, data.id) )
         return True
 
@@ -758,8 +761,10 @@ true, it will allow you to hide the event alarm information without removing it.
             alarm_ids = alarm_obj.search(cr, uid, [('model_id', '=', model_id), ('res_id', '=', data.id)])
             if alarm_ids:
                 alarm_obj.unlink(cr, uid, alarm_ids)
-                cr.execute('Update %s set base_calendar_alarm_id=NULL, alarm_id=NULL\
-                            where id=%%s' % model_obj._table,(data.id,))
+                cr.execute(
+                        'Update %s set base_calendar_alarm_id=NULL, alarm_id=NULL where id=%%s' % model_obj._table,
+                        (data.id,),
+                        )
         return True
 
 res_alarm()
@@ -772,22 +777,19 @@ class calendar_alarm(osv.osv):
 
     _columns = {
         'alarm_id': fields.many2one('res.alarm', 'Basic Alarm', ondelete='cascade'),
-        'name': fields.char('Summary', size=124, help="""Contains the text to be \
-                     used as the message subject for email \
-                     or contains the text to be used for display"""),
-        'action': fields.selection([('audio', 'Audio'), ('display', 'Display'), \
-                ('procedure', 'Procedure'), ('email', 'Email') ], 'Action', \
+        'name': fields.char('Summary', size=124,
+            help="""Contains the text to be used as the message subject for email or contains the text to be used for display"""),
+        'action': fields.selection([('audio', 'Audio'), ('display', 'Display'),
+                ('procedure', 'Procedure'), ('email', 'Email') ], 'Action',
                 required=True, help="Defines the action to be invoked when an alarm is triggered"),
-        'description': fields.text('Description', help='Provides a more complete \
-                            description of the calendar component, than that \
-                            provided by the "SUMMARY" property'),
-        'attendee_ids': fields.many2many('calendar.attendee', 'alarm_attendee_rel', \
+        'description': fields.text('Description',
+            help='Provides a more complete description of the calendar component, than that provided by the "SUMMARY" property'),
+        'attendee_ids': fields.many2many('calendar.attendee', 'alarm_attendee_rel',
                                       'alarm_id', 'attendee_id', 'Attendees', readonly=True),
-        'attach': fields.binary('Attachment', help="""* Points to a sound resource,\
-                     which is rendered when the alarm is triggered for audio,
-                    * File which is intended to be sent as message attachments for email,
-                    * Points to a procedure resource, which is invoked when\
-                      the alarm is triggered for procedure."""),
+        'attach': fields.binary('Attachment',
+            help="""* Points to a sound resource, which is rendered when the alarm is triggered for audio,\n
+                    * File which is intended to be sent as message attachments for email,\n
+                    * Points to a procedure resource, which is invoked when the alarm is triggered for procedure."""),
         'res_id': fields.integer('Resource ID'),
         'model_id': fields.many2one('ir.model', 'Model'),
         'user_id': fields.many2one('res.users', 'Owner'),
@@ -832,7 +834,7 @@ class calendar_alarm(osv.osv):
         res = super(calendar_alarm, self).create(cr, uid, vals, context=context)
         return res
 
-    def do_run_scheduler(self, cr, uid, automatic=False, use_new_cursor=False, \
+    def do_run_scheduler(self, cr, uid, automatic=False, use_new_cursor=False,
                        context=None):
         """Scheduler for event reminder
         @param self: The object pointer
@@ -896,7 +898,7 @@ From:
 ----
 %s
 </pre>
-"""  % (alarm.name, alarm.trigger_date, alarm.description, \
+"""  % (alarm.name, alarm.trigger_date, alarm.description,
                         alarm.user_id.name, alarm.user_id.signature)
                     mail_to = alarm.user_id.email
                     for att in alarm.attendee_ids:
@@ -1043,10 +1045,10 @@ class calendar_event(osv.osv):
         'create_date': fields.datetime('Created', readonly=True),
         'duration': fields.float('Duration', states={'done': [('readonly', True)]}),
         'description': fields.text('Description', states={'done': [('readonly', True)]}),
-        'class': fields.selection([('public', 'Public'), ('private', 'Private'), \
+        'class': fields.selection([('public', 'Public'), ('private', 'Private'),
              ('confidential', 'Public for Employees')], 'Privacy', states={'done': [('readonly', True)]}),
         'location': fields.char('Location', size=264, help="Location of Event", states={'done': [('readonly', True)]}),
-        'show_as': fields.selection([('free', 'Free'), ('busy', 'Busy')], \
+        'show_as': fields.selection([('free', 'Free'), ('busy', 'Busy')],
                                                 'Show Time as', states={'done': [('readonly', True)]}),
         'base_calendar_url': fields.char('Caldav URL', size=264),
         'state': fields.selection([
@@ -1054,11 +1056,11 @@ class calendar_event(osv.osv):
             ('cancelled', 'Cancelled'),
             ('confirmed', 'Confirmed'),
             ], 'Status', readonly=True),
-        'exdate': fields.text('Exception Date/Times', help="This property \
-defines the list of date/time exceptions for a recurring calendar component."),
-        'exrule': fields.char('Exception Rule', size=352, help="Defines a \
-rule or repeating pattern of time to exclude from the recurring rule."),
-        'rrule': fields.function(_get_rulestring, type='char', size=124, \
+        'exdate': fields.text('Exception Date/Times',
+            help="This property defines the list of date/time exceptions for a recurring calendar component."),
+        'exrule': fields.char('Exception Rule', size=352,
+            help="Defines a rule or repeating pattern of time to exclude from the recurring rule."),
+        'rrule': fields.function(_get_rulestring, type='char', size=124,
                     fnct_inv=_rrule_write, store=True, string='Recurrent Rule'),
         'rrule_type': fields.selection([
             ('daily', 'Day(s)'),
@@ -1106,11 +1108,11 @@ rule or repeating pattern of time to exclude from the recurring rule."),
             ('-1', 'Last')], 'By day'),
         'month_list': fields.selection(months.items(), 'Month'),
         'end_date': fields.date('Repeat Until'),
-        'attendee_ids': fields.many2many('calendar.attendee', 'event_attendee_rel', \
+        'attendee_ids': fields.many2many('calendar.attendee', 'event_attendee_rel',
                                  'event_id', 'attendee_id', 'Attendees'),
         'allday': fields.boolean('All Day', states={'done': [('readonly', True)]}),
-        'active': fields.boolean('Active', help="If the active field is set to \
-         true, it will allow you to hide the event alarm information without removing it."),
+        'active': fields.boolean('Active',
+            help="If the active field is set to true, it will allow you to hide the event alarm information without removing it."),
         'recurrency': fields.boolean('Recurrent', help="Recurrent Meeting"),
         'partner_ids': fields.many2many('res.partner', string='Attendees', states={'done': [('readonly', True)]}),
     }
@@ -1271,8 +1273,8 @@ rule or repeating pattern of time to exclude from the recurring rule."),
             if data.get('end_date'):
                 data['end_date_new'] = ''.join((re.compile('\d')).findall(data.get('end_date'))) + 'T235959Z'
 
-            return (data.get('end_type') == 'count' and (';COUNT=' + str(data.get('count'))) or '') +\
-                             ((data.get('end_date_new') and data.get('end_type') == 'end_date' and (';UNTIL=' + data.get('end_date_new'))) or '')
+            return ((data.get('end_type') == 'count' and (';COUNT=' + str(data.get('count'))) or '') +
+                    ((data.get('end_date_new') and data.get('end_type') == 'end_date' and (';UNTIL=' + data.get('end_date_new'))) or ''))
 
         freq = data.get('rrule_type', False)
         res = ''
@@ -1416,7 +1418,7 @@ rule or repeating pattern of time to exclude from the recurring rule."),
                 continue
 
             #if edit one instance of a reccurrent id
-            data = self.read(cr, uid, event_id, ['date', 'date_deadline', \
+            data = self.read(cr, uid, event_id, ['date', 'date_deadline',
                                                 'rrule', 'duration', 'exdate'])
             if data.get('rrule'):
                 data.update(
@@ -1433,7 +1435,7 @@ rule or repeating pattern of time to exclude from the recurring rule."),
                 new_id = self.copy(cr, uid, real_event_id, default=data, context=context)
 
                 date_new = event_id.split('-')[1]
-                date_new = time.strftime("%Y%m%dT%H%M%S", \
+                date_new = time.strftime("%Y%m%dT%H%M%S",
                              time.strptime(date_new, "%Y%m%d%H%M%S"))
                 exdate = (data['exdate'] and (data['exdate'] + ',')  or '') + date_new
                 res = self.write(cr, uid, [real_event_id], {'exdate': exdate})
@@ -1448,8 +1450,8 @@ rule or repeating pattern of time to exclude from the recurring rule."),
         if vals.get('partner_ids', False):
             self.create_attendees(cr, uid, ids, context)
 
-        if ('alarm_id' in vals or 'base_calendar_alarm_id' in vals)\
-                or ('date' in vals or 'duration' in vals or 'date_deadline' in vals):
+        if (('alarm_id' in vals or 'base_calendar_alarm_id' in vals)
+                or ('date' in vals or 'duration' in vals or 'date_deadline' in vals)):
             alarm_obj = self.pool.get('res.alarm')
             alarm_obj.do_alarm_create(cr, uid, ids, self._name, 'date', context=context)
         return res or True and False
@@ -1549,7 +1551,7 @@ rule or repeating pattern of time to exclude from the recurring rule."),
             real_event_id = base_calendar_id2real_id(event_id)
             data = self.read(cr, uid, real_event_id, ['exdate'], context=context)
             date_new = event_id.split('-')[1]
-            date_new = time.strftime("%Y%m%dT%H%M%S", \
+            date_new = time.strftime("%Y%m%dT%H%M%S",
                          time.strptime(date_new, "%Y%m%d%H%M%S"))
             exdate = (data['exdate'] and (data['exdate'] + ',')  or '') + date_new
             self.write(cr, uid, [real_event_id], {'exdate': exdate})
@@ -1650,7 +1652,7 @@ class calendar_todo(osv.osv):
         return self.write(cr, uid, id, { 'date_start': value }, context=context)
 
     _columns = {
-        'date': fields.function(_get_date, fnct_inv=_set_date, \
+        'date': fields.function(_get_date, fnct_inv=_set_date,
                             string='Duration', store=True, type='datetime'),
         'duration': fields.integer('Duration'),
     }
@@ -1664,7 +1666,7 @@ calendar_todo()
 class ir_values(osv.osv):
     _inherit = 'ir.values'
 
-    def set(self, cr, uid, key, key2, name, models, value, replace=True, \
+    def set(self, cr, uid, key, key2, name, models, value, replace=True,
             isobject=False, meta=False, preserve_user=False, company=False):
         """
         Set IR Values
@@ -1680,10 +1682,10 @@ class ir_values(osv.osv):
                 new_model.append((data[0], base_calendar_id2real_id(data[1])))
             else:
                 new_model.append(data)
-        return super(ir_values, self).set(cr, uid, key, key2, name, new_model, \
+        return super(ir_values, self).set(cr, uid, key, key2, name, new_model,
                     value, replace, isobject, meta, preserve_user, company)
 
-    def get(self, cr, uid, key, key2, models, meta=False, context=None, \
+    def get(self, cr, uid, key, key2, models, meta=False, context=None,
              res_id_req=False, without_user=True, key2_req=True):
         """
         Get IR Values
@@ -1700,7 +1702,7 @@ class ir_values(osv.osv):
                 new_model.append((data[0], base_calendar_id2real_id(data[1])))
             else:
                 new_model.append(data)
-        return super(ir_values, self).get(cr, uid, key, key2, new_model, \
+        return super(ir_values, self).get(cr, uid, key, key2, new_model,
                          meta, context, res_id_req, without_user, key2_req)
 
 ir_values()
@@ -1722,7 +1724,7 @@ class ir_model(osv.osv):
         new_ids = isinstance(ids, (str, int, long)) and [ids] or ids
         if context is None:
             context = {}
-        data = super(ir_model, self).read(cr, uid, new_ids, fields=fields, \
+        data = super(ir_model, self).read(cr, uid, new_ids, fields=fields,
                         context=context, load=load)
         if data:
             for val in data:
@@ -1743,7 +1745,7 @@ class virtual_report_spool(web_services.report_spool):
         """
 
         if object == 'printscreen.list':
-            return super(virtual_report_spool, self).exp_report(db, uid, \
+            return super(virtual_report_spool, self).exp_report(db, uid,
                             object, ids, data, context)
         new_ids = []
         for id in ids:
