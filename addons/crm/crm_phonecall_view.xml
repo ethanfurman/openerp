@@ -100,9 +100,9 @@
                     </div>
 
                     <group col="4">
-                        <field name="date"/>
+                        <field name="date" on_change="onchange_dates(date,duration)"/>
                         <field name="user_id"/>
-                        <field name="duration" widget="float_time"/>
+                        <field name="duration" widget="float_time" on_change="onchange_dates(date,duration)"/>
                         <field name="section_id" colspan="1" widget="selection"/>
                         <field name="partner_id" on_change="onchange_partner_id(partner_id)"/>
                         <field name="email_from" invisible="1"/> <!--not needed because of the chatter, thus invisible, but must be in the view as it's returned by onchange_partner_id()-->
