@@ -87,7 +87,11 @@ class _column(object):
     # used to hide a certain field type in the list of field types
     _deprecated = False
 
-    def __init__(self, string='unknown', required=False, readonly=False, domain=None, context=None, states=None, priority=0, change_default=False, size=None, ondelete=None, translate=False, select=False, manual=False, **args):
+    def __init__(
+            self, string='unknown', required=False, readonly=False, domain=None,
+            context=None, states=None, priority=0, change_default=False, size=None,
+            ondelete=None, translate=False, select=False, manual=False, **args
+            ):
         """
 
         The 'manual' keyword argument specifies if the field is a custom one.
@@ -937,7 +941,7 @@ class function(_column):
             return result
         _columns['name'] = fields.function(compute_person_data, type='char',\
                                            size=50, multi='person_data')
-        _columns[''age'] = fields.function(compute_person_data, type='integer',\
+        _columns['age'] = fields.function(compute_person_data, type='integer',\
                                            multi='person_data')
 
         # when called with ``ids=[1,2,3]``, ``compute_person_data`` could return:
@@ -1059,7 +1063,10 @@ class function(_column):
 #
 # multi: compute several fields in one call
 #
-    def __init__(self, fnct, arg=None, fnct_inv=None, fnct_inv_arg=None, type='float', fnct_search=None, obj=None, store=False, multi=False, **args):
+    def __init__(
+            self, fnct, arg=None, fnct_inv=None, fnct_inv_arg=None, type='float',
+            fnct_search=None, obj=None, store=False, multi=False, **args
+            ):
         _column.__init__(self, **args)
         self._obj = obj
         self._fnct = fnct
@@ -1304,7 +1311,6 @@ class sparse(function):
                     read_value.remove(vals[1])
             return read_value
         return value
-
 
     def _fnct_write(self,obj,cr, uid, ids, field_name, value, args, context=None):
         if not type(ids) == list:
