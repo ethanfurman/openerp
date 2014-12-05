@@ -631,6 +631,12 @@ class MetaModel(type):
     module_to_models = {}
 
     def __init__(self, name, bases, attrs):
+        # check for mirrored fields -- if any, fill in _mirror_source
+        for mirror in self._mirrors:
+            link_field = mirror.split('.', 1)[0]
+            link_table = self._columns[link_field]._obj
+            self._mirror_source[link_field] = link_table
+
         if not self._register:
             self._register = True
             super(MetaModel, self).__init__(name, bases, attrs)
@@ -719,6 +725,14 @@ class BaseModel(object):
     #  { 'field_name': ('parent_model', 'm2o_field_to_reach_parent',
     #                   field_column_obj, origina_parent_model), ... }
     _inherit_fields = {}
+
+    # dict of link_fields to mirror_fields to mirror from some other table; akin to _inherit_fields except
+    # only the fields listed will be added locally with the dotted name, and (at this point) all mirrored
+    # fields are read-only, and if link_field is False so are the mirror fields (so the link is not required)
+    _mirrors = {}
+
+    # if any mirrored fields, metaclass will fill in the mirror sources
+    _mirror_source = {}
 
     # Mapping field name/column_info object
     # This is similar to _inherit_fields but:
@@ -3588,6 +3602,15 @@ class BaseModel(object):
                             sel2.append((key, val2 or val))
                         res[f]['selection'] = sel2
 
+        for link_field, mirrors in self._mirrors.items():
+            link_table = res[link_field]['relation']
+            link_table_fields = self.pool.get(link_table).fields_get(cr, user, mirrors, context, write_access)
+            for mirror in mirrors:
+                link_mirror = link_field + '.' + mirror
+                res[link_mirror] = link_table_fields[mirror]
+                # TODO: eventually support writing to mirrored fields
+                res[link_mirror]['readonly'] = True
+
         return res
 
     def check_field_access_rights(self, cr, user, operation, fields, context=None):
@@ -3645,6 +3668,11 @@ class BaseModel(object):
 
         if not context:
             context = {}
+        if not isinstance(fields, (type(None), bool)):
+            mirrored = [f for f in fields if '.' in f]
+            fields = [f for f in fields if '.' not in f]
+        else:
+            mirrored = []
         self.check_access_rights(cr, user, 'read')
         fields = self.check_field_access_rights(cr, user, 'read', fields)
         if isinstance(ids, (int, long)):
@@ -3658,6 +3686,19 @@ class BaseModel(object):
             for key, v in r.items():
                 if v is None:
                     r[key] = False
+
+        # mirroring just uses the last 'r', but hopefully there was only one...
+        for mirror in mirrored:
+            link_field, target_field = mirror.split('.', 2)
+            if r[link_field] is False:
+                # no link, no field, no value
+                r[mirror] = False
+                continue
+            link_table = self._mirror_source[link_field]
+            link_record = self.pool.get(link_table).read(
+                    cr, user, r[link_field][0], fields=[target_field], context=context, load=load,
+                    )
+            r[mirror] = link_record[target_field]
 
         if isinstance(ids, (int, long, dict)):
             return result and result[0] or False
