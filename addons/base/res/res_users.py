@@ -197,6 +197,18 @@ class res_users(osv.osv):
         partner_ids = [user.partner_id.id for user in self.browse(cr, uid, ids, context=context)]
         return self.pool.get('res.partner').onchange_address(cr, uid, partner_ids, use_parent_address, parent_id, context=context)
 
+    def onchange_partner(self, cr, uid, ids, partner_id, context=None):
+        """
+        Update name and email fields from selected partner record.
+        """
+        partner = self.pool.get('res.partner').browse(cr, uid, partner_id, context=context)
+        res = {}
+        if partner:
+            res['value'] = values = {}
+            values['name'] = partner.name
+            values['email'] = partner.email
+        return res
+
     def _check_company(self, cr, uid, ids, context=None):
         return all(((this.company_id in this.company_ids) or not this.company_ids) for this in self.browse(cr, uid, ids, context))
 
