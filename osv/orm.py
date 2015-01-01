@@ -501,7 +501,7 @@ class browse_record(object):
             raise AttributeError(e)
 
     def __contains__(self, name):
-        return (name in self._table._columns) or (name in self._table._inherit_fields) or hasattr(self._table, name)
+        return (name in self._table._columns) or (name in self._table._inherit_fields) or (name in self._table._mirror_source) or hasattr(self._table, name)
 
     def __iter__(self):
         raise NotImplementedError("Iteration is not allowed on %s" % self)
