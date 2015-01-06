@@ -342,7 +342,6 @@ class configmanager(object):
             args = []
 
         opt, args = self.parser.parse_args(args)
-        print '----------------------------\n%r\n--------------------------' % (opt, )
 
         def die(cond, msg):
             if cond:
