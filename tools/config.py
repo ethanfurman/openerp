@@ -182,6 +182,7 @@ class configmanager(object):
         # Logging Group
         group = optparse.OptionGroup(parser, "Logging Configuration")
         group.add_option("--logfile", dest="logfile", help="file where the server log will be stored")
+        group.add_option("--console", dest="logconsole", action="store_true", my_default=False, help="log to console (can be used with --logfile)")
         group.add_option("--no-logrotate", dest="logrotate", action="store_false", my_default=True, help="do not rotate the logfile")
         group.add_option("--syslog", action="store_true", dest="syslog", my_default=False, help="Send the log to the syslog server")
         group.add_option('--log-handler', action="append", default=DEFAULT_LOG_HANDLER, my_default=DEFAULT_LOG_HANDLER, metavar="PREFIX:LEVEL", help='setup a handler at LEVEL for a given PREFIX. An empty PREFIX indicates the root logger. This option can be repeated. Example: "openerp.orm:DEBUG" or "werkzeug:CRITICAL" (default: ":INFO")')
@@ -330,6 +331,7 @@ class configmanager(object):
         """
         if args is None:
             args = []
+
         opt, args = self.parser.parse_args(args)
 
         def die(cond, msg):
@@ -384,7 +386,7 @@ class configmanager(object):
                 'email_from', 'smtp_server', 'smtp_user', 'smtp_password',
                 'netrpc_interface', 'netrpc_port', 'db_maxconn', 'import_partial', 'addons_path',
                 'netrpc', 'xmlrpc', 'syslog', 'without_demo', 'timezone',
-                'xmlrpcs_interface', 'xmlrpcs_port', 'xmlrpcs',
+                'xmlrpcs_interface', 'xmlrpcs_port', 'xmlrpcs', 'logconsole',
                 'static_http_enable', 'static_http_document_root', 'static_http_url_prefix',
                 'secure_cert_file', 'secure_pkey_file', 'dbfilter', 'log_handler', 'log_level'
                 ]
