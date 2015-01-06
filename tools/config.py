@@ -62,6 +62,15 @@ def check_ssl():
 
 DEFAULT_LOG_HANDLER = [':INFO']
 
+def _get_logfile_name(option, opt_str, value, parser):
+    """
+    checks next arg to see if it is a filename; if not, stores True to option
+    """
+    value = True
+    if parser.rargs and not parser.rargs[0].startswith('-'):
+        value = parser.rargs.pop(0)
+    setattr(parser.values, option.dest, value)
+
 class configmanager(object):
     def __init__(self, fname=None):
         # Options not exposed on the command line. Command line options will be added
@@ -181,7 +190,7 @@ class configmanager(object):
 
         # Logging Group
         group = optparse.OptionGroup(parser, "Logging Configuration")
-        group.add_option("--logfile", dest="logfile", help="file where the server log will be stored")
+        group.add_option("--logfile", dest="logfile", action="callback", callback=_get_logfile_name,  help="file where the server log will be stored")
         group.add_option("--console", dest="logconsole", action="store_true", my_default=False, help="log to console (can be used with --logfile)")
         group.add_option("--no-logrotate", dest="logrotate", action="store_false", my_default=True, help="do not rotate the logfile")
         group.add_option("--syslog", action="store_true", dest="syslog", my_default=False, help="Send the log to the syslog server")
@@ -333,6 +342,7 @@ class configmanager(object):
             args = []
 
         opt, args = self.parser.parse_args(args)
+        print '----------------------------\n%r\n--------------------------' % (opt, )
 
         def die(cond, msg):
             if cond:
@@ -372,7 +382,6 @@ class configmanager(object):
                 or os.environ.get('OPENERP_SERVER') or rcfilepath)
         self.load()
 
-
         # Verify that we want to log or not, if not the output will go to stdout
         if self.options['logfile'] in ('None', 'False'):
             self.options['logfile'] = False
@@ -382,7 +391,7 @@ class configmanager(object):
 
         # if defined dont take the configfile value even if the defined value is None
         keys = ['xmlrpc_interface', 'xmlrpc_port', 'db_name', 'db_user', 'db_password', 'db_host',
-                'db_port', 'db_template', 'logfile', 'pidfile', 'smtp_port',
+                'db_port', 'db_template', 'pidfile', 'smtp_port',
                 'email_from', 'smtp_server', 'smtp_user', 'smtp_password',
                 'netrpc_interface', 'netrpc_port', 'db_maxconn', 'import_partial', 'addons_path',
                 'netrpc', 'xmlrpc', 'syslog', 'without_demo', 'timezone',
@@ -418,6 +427,19 @@ class configmanager(object):
         for arg in keys:
             # Copy the command-line argument...
             if getattr(opt, arg) is not None:
+                self.options[arg] = getattr(opt, arg)
+            # ... or keep, but cast, the config file value.
+            elif isinstance(self.options[arg], basestring) and self.casts[arg].type in optparse.Option.TYPE_CHECKER:
+                self.options[arg] = optparse.Option.TYPE_CHECKER[self.casts[arg].type](self.casts[arg], arg, self.options[arg])
+
+        # if defined but True take the configfile value
+        keys = [
+            'logfile',
+        ]
+
+        for arg in keys:
+            # Copy the command-line argument...
+            if getattr(opt, arg) not in (None, True):
                 self.options[arg] = getattr(opt, arg)
             # ... or keep, but cast, the config file value.
             elif isinstance(self.options[arg], basestring) and self.casts[arg].type in optparse.Option.TYPE_CHECKER:
