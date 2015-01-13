@@ -1679,7 +1679,7 @@
         <ul>
 
         </ul>
-        <button class="oe_add_condition button" type="button">Add a condition</button><br/>
+        <button class="oe_add_condition oe_right button" type="button">Add a condition</button><br/>
         <button class="oe_apply" type="submit">Apply</button>
     </form>
 </div>
