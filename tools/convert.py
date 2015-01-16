@@ -954,5 +954,24 @@ def convert_xml_import(cr, module, xmlfile, idref=None, mode='init', noupdate=Fa
     obj.parse(doc.getroot())
     return True
 
+def convert_xaml_import(cr, module, xamlfile, idref=None, mode='init', noupdate=False, report=None):
+    xaml = xamlfile.read()
+    xml = Xaml(xaml).parse()
+    doc = etree.fromstring(xml)
+    relaxng = etree.RelaxNG(
+        etree.parse(os.path.join(config['root_path'],'import_xml.rng' )))
+    try:
+        relaxng.assert_(doc)
+    except Exception:
+        _logger.error('The XML file does not fit the required schema !')
+        _logger.error(misc.ustr(relaxng.error_log.last_error))
+        raise
+
+    if idref is None:
+        idref={}
+    obj = xml_import(cr, module, idref, mode, report=report, noupdate=noupdate)
+    obj.parse(doc.getroot())
+    return True
+
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
