@@ -729,6 +729,8 @@ class BaseModel(object):
     # dict of link_fields to mirror_fields to mirror from some other table; akin to _inherit_fields except
     # only the fields listed will be added locally with the dotted name, and (at this point) all mirrored
     # fields are read-only, and if link_field is False so are the mirror fields (so the link is not required)
+    # Example:
+    #   { 'user_id': ['name', 'last_login'] }
     _mirrors = {}
 
     # if any mirrored fields, metaclass will fill in the mirror sources
