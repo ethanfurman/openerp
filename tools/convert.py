@@ -49,6 +49,7 @@ import misc
 import openerp.pooler as pooler
 from config import config
 from translate import _
+from xaml import Xaml
 
 # List of etree._Element subclasses that we choose to ignore when parsing XML.
 from misc import SKIPPED_ELEMENT_TYPES
@@ -955,8 +956,8 @@ def convert_xml_import(cr, module, xmlfile, idref=None, mode='init', noupdate=Fa
     return True
 
 def convert_xaml_import(cr, module, xamlfile, idref=None, mode='init', noupdate=False, report=None):
-    xaml = xamlfile.read()
-    xml = Xaml(xaml).parse()
+    markup = xamlfile.read()
+    xml = Xaml(markup).parse()
     doc = etree.fromstring(xml)
     relaxng = etree.RelaxNG(
         etree.parse(os.path.join(config['root_path'],'import_xml.rng' )))
