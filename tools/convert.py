@@ -958,7 +958,7 @@ def convert_xml_import(cr, module, xmlfile, idref=None, mode='init', noupdate=Fa
 def convert_xaml_import(cr, module, xamlfile, idref=None, mode='init', noupdate=False, report=None):
     markup = xamlfile.read()
     xml = Xaml(markup).parse()
-    doc = etree.fromstring(xml)
+    doc = etree.ElementTree(etree.fromstring(xml))
     relaxng = etree.RelaxNG(
         etree.parse(os.path.join(config['root_path'],'import_xml.rng' )))
     try:
