@@ -43,6 +43,7 @@ from openerp import SUPERUSER_ID
 from openerp.tools.translate import _
 from openerp.modules.module import initialize_sys_path, \
     load_openerp_module, init_module_models, adapt_version
+from xaml import Xaml
 
 _logger = logging.getLogger(__name__)
 
@@ -123,10 +124,16 @@ def load_module_graph(cr, graph, status=None, perform_checks=True, skip_modules=
                     process_sql_file(cr, fp)
                 elif ext == '.yml':
                     tools.convert_yaml_import(cr, module_name, fp, kind, idref, mode, noupdate, report)
-                elif ext == '.xml':
+                elif ext in ('.xaml', '.xml'):
+                    if ext == '.xaml':
+                        pathname = pathname[:-4] + 'xml'
+                        markup = fp.read()
+                        xaml_doc = Xaml(markup).document
+                        xml = tools.file_open(pathname, mode='w')
+                        xml.write(xaml_doc.bytes())
+                        xml.close()
+                        fp = tools.file_open(pathname)
                     tools.convert_xml_import(cr, module_name, fp, idref, mode, noupdate, report)
-                elif ext == '.xaml':
-                    tools.convert_xaml_import(cr, module_name, fp, idref, mode, noupdate, report)
                 elif ext == '.js':
                     pass # .js files are valid but ignored here.
                 else:
