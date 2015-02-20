@@ -406,20 +406,21 @@ class res_users(osv.osv):
                 user_id = res[0]
                 # check credentials
                 self.check_credentials(cr, user_id, password)
-                # We effectively unconditionally write the res_users line.
-                # Even w/ autocommit there's a chance the user row will be locked,
-                # in which case we can't delay the login just for the purpose of
-                # update the last login date - hence we use FOR UPDATE NOWAIT to
-                # try to get the lock - fail-fast
-                # Failing to acquire the lock on the res_users row probably means
-                # another request is holding it. No big deal, we don't want to
-                # prevent/delay login in that case. It will also have been logged
-                # as a SQL error, if anyone cares.
-                try:
-                    cr.execute("SELECT id FROM res_users WHERE id=%s FOR UPDATE NOWAIT", (user_id,), log_exceptions=False)
-                    cr.execute("UPDATE res_users SET login_date = now() AT TIME ZONE 'UTC' WHERE id=%s", (user_id,))
-                except Exception:
-                    _logger.debug("Failed to update last_login for db:%s login:%s", db, login, exc_info=True)
+                if user_id != SUPERUSER_ID:
+                    # We effectively unconditionally write the res_users line.
+                    # Even w/ autocommit there's a chance the user row will be locked,
+                    # in which case we can't delay the login just for the purpose of
+                    # update the last login date - hence we use FOR UPDATE NOWAIT to
+                    # try to get the lock - fail-fast
+                    # Failing to acquire the lock on the res_users row probably means
+                    # another request is holding it. No big deal, we don't want to
+                    # prevent/delay login in that case. It will also have been logged
+                    # as a SQL error, if anyone cares.
+                    try:
+                        cr.execute("SELECT id FROM res_users WHERE id=%s FOR UPDATE NOWAIT", (user_id,), log_exceptions=False)
+                        cr.execute("UPDATE res_users SET login_date = now() AT TIME ZONE 'UTC' WHERE id=%s", (user_id,))
+                    except Exception:
+                        _logger.debug("Failed to update last_login for db:%s login:%s", db, login, exc_info=True)
         except openerp.exceptions.AccessDenied:
             _logger.info("Login failed for db:%s login:%s", db, login)
             user_id = False
