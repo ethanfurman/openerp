@@ -3609,6 +3609,8 @@ class BaseModel(object):
                         res[f]['selection'] = sel2
 
         for link_field, mirrors in self._mirrors.items():
+            if allfields and link_field not in allfields:
+                continue
             link_table = res[link_field]['relation']
             link_table_fields = self.pool.get(link_table).fields_get(cr, user, mirrors, context, write_access)
             for mirror in mirrors:
