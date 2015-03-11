@@ -239,6 +239,11 @@ class mail_thread(osv.AbstractModel):
         """
         if context is None:
             context = {}
+        if context.get('mail_track_initial'):
+            tracked_values = {}
+            tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context)
+            for field_name in tracked_fields:
+                tracked_values[field_name] = values.pop(field_name)
         thread_id = super(mail_thread, self).create(cr, uid, values, context=context)
 
         # subscribe uid unless asked not to
@@ -250,6 +255,8 @@ class mail_thread(osv.AbstractModel):
         # automatic logging unless asked not to (mainly for various testing purpose)
         if not context.get('mail_create_nolog'):
             self.message_post(cr, uid, thread_id, body=_('Document created'), context=context)
+        if context.get('mail_track_initial') and tracked_values:
+            self.write(cr, uid, thread_id, tracked_values, context=context)
         return thread_id
 
     def write(self, cr, uid, ids, values, context=None):
@@ -298,7 +305,7 @@ class mail_thread(osv.AbstractModel):
     def _get_tracked_fields(self, cr, uid, updated_fields, context=None):
         """ Return a structure of tracked fields for the current model.
             :param list updated_fields: modified field names
-            :return list: a list of (field_name, column_info obj), containing
+            :return dict: a dict of {field_name: column_info_obj), containing
                 always tracked fields and modified on_change fields
         """
         lst = []
