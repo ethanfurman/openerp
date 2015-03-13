@@ -311,7 +311,10 @@ class mail_thread(osv.AbstractModel):
         lst = []
         for name, column_info in self._all_columns.items():
             visibility = getattr(column_info.column, 'track_visibility', False)
-            if visibility == 'always' or (visibility == 'onchange' and name in updated_fields) or name in self._track:
+            if (visibility == 'always' or
+                    (visibility in ('onchange', 'change_only') and name in updated_fields) or
+                    name in self._track
+                    ):
                 lst.append(name)
         if not lst:
             return lst
@@ -323,7 +326,7 @@ class mail_thread(osv.AbstractModel):
             if not value and col_info['type'] == 'boolean':
                 return 'False'
             if not value:
-                return ''
+                return '&lt;removed&gt;'
             if col_info['type'] == 'many2one':
                 return value[1]
             if col_info['type'] == 'selection':
@@ -351,14 +354,19 @@ class mail_thread(osv.AbstractModel):
 
             # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
             for col_name, col_info in tracked_fields.items():
-                if record[col_name] == initial[col_name] and getattr(self._all_columns[col_name].column, 'track_visibility', None) == 'always':
-                    tracked_values[col_name] = dict(col_info=col_info['string'],
-                                                        new_value=convert_for_display(record[col_name], col_info))
+                tracking = getattr(self._all_columns[col_name].column, 'track_visibility', None)
+                if record[col_name] == initial[col_name] and tracking == 'always':
+                    tracked_values[col_name] = dict(
+                            col_info=col_info['string'],
+                            new_value=convert_for_display(record[col_name], col_info),
+                            )
                 elif record[col_name] != initial[col_name]:
-                    if getattr(self._all_columns[col_name].column, 'track_visibility', None) in ['always', 'onchange']:
-                        tracked_values[col_name] = dict(col_info=col_info['string'],
-                                                            old_value=convert_for_display(initial[col_name], col_info),
-                                                            new_value=convert_for_display(record[col_name], col_info))
+                    if tracking in ['always', 'onchange', 'change_only']:
+                        tracking_info = {'col_info': col_info['string']}
+                        if tracking in ('always', 'onchange'):
+                            tracking_info['old_value'] = convert_for_display(initial[col_name], col_info)
+                        tracking_info['new_value'] = convert_for_display(record[col_name], col_info)
+                        tracked_values[col_name] = tracking_info
                     if col_name in tracked_fields:
                         changes.append(col_name)
             if not changes:
