@@ -19,6 +19,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
+from __future__ import print_function
 
 from operator import itemgetter
 from textwrap import dedent
@@ -64,14 +65,12 @@ class board_board(osv.osv):
         @return: Dictionary of Fields, arch and toolbar.
         """
 
-        res = {}
         res = super(board_board, self).fields_view_get(cr, user, view_id, view_type,
                                                        context, toolbar=toolbar, submenu=submenu)
-
         CustView = self.pool.get('ir.ui.view.custom')
         vids = CustView.search(cr, user, [('user_id', '=', user), ('ref_id', '=', view_id)], context=context)
         if vids:
-            view_id = vids[0]
+            view_id = max(vids)
             arch = CustView.browse(cr, user, view_id, context=context)
             res['custom_view_id'] = view_id
             res['arch'] = arch.arch
@@ -149,7 +148,7 @@ class board_create(osv.osv_memory):
             'action': 'ir.actions.act_window,%s' % (action_id,)
         }, context=context)
 
-        # self.pool.get('board.board')._clear_list_cache()
+        self.pool.get('board.board')._clear_list_cache()
 
         return {
             'type': 'ir.actions.client',
