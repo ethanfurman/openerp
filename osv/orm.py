@@ -3694,19 +3694,18 @@ class BaseModel(object):
             for key, v in r.items():
                 if v is None:
                     r[key] = False
-
-        # mirroring just uses the last 'r', but hopefully there was only one...
-        for mirror in mirrored:
-            link_field, target_field = mirror.split('.', 2)
-            if r[link_field] is False:
-                # no link, no field, no value
-                r[mirror] = False
-                continue
-            link_table = self._mirror_source[link_field]
-            link_record = self.pool.get(link_table).read(
-                    cr, user, r[link_field][0], fields=[target_field], context=context, load=load,
-                    )
-            r[mirror] = link_record[target_field]
+            # set the mirrored fields
+            for mirror in mirrored:
+                link_field, target_field = mirror.split('.', 2)
+                if r[link_field] is False:
+                    # no link, no field, no value
+                    r[mirror] = False
+                    continue
+                link_table = self._mirror_source[link_field]
+                link_record = self.pool.get(link_table).read(
+                        cr, user, r[link_field][0], fields=[target_field], context=context, load=load,
+                        )
+                r[mirror] = link_record[target_field]
 
         if isinstance(ids, (int, long, dict)):
             return result and result[0] or False
