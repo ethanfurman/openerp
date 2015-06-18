@@ -1512,7 +1512,7 @@ class calendar_event(osv.osv):
                 user_id = type(r['user_id']) in (tuple,list) and r['user_id'][0] or r['user_id']
                 if user_id==uid:
                     continue
-            if r['class']=='private':
+            if r['class'] == 'private' and uid != SUPERUSER_ID:
                 for f in r.keys():
                     if f not in ('id','date','date_deadline','duration','user_id','state'):
                         if isinstance(r[f], list):
