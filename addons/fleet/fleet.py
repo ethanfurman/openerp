@@ -211,7 +211,16 @@ class fleet_vehicle(osv.Model):
     def _vehicle_name_get_fnc(self, cr, uid, ids, prop, unknow_none, context=None):
         res = {}
         for record in self.browse(cr, uid, ids, context=context):
-            res[record.id] = record.model_id.brand_id.name + '/' + record.model_id.modelname + ' / ' + record.license_plate
+            make = record.model_id.brand_id.name
+            model = record.model_id.modelname
+            license = record.license_plate
+            if make and model:
+                mm = make + '/' + model
+            elif make or model:
+                mm = make or model
+            else:
+                mm = None
+            res[record.id] = ' / '.join([n for n in (mm, license) if n])
         return res
 
     def return_action_to_open(self, cr, uid, ids, context=None):
