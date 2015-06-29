@@ -539,6 +539,7 @@ class product_product(osv.osv):
     _inherits = {'product.template': 'product_tmpl_id'}
     _inherit = ['mail.thread']
     _order = 'default_code,name_template'
+    _mirrors = {'seller_id': ['phone',]}
     _columns = {
         'qty_available': fields.function(_product_qty_available, type='float', string='Quantity On Hand'),
         'virtual_available': fields.function(_product_virtual_available, type='float', string='Quantity Available'),
