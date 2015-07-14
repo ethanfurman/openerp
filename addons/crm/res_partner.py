@@ -44,7 +44,7 @@ class res_partner(osv.osv):
             'Leads and Opportunities', domain=[('state','in', ('draft','open','pending'))]),
         'meeting_ids': fields.many2many('crm.meeting', 'crm_meeting_partner_rel','partner_id', 'meeting_id',
             'Meetings'),
-        'phonecall_ids': fields.one2many('crm.phonecall', 'partner_id',\
+        'phonecall_ids': fields.one2many('crm.meeting', 'partner_id',\
             'Phonecalls'),
         'opportunity_count': fields.function(_opportunity_meeting_count, string="Opportunity", type='integer', multi='opp_meet'),
         'meeting_count': fields.function(_opportunity_meeting_count, string="# Meetings", type='integer', multi='opp_meet'),

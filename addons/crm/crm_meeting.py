@@ -30,7 +30,7 @@ class crm_meeting(osv.Model):
     """ Model for CRM meetings """
     _inherit = 'crm.meeting'
     _columns = {
-        'phonecall_id': fields.many2one ('crm.phonecall', 'Phonecall'),
+        # 'phonecall_id': fields.many2one ('crm.phonecall', 'Phonecall'),
         'opportunity_id': fields.many2one ('crm.lead', 'Opportunity', domain="[('type', '=', 'opportunity')]"),
     }
 

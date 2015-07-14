@@ -831,7 +831,7 @@ class crm_lead(base_stage, format_address, osv.osv):
         """
         :param string action: ('schedule','Schedule a call'), ('log','Log a call')
         """
-        phonecall = self.pool.get('crm.phonecall')
+        phonecall = self.pool.get('crm.meeting')
         model_data = self.pool.get('ir.model.data')
         phonecall_dict = {}
         if not categ_id:
@@ -1036,7 +1036,7 @@ class crm_lead(base_stage, format_address, osv.osv):
     # ----------------------------------------
 
     def schedule_phonecall_send_note(self, cr, uid, ids, phonecall_id, action, context=None):
-        phonecall = self.pool.get('crm.phonecall').browse(cr, uid, [phonecall_id], context=context)[0]
+        phonecall = self.pool.get('crm.meeting').browse(cr, uid, [phonecall_id], context=context)[0]
         if action == 'log':
             prefix = 'Logged'
         else:

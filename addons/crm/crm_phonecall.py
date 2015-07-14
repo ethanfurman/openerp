@@ -28,22 +28,18 @@ from openerp.tools.translate import _
 
 class crm_phonecall(base_state, osv.osv):
     """ Model for CRM phonecalls """
-    _name = "crm.phonecall"
+    _name = "crm.meeting"
     _description = "Phonecall"
     _order = "id desc"
-    _inherits = {'crm.meeting':'meeting_id'}
-    _inherit = ['mail.thread']
+    _inherit = ['crm.meeting', 'mail.thread']
     _columns = {
         # base_state required fields
         'date_action_last': fields.datetime('Last Action', readonly=1),
         'date_action_next': fields.datetime('Next Action', readonly=1),
-        # 'create_date': fields.datetime('Creation Date' , readonly=True),
         'section_id': fields.many2one('crm.case.section', 'Sales Team', \
                         select=True, help='Sales team to which Case belongs to.'),
-        # 'user_id': fields.many2one('res.users', 'Responsible'),
         'partner_id': fields.many2one('res.partner', 'Contact'),
         'company_id': fields.many2one('res.company', 'Company'),
-        # 'description': fields.text('Description'),
         'state': fields.selection([ ('draft', 'Draft'),
                                     ('open', 'Confirmed'),
                                     ('pending', 'Not Held'),
@@ -57,19 +53,13 @@ class crm_phonecall(base_state, osv.osv):
         'email_from': fields.char('Email', size=128, help="These people will receive email."),
         'date_open': fields.datetime('Opened', readonly=True),
         # phonecall fields
-        # 'name': fields.char('Call Summary', size=64, required=True),
-        # 'active': fields.boolean('Active', required=False),
-        # 'duration': fields.float('Duration', help="Duration in Minutes"),
         'categ_id': fields.many2one('crm.case.categ', 'Category', \
                         domain="['|',('section_id','=',section_id),('section_id','=',False),\
                         ('object_id.model', '=', 'crm.phonecall')]"),
         'partner_phone': fields.char('Phone', size=32),
         'partner_mobile': fields.char('Mobile', size=32),
         'priority': fields.selection(crm.AVAILABLE_PRIORITIES, 'Priority'),
-        # 'date_closed': fields.datetime('Closed', readonly=True),
-        # 'date': fields.datetime('Date'),
         'opportunity_id': fields.many2one ('crm.lead', 'Lead/Opportunity'),
-        'meeting_id': fields.many2one('crm.meeting', 'Meeting', required=True, ondelete='cascade'),
     }
 
     def _get_default_state(self, cr, uid, context=None):
@@ -95,7 +85,7 @@ class crm_phonecall(base_state, osv.osv):
         if 'date_deadline' not in values:
             if not values.get('duration'):
                 values['duration'] = 0.25
-            temp = self.onchange_dates(cr, uid, [], values['date'], values['duration'], context=context)
+            temp = self.onchange_phonecall_dates(cr, uid, [], values['date'], values['duration'], context=context)
             values.update(temp['value'])
         return super(crm_phonecall, self).create(cr, uid, values, context=context)
 
@@ -130,7 +120,7 @@ class crm_phonecall(base_state, osv.osv):
         self.write(cr, uid, ids, {'duration': 0.0, 'state':'open'}, context=context)
         return res
 
-    def onchange_dates(self, cr, uid, ids, start_date, duration, context=None):
+    def onchange_phonecall_dates(self, cr, uid, ids, start_date, duration, context=None):
         """Returns duration and/or end date based on values passed
         @param self: The object pointer
         @param cr: the current row, from the database cursor,
@@ -261,7 +251,7 @@ class crm_phonecall(base_state, osv.osv):
                 'name': _('Phone Call'),
                 'view_type': 'form',
                 'view_mode': 'tree,form',
-                'res_model': 'crm.phonecall',
+                'res_model': 'crm.meeting',
                 'res_id' : int(phonecall_id),
                 'views': [(form_view and form_view[1] or False, 'form'), (tree_view and tree_view[1] or False, 'tree'), (False, 'calendar')],
                 'type': 'ir.actions.act_window',
