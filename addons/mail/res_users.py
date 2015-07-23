@@ -90,7 +90,7 @@ class res_users(osv.Model):
         # TODO change SUPERUSER_ID into user.id but catch errors
         return self.pool.get('res.partner').message_post(cr, SUPERUSER_ID, [user.partner_id.id],
             body=body, context=context)
-
+        
     def write(self, cr, uid, ids, vals, context=None):
         # User alias is sync'ed with login
         if vals.get('login'):
@@ -104,6 +104,24 @@ class res_users(osv.Model):
         res = super(res_users, self).unlink(cr, uid, ids, context=context)
         alias_pool.unlink(cr, uid, alias_ids, context=context)
         return res
+
+    def message_notify(self, cr, uid, ids, title, body, context=None):
+        """
+        Send notification to user(s)
+        """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        mail_message = self.pool.get('mail.message')
+        mail_message_subtype = self.pool.get('mail.message.subtype')
+        [discussion] = mail_message_subtype.browse(cr, SUPERUSER_ID, [('name','=','Discussions')])
+        users = self.browse(cr, uid, ids, context=context)
+        mail_message.create(cr, SUPERUSER_ID, values=dict(
+                type='email',
+                subtype_id=discussion.id,
+                partner_ids=[(4, u.partner_id.id) for u in users],
+                subject=title,
+                body=body,
+                ))
 
     def _message_post_get_pid(self, cr, uid, thread_id, context=None):
         assert thread_id, "res.users does not support posting global messages"
