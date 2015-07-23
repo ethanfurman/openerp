@@ -105,7 +105,7 @@ class res_users(osv.Model):
         alias_pool.unlink(cr, uid, alias_ids, context=context)
         return res
 
-    def message_notify(self, cr, uid, ids, title, body, context=None):
+    def message_notify(self, cr, uid, ids, subject, body, context=None):
         """
         Send notification to user(s)
         """
@@ -113,13 +113,13 @@ class res_users(osv.Model):
             ids = [ids]
         mail_message = self.pool.get('mail.message')
         mail_message_subtype = self.pool.get('mail.message.subtype')
-        [discussion] = mail_message_subtype.browse(cr, SUPERUSER_ID, [('name','=','Discussions')])
+        [discussion_id] = mail_message_subtype.search(cr, SUPERUSER_ID, [('name','=','Discussions')])
         users = self.browse(cr, uid, ids, context=context)
         mail_message.create(cr, SUPERUSER_ID, values=dict(
                 type='email',
-                subtype_id=discussion.id,
+                subtype_id=discussion_id,
                 partner_ids=[(4, u.partner_id.id) for u in users],
-                subject=title,
+                subject=subject,
                 body=body,
                 ))
 
