@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+        <record id="ir_cron_view" model="ir.ui.view">
+            <field name="name">ir.cron.mail</field>
+            <field name="model">ir.cron</field>
+            <field name="inherit_id" ref="base.ir_cron_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='user_id']" position="replace">
+                    <field name="user_id" string="Run as"/>
+                </xpath>
+                <xpath expr="//field[@name='priority']" position="after">
+                    <field name="notify_ids" on_change="onchange_user_ids(notify_ids)">
+                        <tree>
+                            <field name="name"/>
+                            <field name="login"/>
+                        </tree>
+                    </field>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</openerp>

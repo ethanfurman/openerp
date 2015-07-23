@@ -63,6 +63,7 @@ Main Features
         'security/ir.model.access.csv',
         'mail_alias_view.xml',
         'res_users_view.xml',
+        'ir_cron_view.xml',
     ],
     'demo': [
         'data/mail_demo.xml',
