@@ -160,6 +160,33 @@ class res_users(osv.Model):
         return self.pool.get('res.partner').message_get_suggested_recipients(cr, uid, partner_ids, context=context)
 
     #------------------------------------------------------
+    # Tools
+    #------------------------------------------------------
+
+    def check_email(self, cr, uid, ids, context=None):
+        """
+        Verify that selected user_ids have an email_address defined.
+        Otherwise throw a warning.
+        """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        user_wo_email_lst = []
+        for user in self.browse(cr, uid, ids, context=context):
+            if not user.email:
+                user_wo_email_lst.append(user)
+        if not user_wo_email_lst:
+            return {}
+        warning_msg = _('The following users have no email address:')
+        for user in user_wo_email_lst:
+            warning_msg += '\n- %s' % (user.name)
+        return {'warning': {
+                    'title': _('Email addresses not found'),
+                    'message': warning_msg,
+                    }
+                }
+
+
+    #------------------------------------------------------
     # Compatibility methods: do not use
     # TDE TODO: remove me in 8.0
     #------------------------------------------------------
