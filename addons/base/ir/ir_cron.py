@@ -96,7 +96,7 @@ class ir_cron(osv.osv):
         (_check_args, 'Invalid arguments', ['args']),
     ]
 
-    def _handle_callback_exception(self, cr, uid, model_name, method_name, args, job_id, job_exception):
+    def _handle_callback_exception(self, cr, uid, model_name, method_name, args, job_id, job_name, job_exception):
         """ Method called when an exception is raised by a job.
 
         Simply logs the exception and rollback the transaction.
@@ -111,7 +111,7 @@ class ir_cron(osv.osv):
         cr.rollback()
         _logger.exception("Call of self.pool.get('%s').%s(cr, uid, *%r) failed in Job %s" % (model_name, method_name, args, job_id))
 
-    def _callback(self, cr, uid, model_name, method_name, args, job_id):
+    def _callback(self, cr, uid, model_name, method_name, args, job_id, job_name):
         """ Run the method associated to a given job
 
         It takes care of logging and exception handling.
@@ -135,7 +135,7 @@ class ir_cron(osv.osv):
                     end_time = time.time()
                     _logger.debug('%.3fs (%s, %s)' % (end_time - start_time, model_name, method_name))
             except Exception, e:
-                self._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, e)
+                self._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, job_name, e)
 
     def _process_job(self, job_cr, job, cron_cr):
         """ Run a given job taking care of the repetition.
@@ -155,7 +155,7 @@ class ir_cron(osv.osv):
                 if numbercall > 0:
                     numbercall -= 1
                 if not ok or job['doall']:
-                    self._callback(job_cr, job['user_id'], job['model'], job['function'], job['args'], job['id'])
+                    self._callback(job_cr, job['user_id'], job['model'], job['function'], job['args'], job['id'], job['name'])
                 if numbercall:
                     nextcall += _intervalTypes[job['interval_type']](job['interval_number'])
                 ok = True
