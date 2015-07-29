@@ -13,6 +13,7 @@
 .*\.rej
 .*\.orig
 .*/\..*\.sw.
+.*/original_xml/.*
 PKG-INFO
 filestore/
 addons/automated_clearing_house
