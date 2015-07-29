@@ -115,7 +115,7 @@ class res_users(osv.Model):
         mail_message_subtype = self.pool.get('mail.message.subtype')
         [discussion_id] = mail_message_subtype.search(cr, SUPERUSER_ID, [('name','=','Discussions')])
         users = self.browse(cr, uid, ids, context=context)
-        mail_message.create(cr, SUPERUSER_ID, values=dict(
+        mail_message.create(cr, uid, values=dict(
                 type='email',
                 subtype_id=discussion_id,
                 partner_ids=[(4, u.partner_id.id) for u in users],
