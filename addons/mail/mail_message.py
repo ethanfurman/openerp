@@ -866,8 +866,10 @@ class mail_message(osv.Model):
 
         partners_to_notify = set([])
         # message has no subtype_id: pure log message -> no partners, no one notified
-        if not message.subtype_id:
-            return True
+        if message.subtype_id:
+            subtype_id = message.subtype_id.id
+        else:
+            [subtype_id] = self.pool.get('mail.message.subtype').search(cr, SUPERUSER_ID, [('name','=','Discussions')]) 
 
         # all followers of the mail.message document have to be added as partners and notified
         if message.model and message.res_id:
@@ -876,7 +878,7 @@ class mail_message(osv.Model):
             fol_ids = fol_obj.search(cr, SUPERUSER_ID, [
                 ('res_model', '=', message.model),
                 ('res_id', '=', message.res_id),
-                ('subtype_ids', 'in', message.subtype_id.id)
+                ('subtype_ids', 'in', subtype_id)
                 ], context=context)
             partners_to_notify |= set(fo.partner_id for fo in fol_obj.browse(cr, SUPERUSER_ID, fol_ids, context=context))
         # remove me from notified partners, unless the message is written on my own wall

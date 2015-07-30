@@ -239,6 +239,7 @@ class mail_thread(osv.AbstractModel):
         """
         if context is None:
             context = {}
+        follower_ids = values.pop('message_follower_user_ids', [])
         if context.get('mail_track_initial'):
             tracked_values = {}
             tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context)
@@ -249,7 +250,10 @@ class mail_thread(osv.AbstractModel):
         # subscribe uid unless asked not to
         # do not subscribe Administrator (ever!)
         if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
-            self.message_subscribe_users(cr, uid, [thread_id], [uid], context=context)
+            if uid not in follower_ids:
+                follower_ids.append(uid)
+        if follower_ids:
+            self.message_subscribe_users(cr, uid, [thread_id], follower_ids, context=context)
         self.message_auto_subscribe(cr, uid, [thread_id], values.keys(), context=context)
 
         # automatic logging unless asked not to (mainly for various testing purpose)
@@ -299,7 +303,7 @@ class mail_thread(osv.AbstractModel):
         return super(mail_thread, self).copy(cr, uid, id, default=default, context=context)
 
     #------------------------------------------------------
-    # Automatically log tracked fields
+    # Automatically log tracked fields and notify followers
     #------------------------------------------------------
 
     def _get_tracked_fields(self, cr, uid, updated_fields, context=None):
@@ -326,7 +330,7 @@ class mail_thread(osv.AbstractModel):
             if not value and col_info['type'] == 'boolean':
                 return 'False'
             if not value:
-                return '&lt;removed&gt;'
+                return '&lt;empty&gt;'
             if col_info['type'] == 'many2one':
                 return value[1]
             if col_info['type'] == 'selection':
@@ -351,6 +355,7 @@ class mail_thread(osv.AbstractModel):
             initial = initial_values[record['id']]
             changes = []
             tracked_values = {}
+            notify_ids = [r.id for r in self.browse(cr, uid, record['id']).message_follower_ids]
 
             # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
             for col_name, col_info in tracked_fields.items():
@@ -373,22 +378,29 @@ class mail_thread(osv.AbstractModel):
                 continue
 
             # find subtypes and post messages or log if no subtype found
-            subtypes = []
-            for field, track_info in self._track.items():
-                if field not in changes:
-                    continue
-                for subtype, method in track_info.items():
-                    if method(self, cr, uid, record, context):
-                        subtypes.append(subtype)
+            if not self._track:
+                subtypes = ['mail.mt_comment']
+            else:
+                subtypes = []
+                for field, track_info in self._track.items():
+                    if field not in changes:
+                        continue
+                    for subtype, method in track_info.items():
+                        if method(self, cr, uid, record, context):
+                            subtypes.append(subtype)
 
             posted = False
             for subtype in subtypes:
                 try:
                     subtype_rec = self.pool.get('ir.model.data').get_object(cr, uid, subtype.split('.')[0], subtype.split('.')[1], context=context)
                 except ValueError, e:
-                    _logger.debug('subtype %s not found, giving error "%s"' % (subtype, e))
+                    _logger.warning('subtype %s not found, giving error "%s"' % (subtype, e))
                     continue
-                message = format_message(subtype_rec.description if subtype_rec.description else subtype_rec.name, tracked_values)
+                if subtype == 'mail.mt_comment':
+                    description = ''
+                else:
+                    description = subtype_rec.description if subtype_rec.description else subtype_rec.name
+                message = format_message(description, tracked_values)
                 self.message_post(cr, uid, record['id'], body=message, subtype=subtype, context=context)
                 posted = True
             if not posted:
