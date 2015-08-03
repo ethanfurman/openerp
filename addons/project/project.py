@@ -183,7 +183,8 @@ class project(osv.osv):
             elif proj.alias_id:
                 alias_ids.append(proj.alias_id.id)
         res =  super(project, self).unlink(cr, uid, ids, context=context)
-        mail_alias.unlink(cr, uid, alias_ids, context=context)
+        # if user can delete project, then remove aliases
+        mail_alias.unlink(cr, SUPERUSER_ID, alias_ids, context=context)
         return res
     
     def _get_attached_docs(self, cr, uid, ids, field_name, arg, context):

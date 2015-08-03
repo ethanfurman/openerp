@@ -102,7 +102,7 @@ class res_users(osv.Model):
         alias_pool = self.pool.get('mail.alias')
         alias_ids = [user.alias_id.id for user in self.browse(cr, uid, ids, context=context) if user.alias_id]
         res = super(res_users, self).unlink(cr, uid, ids, context=context)
-        alias_pool.unlink(cr, uid, alias_ids, context=context)
+        alias_pool.unlink(cr, SUPERUSER_ID, alias_ids, context=context)
         return res
 
     def message_notify(self, cr, uid, ids, subject, body, context=None):
