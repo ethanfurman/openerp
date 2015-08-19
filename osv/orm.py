@@ -975,7 +975,6 @@ class BaseModel(object):
 
         """
 
-
         # Set the module name (e.g. base, sale, accounting, ...) on the class.
         module = cls.__module__.split('.')[0]
         if not hasattr(cls, '_module'):
@@ -3677,8 +3676,8 @@ class BaseModel(object):
         if not context:
             context = {}
         if not isinstance(fields, (type(None), bool)):
-            mirrored = [f for f in fields if '.' in f]
-            fields = [f for f in fields if '.' not in f]
+            mirrored = [f for f in fields if f and '.' in f]
+            fields = [f for f in fields if not f or '.' not in f]
         else:
             mirrored = []
         self.check_access_rights(cr, user, 'read')
