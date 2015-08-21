@@ -3651,7 +3651,7 @@ class BaseModel(object):
                     (self._description, operation))
         return fields
 
-    def read(self, cr, user, ids, fields=None, context=None, load='_classic_read'):
+    def read(self, cr, user, ids=[None], fields=None, context=None, load='_classic_read'):
         """ Read records with given ids with the given fields
 
         :param cr: database cursor
@@ -3684,8 +3684,13 @@ class BaseModel(object):
         fields = self.check_field_access_rights(cr, user, 'read', fields)
         if isinstance(ids, (int, long)):
             select = [ids]
+        elif ids and not isinstance(ids[0], (int, long)):
+            if ids == [None]:
+                ids = []
+            select = self.search(cr, user, ids, context=context)
         else:
             select = ids
+
         select = map(lambda x: isinstance(x, dict) and x['id'] or x, select)
         result = self._read_flat(cr, user, select, fields, context, load)
 
