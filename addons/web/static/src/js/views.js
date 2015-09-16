@@ -867,6 +867,26 @@ instance.web.ViewManagerAction = instance.web.ViewManager.extend({
 
         this.$el.find('.oe_debug_view').change(this.on_debug_changed);
         this.$el.addClass("oe_view_manager_" + (this.action.target || 'current'));
+        function findNodeWithClass(startNode, searchPattern) {
+            var newChildren = [startNode];
+            var currentChild;
+            var i;
+            while (newChildren.length > 0) {
+                currentChild = newChildren.shift();
+                var getAttr = currentChild.getAttribute;
+                if (getAttr !== undefined && searchPattern.test(currentChild.getAttribute("class"))) {
+                    return currentChild;
+                };
+                for (i=0; i<currentChild.childNodes.length; i+=1) {
+                    newChildren.push(currentChild.childNodes[i]);
+                };
+            };
+            return;
+        }
+        var targetNode = findNodeWithClass(document.children[0], /oe_view_manager_current/);
+        if (!/oe_main_window/.test(targetNode.getAttribute("class"))) {
+            this.$el.addClass("oe_main_window");
+        }
         return manager_ready;
     },
     on_debug_changed: function (evt) {

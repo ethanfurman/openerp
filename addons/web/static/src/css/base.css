@@ -1003,6 +1003,9 @@
   display: none;
 }
 .openerp .oe_topbar {
+  position: fixed;
+  z-index: 1;
+  top: 0;
   width: 100%;
   height: 32px;
   background-color: #414141;
@@ -1191,11 +1194,17 @@
 }
 .openerp .oe_leftbar {
   display: none;
+  position: fixed;
+  top: 32px;
+  left: 0;
   width: 220px;
+  height: calc(100% - 32px);
+  z-index: 2;
   background: #f0eeee;
-  border-right: 1px solid #afafb6;
+  border-right: 0px solid #afafb6;
   text-shadow: 0 1px 1px white;
   padding-bottom: 16px;
+  overflow: scroll;
 }
 .openerp a.oe_logo {
   position: relative;
@@ -1421,9 +1430,14 @@
   display: inline-block;
   overflow: hidden;
 }
+.openerp .oe_main_window {
+  position: relative;
+  top: 32px;
+  left: 220px;
+  width: calc(100% - 220px) !important;
+}
 .openerp .oe_view_manager {
   display: table;
-  height: inherit;
   width: 100%;
 }
 .openerp .oe_view_manager .oe_view_manager_body {
