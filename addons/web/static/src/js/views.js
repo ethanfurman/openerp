@@ -883,8 +883,12 @@ instance.web.ViewManagerAction = instance.web.ViewManager.extend({
             };
             return;
         }
-        var targetNode = findNodeWithClass(document.children[0], /oe_view_manager_current/);
-        if (!/oe_main_window/.test(targetNode.getAttribute("class"))) {
+        var targetNode = findNodeWithClass(document.childNodes[0], /oe_view_manager_current/);
+        if (targetNode == undefined) {
+            targetNode = findNodeWithClass(document.childNodes[1], /oe_view_manager_current/);
+        }
+        if (targetNode !== undefined && !/oe_main_window/.test(targetNode.getAttribute("class"))) {
+
             this.$el.addClass("oe_main_window");
         }
         return manager_ready;
