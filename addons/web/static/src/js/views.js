@@ -6,6 +6,31 @@ openerp.web.views = function(instance) {
 var QWeb = instance.web.qweb,
     _t = instance.web._t;
 
+function addOeMainWindow() {
+    var newChildren = [];
+    var currentChild, getAttr, oldClass, newClass;
+    var i;
+    for (i=0; i<document.childNodes.length; i+=1) {
+        newChildren.push(document.childNodes[i]);
+    }
+    while (newChildren.length > 0) {
+        currentChild = newChildren.shift();
+        getAttr = currentChild.getAttribute;
+        if (getAttr !== undefined) {
+            oldClass = currentChild.getAttribute("class");
+            if (/oe_view_manager_current/.test(oldClass) && !/oe_main_window/.test(oldClass)) {
+                newClass = oldClass + " oe_main_window";
+                currentChild.setAttribute("class", newClass);
+                return;
+            }
+        }
+        for (i=0; i<currentChild.childNodes.length; i+=1) {
+            newChildren.push(currentChild.childNodes[i]);
+        }
+    }
+    return;
+}
+
 instance.web.ActionManager = instance.web.Widget.extend({
     init: function(parent) {
         this._super(parent);
@@ -867,30 +892,7 @@ instance.web.ViewManagerAction = instance.web.ViewManager.extend({
 
         this.$el.find('.oe_debug_view').change(this.on_debug_changed);
         this.$el.addClass("oe_view_manager_" + (this.action.target || 'current'));
-        function findNodeWithClass(startNode, searchPattern) {
-            var newChildren = [startNode];
-            var currentChild;
-            var i;
-            while (newChildren.length > 0) {
-                currentChild = newChildren.shift();
-                var getAttr = currentChild.getAttribute;
-                if (getAttr !== undefined && searchPattern.test(currentChild.getAttribute("class"))) {
-                    return currentChild;
-                };
-                for (i=0; i<currentChild.childNodes.length; i+=1) {
-                    newChildren.push(currentChild.childNodes[i]);
-                };
-            };
-            return;
-        }
-        var targetNode = findNodeWithClass(document.childNodes[0], /oe_view_manager_current/);
-        if (targetNode == undefined) {
-            targetNode = findNodeWithClass(document.childNodes[1], /oe_view_manager_current/);
-        }
-        if (targetNode !== undefined && !/oe_main_window/.test(targetNode.getAttribute("class"))) {
-
-            this.$el.addClass("oe_main_window");
-        }
+        addOeMainWindow();
         return manager_ready;
     },
     on_debug_changed: function (evt) {
