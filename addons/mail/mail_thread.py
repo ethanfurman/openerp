@@ -731,8 +731,7 @@ class mail_thread(osv.AbstractModel):
         fields = model_pool.fields_get(cr, uid, context=context)
         if 'name' in fields and not data.get('name'):
             data['name'] = msg_dict.get('subject', '')
-        res_id = model_pool.create(cr, uid, data, context=context)
-        return res_id
+        return model_pool.create(cr, uid, data, context=context)
 
     def message_update(self, cr, uid, ids, msg_dict, update_vals=None, context=None):
         """Called by ``message_process`` when a new message is received
