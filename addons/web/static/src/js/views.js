@@ -18,7 +18,7 @@ function addOeMainWindow() {
         getAttr = currentChild.getAttribute;
         if (getAttr !== undefined) {
             oldClass = currentChild.getAttribute("class");
-            if (/oe_view_manager_current/.test(oldClass) && !/oe_main_window/.test(oldClass)) {
+            if (/oe_view_manager/.test(oldClass) && !/oe_main_window/.test(oldClass)) {
                 newClass = oldClass + " oe_main_window";
                 currentChild.setAttribute("class", newClass);
                 return;
