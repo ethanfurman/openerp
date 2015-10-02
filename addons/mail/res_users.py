@@ -105,7 +105,7 @@ class res_users(osv.Model):
         alias_pool.unlink(cr, SUPERUSER_ID, alias_ids, context=context)
         return res
 
-    def message_notify(self, cr, uid, ids, subject, body, context=None):
+    def message_notify(self, cr, uid, ids, context=None, **values):
         """
         Send notification to user(s)
         """
@@ -115,13 +115,9 @@ class res_users(osv.Model):
         mail_message_subtype = self.pool.get('mail.message.subtype')
         [discussion_id] = mail_message_subtype.search(cr, SUPERUSER_ID, [('name','=','Discussions')])
         users = self.browse(cr, uid, ids, context=context)
-        mail_message.create(cr, uid, values=dict(
-                type='email',
-                subtype_id=discussion_id,
-                partner_ids=[(4, u.partner_id.id) for u in users],
-                subject=subject,
-                body=body,
-                ))
+	values['subtype_id'] = discussion_id
+	values['partner_ids'] = [(4, u.partner_id.id) for u in users]
+        mail_message.create(cr, uid, values, context=context)
 
     def _message_post_get_pid(self, cr, uid, thread_id, context=None):
         assert thread_id, "res.users does not support posting global messages"
