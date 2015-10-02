@@ -41,7 +41,7 @@ class ir_cron(osv.Model):
             subject = 'Failed Job: ' + job_name
             message = '\n'.join(['<pre>%s</pre>' % line for line in traceback.format_exc(job_exception).split('\n')])
             res_users = self.pool.get('res.users')
-            res_users.message_notify(cr, SUPERUSER_ID, notify_ids, subject, message)
+            res_users.message_notify(cr, SUPERUSER_ID, notify_ids, message=message, model=self._name, res_id=job_id)
 
     def onchange_user_ids(self, cr, uid, ids, value, context=None):
         """
