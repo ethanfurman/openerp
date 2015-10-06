@@ -222,7 +222,7 @@ class JsonRequest(WebRequest):
                     'type': 'server_exception',
                     'fault_code': e.faultCode,
                     'debug': "Client %s\nServer %s" % (
-                    "".join(traceback.format_exception("", None, sys.exc_traceback)), e.faultString)
+                    "".join(traceback.format_exception("", None, sys.exc_info()[2])), e.faultString)
                 }
             }
         except Exception:
