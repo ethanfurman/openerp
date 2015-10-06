@@ -240,12 +240,13 @@ class mail_thread(osv.AbstractModel):
         if context is None:
             context = {}
         follower_ids = values.pop('message_follower_user_ids', [])
+        notify_ids = values.pop('message_notify_ids', [])
+        thread_id = super(mail_thread, self).create(cr, uid, values, context=context)
         if context.get('mail_track_initial'):
-            tracked_values = {}
+            initial_values = {thread_id: {'id':thread_id}}
             tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context)
             for field_name in tracked_fields:
-                tracked_values[field_name] = values.pop(field_name)
-        thread_id = super(mail_thread, self).create(cr, uid, values, context=context)
+                initial_values[thread_id][field_name] = False
 
         # subscribe uid unless asked not to
         # do not subscribe Administrator (ever!)
@@ -258,14 +259,21 @@ class mail_thread(osv.AbstractModel):
 
         # automatic logging unless asked not to (mainly for various testing purpose)
         if not context.get('mail_create_nolog'):
-            self.message_post(cr, uid, thread_id, body=_('Document created'), context=context)
-        if context.get('mail_track_initial') and tracked_values:
-            self.write(cr, uid, thread_id, tracked_values, context=context)
+            if context.get('mail_track_initial'):
+                self.message_track(
+                        cr, uid, [thread_id],
+                        tracked_fields, initial_values,
+                        body=_('Document created'), notify_ids=notify_ids, context=context,
+                        )
+            else:
+                self.message_post(cr, uid, thread_id, body=_('Document created'), context=context)
         return thread_id
 
     def write(self, cr, uid, ids, values, context=None):
         if isinstance(ids, (int, long)):
             ids = [ids]
+        follower_ids = values.pop('message_follower_user_ids', [])
+        notify_ids = values.pop('message_notify_ids', [])
         # Track initial values of tracked fields
         tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context)
         if tracked_fields:
@@ -274,11 +282,16 @@ class mail_thread(osv.AbstractModel):
 
         # Perform write, update followers
         result = super(mail_thread, self).write(cr, uid, ids, values, context=context)
+        if follower_ids:
+            self.message_subscribe_users(cr, uid, ids, follower_ids, context=context)
         self.message_auto_subscribe(cr, uid, ids, values.keys(), context=context)
 
         # Perform the tracking
         if tracked_fields:
-            self.message_track(cr, uid, ids, tracked_fields, initial_values, context=context)
+            self.message_track(
+                    cr, uid, ids,
+                    tracked_fields, initial_values,
+                    notify_ids=notify_ids, context=context)
         return result
 
     def unlink(self, cr, uid, ids, context=None):
@@ -324,7 +337,7 @@ class mail_thread(osv.AbstractModel):
             return lst
         return self.fields_get(cr, uid, lst, context=context)
 
-    def message_track(self, cr, uid, ids, tracked_fields, initial_values, context=None):
+    def message_track(self, cr, uid, ids, tracked_fields, initial_values, context=None, body='', notify_ids=[]):
 
         def convert_for_display(value, col_info):
             if not value and col_info['type'] == 'boolean':
@@ -355,7 +368,7 @@ class mail_thread(osv.AbstractModel):
             initial = initial_values[record['id']]
             changes = []
             tracked_values = {}
-            notify_ids = [r.id for r in self.browse(cr, uid, record['id']).message_follower_ids]
+            partner_ids = notify_ids + [partner.id for partner in self.browse(cr, uid, record['id']).message_follower_ids]
 
             # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
             for col_name, col_info in tracked_fields.items():
@@ -400,12 +413,12 @@ class mail_thread(osv.AbstractModel):
                     description = ''
                 else:
                     description = subtype_rec.description if subtype_rec.description else subtype_rec.name
-                message = format_message(description, tracked_values)
-                self.message_post(cr, uid, record['id'], body=message, subtype=subtype, context=context)
+                message = body + '\n' + format_message(description, tracked_values)
+                self.message_post(cr, uid, record['id'], body=message, subtype=subtype, context=context, partner_ids=partner_ids)
                 posted = True
             if not posted:
-                message = format_message('', tracked_values)
-                self.message_post(cr, uid, record['id'], body=message, context=context)
+                message = body + '\n' + format_message('', tracked_values)
+                self.message_post(cr, uid, record['id'], body=message, context=context, partner_ids=partner_ids)
         return True
 
     #------------------------------------------------------
