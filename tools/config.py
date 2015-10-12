@@ -178,6 +178,8 @@ class configmanager(object):
 
         # Testing Group
         group = optparse.OptionGroup(parser, "Testing Configuration")
+        group.add_option("--test-module", dest="test_module",
+                         help="Run a module's unit tests.")
         group.add_option("--test-file", dest="test_file", my_default=False,
                          help="Launch a YML test file.")
         group.add_option("--test-report-directory", dest="test_report_directory", my_default=False,
@@ -418,7 +420,7 @@ class configmanager(object):
             'debug_mode', 'smtp_ssl', 'load_language',
             'stop_after_init', 'logrotate', 'without_demo', 'netrpc', 'xmlrpc', 'syslog',
             'list_db', 'xmlrpcs', 'proxy_mode',
-            'test_file', 'test_enable', 'test_commit', 'test_report_directory',
+            'test_module', 'test_file', 'test_enable', 'test_commit', 'test_report_directory',
             'osv_memory_count_limit', 'osv_memory_age_limit', 'max_cron_threads', 'unaccent',
             'workers', 'limit_memory_hard', 'limit_memory_soft', 'limit_time_cpu', 'limit_time_real', 'limit_request'
         ]

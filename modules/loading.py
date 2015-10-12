@@ -158,6 +158,8 @@ def load_module_graph(cr, graph, status=None, perform_checks=True, skip_modules=
     for field in cr.dictfetchall():
         pool.fields_by_model.setdefault(field['model'], []).append(field)
 
+    test_modules = tools.config.options['test_module'] or []
+
     # register, instantiate and initialize models for each modules
     for index, package in enumerate(graph):
         module_name = package.name
@@ -231,6 +233,9 @@ def load_module_graph(cr, graph, status=None, perform_checks=True, skip_modules=
             for kind in ('init', 'demo', 'update'):
                 if hasattr(package, kind):
                     delattr(package, kind)
+
+        if module_name in test_modules:
+            report.record_result(openerp.modules.module.run_unit_tests(module_name))
 
         cr.commit()
 

@@ -491,12 +491,8 @@ def get_test_modules(module, submodule, explode):
             logging.exception('')
             sys.exit(1)
         else:
-            if str(e) == 'No module named tests':
-                # It seems the module has no `tests` sub-module, no problem.
-                pass
-            else:
-                _logger.exception('Can not `import %s`.', module)
-            return []
+            _logger.error('Can not `import %s`.', module)
+            return None
 
     # Discover available test sub-modules.
     m = sys.modules[module]
@@ -515,6 +511,13 @@ def get_test_modules(module, submodule, explode):
     if submodule is None:
         # Use auto-discovered sub-modules.
         ms = submodules
+        if not ms:
+            if explode:
+                print 'The module `%s` has no tests.' % (module,)
+                show_submodules_and_exit()
+            else:
+                _logger.error('The module %s has no tests.', (module,))
+                return None
     elif submodule == '__fast_suite__':
         # Obtain the explicit test sub-modules list.
         ms = getattr(sys.modules[module], 'fast_suite', None)
@@ -556,8 +559,13 @@ def run_unit_tests(module_name):
     """
     import unittest2
     ms = get_test_modules(module_name, '__fast_suite__', explode=False)
+    if ms is None:
+        return None
     # TODO: No need to try again if the above call failed because of e.g. a syntax error.
     ms.extend(get_test_modules(module_name, '__sanity_checks__', explode=False))
+    if not ms:
+        # if nothing in suite nor checks, use whatever is there
+        ms = get_test_modules(module_name, None, explode=False)
     suite = unittest2.TestSuite()
     for m in ms:
         suite.addTests(unittest2.TestLoader().loadTestsFromModule(m))
