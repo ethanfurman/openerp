@@ -26,7 +26,7 @@ HOST = '127.0.0.1'
 
 ADMIN_USER = 'admin'
 ADMIN_USER_ID = openerp.SUPERUSER_ID
-ADMIN_PASSWORD = 'admin'
+ADMIN_PASSWORD = openerp.tools.config['admin_passwd'] or 'admin'
 
 def start_openerp():
     """
