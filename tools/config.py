@@ -320,8 +320,6 @@ class configmanager(object):
                     self.options[option.dest] = option.my_default
                     self.casts[option.dest] = option
 
-        self.parse_config(None, False)
-
     def parse_config(self, args=None, complete=True):
         """ Parse the configuration file (if any) and the command-line
         arguments.
