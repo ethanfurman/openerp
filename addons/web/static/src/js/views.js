@@ -18,9 +18,11 @@ function addOeMainWindow() {
         getAttr = currentChild.getAttribute;
         if (getAttr !== undefined) {
             oldClass = currentChild.getAttribute("class");
-            if (/oe_view_manager/.test(oldClass) && !/oe_main_window/.test(oldClass)) {
-                newClass = oldClass + " oe_main_window";
-                currentChild.setAttribute("class", newClass);
+            if (/oe_view_manager/.test(oldClass)) {
+                if (!/oe_main_window/.test(oldClass)) {
+                    newClass = oldClass + " oe_main_window";
+                    currentChild.setAttribute("class", newClass);
+                }
                 return;
             }
         }
