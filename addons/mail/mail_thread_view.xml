@@ -2,7 +2,7 @@
 <openerp>
     <data>
         <record id="action_mail_inbox_feeds" model="ir.actions.client">
-            <field name="name">Inbox</field>
+            <field name="name">Inbox: New</field>
             <field name="tag">mail.wall</field>
             <field name="res_model">mail.message</field>
             <field name="context">{
@@ -20,7 +20,7 @@
             }&quot;"/>
             <field name="help" type="html">
                 <p>
-                    <b>Good Job!</b> Your inbox is empty.
+                    <b>Good Job!</b> You have no outstanding mail.
                 </p><p>
                     Your inbox contains private messages or emails sent to you
                     as well as information related to documents or people you
@@ -30,7 +30,7 @@
         </record>
 
         <record id="action_mail_to_me_feeds" model="ir.actions.client">
-            <field name="name">To: me</field>
+            <field name="name">Inbox: To me</field>
             <field name="tag">mail.wall</field>
             <field name="res_model">mail.message</field>
             <field name="context">{
@@ -48,7 +48,7 @@
             }&quot;"/>
             <field name="help" type="html">
                 <p>
-                    <b>No private message.</b>
+                    <b>No private messages.</b>
                 </p><p>
                     This list contains messages sent to you.
                 </p>
@@ -56,7 +56,7 @@
         </record>
 
         <record id="action_mail_star_feeds" model="ir.actions.client">
-            <field name="name">To-do</field>
+            <field name="name">Inbox: To-do</field>
             <field name="tag">mail.wall</field>
             <field name="res_model">mail.message</field>
             <field name="context">{
@@ -74,16 +74,16 @@
             }&quot;"/>
             <field name="help" type="html">
                 <p>
-                    <b>No todo.</b>
+                    <b>To-do list is empty.</b>
                 </p><p>
                     When you process messages in your inbox, you can mark some
-                    as <i>todo</i>. From this menu, you can process all your todo.
+                    as <i>to-do</i>. From this menu, you can process all your to-do items.
                 </p>
             </field>
         </record>
 
         <record id="action_mail_archives_feeds" model="ir.actions.client">
-            <field name="name">Archives</field>
+            <field name="name">Inbox: Prior</field>
             <field name="tag">mail.wall</field>
             <field name="context">{
               'default_model': 'res.users',
@@ -121,13 +121,13 @@
         <menuitem id="mail_my_stuff" name="Organizer" parent="mail.mail_feeds_main"/>
 
         <record id="mail_inboxfeeds" model="ir.ui.menu">
-          <field name="name">Inbox</field>
+          <field name="name">New</field>
           <field name="sequence" eval="10"/>
           <field name="action" ref="action_mail_inbox_feeds"/>
           <field name="parent_id" ref="mail.mail_feeds"/>
         </record>
         <record id="mail_tomefeeds" model="ir.ui.menu">
-          <field name="name">To: me</field>
+          <field name="name">To me</field>
           <field name="sequence" eval="11"/>
           <field name="action" ref="action_mail_to_me_feeds"/>
           <field name="parent_id" ref="mail.mail_feeds"/>
@@ -139,10 +139,13 @@
           <field name="parent_id" ref="mail.mail_feeds"/>
         </record>
         <record id="mail_archivesfeeds" model="ir.ui.menu">
-          <field name="name">Archives</field>
+          <field name="name">Prior</field>
           <field name="sequence" eval="16"/>
           <field name="action" ref="action_mail_archives_feeds"/>
           <field name="parent_id" ref="mail.mail_feeds"/>
         </record>
+
+        <!-- Left-side menu: Miscellany -->
+        <menuitem id="messaging_miscellany" name="Miscellany" parent="mail.mail_feeds_main" sequence="99"/>
     </data>
 </openerp>
