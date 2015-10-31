@@ -358,7 +358,7 @@ class account_analytic_account(osv.osv):
     def _get_total_estimation(self, account):
         tot_est = 0.0
         if account.fix_price_invoices:
-            tot_est += account.amount_max 
+            tot_est += account.amount_max
         if account.invoice_on_timesheets:
             tot_est += account.hours_qtt_est
         return tot_est
@@ -581,14 +581,14 @@ class account_analytic_account_summary_user(osv.osv):
             with mu as
                 (select max(id) as max_user from res_users)
             , lu AS
-                (SELECT   
-                 l.account_id AS account_id,   
-                 coalesce(l.user_id, 0) AS user_id,   
-                 SUM(l.unit_amount) AS unit_amount   
-             FROM account_analytic_line AS l,   
-                 account_analytic_journal AS j   
-             WHERE (j.type = 'general' ) and (j.id=l.journal_id)   
-             GROUP BY l.account_id, l.user_id   
+                (SELECT
+                 l.account_id AS account_id,
+                 coalesce(l.user_id, 0) AS user_id,
+                 SUM(l.unit_amount) AS unit_amount
+             FROM account_analytic_line AS l,
+                 account_analytic_journal AS j
+             WHERE (j.type = 'general' ) and (j.id=l.journal_id)
+             GROUP BY l.account_id, l.user_id
             )
             select (lu.account_id * mu.max_user) + lu.user_id as id,
                     lu.account_id as account_id,

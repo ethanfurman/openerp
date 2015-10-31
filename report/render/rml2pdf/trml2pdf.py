@@ -635,7 +635,7 @@ class _rml_flowable(object):
                 if key in ('rml_except', 'rml_loop', 'rml_tag'):
                     del txt_n.attrib[key]
             if not n.tag == 'bullet':
-                if n.tag == 'pageNumber': 
+                if n.tag == 'pageNumber':
                     txt_n.text = self.canvas and str(self.canvas.getPageNumber()) or ''
                 else:
                     txt_n.text = utils.xml2str(self._textual(n))

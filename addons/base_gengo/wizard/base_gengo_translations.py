@@ -57,14 +57,14 @@ class base_gengo_translations(osv.osv_memory):
     }
 
     def gengo_authentication(self, cr, uid, context=None):
-        ''' 
+        '''
         This method tries to open a connection with Gengo. For that, it uses the Public and Private
         keys that are linked to the company (given by Gengo on subscription). It returns a tuple with
          * as first element: a boolean depicting if the authentication was a success or not
-         * as second element: the connection, if it was a success, or the error message returned by 
+         * as second element: the connection, if it was a success, or the error message returned by
             Gengo when the connection failed.
-            This error message can either be displayed in the server logs (if the authentication was called 
-            by the cron) or in a dialog box (if requested by the user), thus it's important to return it 
+            This error message can either be displayed in the server logs (if the authentication was called
+            by the cron) or in a dialog box (if requested by the user), thus it's important to return it
             translated.
         '''
         user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
@@ -127,7 +127,7 @@ class base_gengo_translations(osv.osv_memory):
     def _sync_response(self, cr, uid, limit=GENGO_DEFAULT_LIMIT, context=None):
         """
         This method will be called by cron services to get translations from
-        Gengo. It will read translated terms and comments from Gengo and will 
+        Gengo. It will read translated terms and comments from Gengo and will
         update respective ir.translation in openerp.
         """
         translation_pool = self.pool.get('ir.translation')
@@ -224,10 +224,10 @@ class base_gengo_translations(osv.osv_memory):
     def _sync_request(self, cr, uid, limit=GENGO_DEFAULT_LIMIT, context=None):
         """
         This scheduler will send a job request to the gengo , which terms are
-        waiing to be translated and for which gengo_translation is enabled. 
+        waiing to be translated and for which gengo_translation is enabled.
 
-        A special key 'gengo_language' can be passed in the context in order to 
-        request only translations of that language only. Its value is the language 
+        A special key 'gengo_language' can be passed in the context in order to
+        request only translations of that language only. Its value is the language
         ID in openerp.
         """
         if context is None:

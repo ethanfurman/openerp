@@ -98,15 +98,15 @@ class note_note(osv.osv):
         return result
 
     _columns = {
-        'name': fields.function(_get_note_first_line, 
-            string='Note Summary', 
+        'name': fields.function(_get_note_first_line,
+            string='Note Summary',
             type='text', store=True),
         'memo': fields.html('Note Content'),
         'sequence': fields.integer('Sequence'),
-        'stage_id': fields.function(_get_stage_per_user, 
-            fnct_inv=_set_stage_per_user, 
-            string='Stage', 
-            type='many2one', 
+        'stage_id': fields.function(_get_stage_per_user,
+            fnct_inv=_set_stage_per_user,
+            string='Stage',
+            type='many2one',
             relation='note.stage'),
         'stage_ids': fields.many2many('note.stage','note_stage_rel','note_id','stage_id','Stages of Users'),
         'open': fields.boolean('Active', track_visibility='onchange'),
@@ -165,7 +165,7 @@ class note_note(osv.osv):
             return result
 
         else:
-            return super(note_note, self).read_group(self, cr, uid, domain, fields, groupby, 
+            return super(note_note, self).read_group(self, cr, uid, domain, fields, groupby,
                 offset=offset, limit=limit, context=context, orderby=orderby)
 
 
@@ -191,6 +191,6 @@ class res_users(osv.Model):
             for note_xml_id in ['note_stage_01','note_stage_02','note_stage_03','note_stage_04']:
                 data_id = data_obj._get_id(cr, uid, 'note', note_xml_id)
                 stage_id  = data_obj.browse(cr, uid, data_id, context=context).res_id
-                note_obj.copy(cr, SUPERUSER_ID, stage_id, default = { 
+                note_obj.copy(cr, SUPERUSER_ID, stage_id, default = {
                                         'user_id': user_id}, context=context)
         return user_id

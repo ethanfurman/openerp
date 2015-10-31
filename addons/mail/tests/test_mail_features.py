@@ -24,7 +24,7 @@ from openerp.tools.mail import html_sanitize
 
 
 class test_mail(TestMailBase):
-    
+
     def test_000_alias_setup(self):
         """ Test basic mail.alias setup works, before trying to use them for routing """
         cr, uid = self.cr, self.uid

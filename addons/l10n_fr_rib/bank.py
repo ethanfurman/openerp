@@ -33,7 +33,7 @@ class res_partner_bank(osv.osv):
             # Ignore the accounts of type other than rib
             if bank_acc.state != 'rib':
                 continue
-            # Fail if the needed values are empty of too short 
+            # Fail if the needed values are empty of too short
             if (not bank_acc.bank_code
             or len(bank_acc.bank_code) != 5
             or not bank_acc.office or len(bank_acc.office) != 5
@@ -47,7 +47,7 @@ class res_partner_bank(osv.osv):
             table = dict((ord(a), b) for a, b in zip(
                 u'abcdefghijklmnopqrstuvwxyz', u'12345678912345678923456789'))
             rib = rib.lower().translate(table)
-            # compute the key	
+            # compute the key
             key = 97 - (100 * int(rib)) % 97
             if int(bank_acc.key) != key:
                 raise osv.except_osv(_('Error!'),
@@ -64,7 +64,7 @@ class res_partner_bank(osv.osv):
                                                         context=context)
         if bank_id:
             value = result.setdefault('value', {})
-            bank = self.pool.get('res.bank').browse(cr, uid, bank_id, 
+            bank = self.pool.get('res.bank').browse(cr, uid, bank_id,
                                                     context=context)
             value['bank_code'] = bank.rib_code
         return result
@@ -99,7 +99,7 @@ class res_bank(osv.osv):
         # Merge the results
         results = list(set(results + self.name_get(cr, user, ids, context)))
         return results
-        
+
     _columns = {
         'rib_code': fields.char('RIB Bank Code', size=64),
     }

@@ -17,8 +17,8 @@
  #    You should have received a copy of the GNU Affero General Public License
  #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  #
- ############################################################################## 
- 
+ ##############################################################################
+
 from openerp.osv import fields, osv
 from openerp import tools
 
@@ -38,7 +38,7 @@ class sale_report(osv.osv):
             ('cancel', 'Cancelled')
             ], 'Order Status', readonly=True),
     }
-    
+
     def init(self, cr):
         tools.drop_view_if_exists(cr, 'sale_report')
         cr.execute("""

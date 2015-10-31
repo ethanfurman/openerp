@@ -58,7 +58,7 @@ class account_analytic_journal_report(osv.osv_memory):
             'report_name': 'account.analytic.journal',
             'datas': datas,
             }
-        
+
     def default_get(self, cr, uid, fields, context=None):
         if context is None:
             context = {}

@@ -66,10 +66,10 @@ class procurement_order(osv.osv):
                     phantom_bom_id = self.pool.get('mrp.bom').search(cr, uid, [
                         ('product_id', '=', procurement.move_id.product_id.id),
                         ('bom_id', '=', False),
-                        ('type', '=', 'phantom')]) 
-                    return phantom_bom_id 
+                        ('type', '=', 'phantom')])
+                    return phantom_bom_id
         return False
-    
+
     def action_produce_assign_product(self, cr, uid, ids, context=None):
         """ This is action which call from workflow to assign production order to procurements
         @return: True
@@ -78,10 +78,10 @@ class procurement_order(osv.osv):
         res = procurement_obj.make_mo(cr, uid, ids, context=context)
         res = res.values()
         return len(res) and res[0] or 0
-    
+
     def make_mo(self, cr, uid, ids, context=None):
         """ Make Manufacturing(production) order from procurement
-        @return: New created Production Orders procurement wise 
+        @return: New created Production Orders procurement wise
         """
         res = {}
         company = self.pool.get('res.users').browse(cr, uid, uid, context).company_id
@@ -107,9 +107,9 @@ class procurement_order(osv.osv):
                 'move_prod_id': res_id,
                 'company_id': procurement.company_id.id,
             })
-            
+
             res[procurement.id] = produce_id
-            self.write(cr, uid, [procurement.id], {'state': 'running', 'production_id': produce_id})   
+            self.write(cr, uid, [procurement.id], {'state': 'running', 'production_id': produce_id})
             bom_result = production_obj.action_compute(cr, uid,
                     [produce_id], properties=[x.id for x in procurement.property_ids])
             wf_service.trg_validate(uid, 'mrp.production', produce_id, 'button_confirm', cr)
@@ -123,7 +123,7 @@ class procurement_order(osv.osv):
         for procurement in self.browse(cr, uid, ids, context=context):
             body = _("Manufacturing Order <em>%s</em> created.") % ( procurement.production_id.name,)
             self.message_post(cr, uid, [procurement.id], body=body, context=context)
-    
+
 procurement_order()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

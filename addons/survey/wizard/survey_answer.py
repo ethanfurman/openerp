@@ -55,7 +55,7 @@ class survey_question_wiz(osv.osv_memory):
         que_col_head = self.pool.get('survey.question.column.heading')
         user_obj = self.pool.get('res.users')
         mail_message = self.pool.get('mail.message')
-        
+
         if view_type in ['form']:
             wiz_id = 0
             sur_name_rec = None
@@ -402,7 +402,7 @@ class survey_question_wiz(osv.osv_memory):
 
                     # mark the survey request as done; call 'survey_req_done' on its actual model
                     survey_req_obj = self.pool.get(context.get('active_model'))
-                    if survey_req_obj and hasattr(survey_req_obj, 'survey_req_done'): 
+                    if survey_req_obj and hasattr(survey_req_obj, 'survey_req_done'):
                         survey_req_obj.survey_req_done(cr, uid, context.get('active_ids', []), context=context)
 
                     if sur_rec.send_response:
@@ -469,13 +469,13 @@ class survey_question_wiz(osv.osv_memory):
             fp = open(ret_file_name, 'wb+');
             fp.write(result);
             fp.close();
-            
+
             # hr.applicant: if survey answered directly in system: attach report to applicant
             if context.get('active_model') == 'hr.applicant':
                 self.pool.get('hr.applicant').write(cr,uid,[context.get('active_ids')[0]],{'response':context.get('response_id')})
                 result = base64.b64encode(result)
                 file_name = file_name + '.pdf'
-                ir_attachment = self.pool.get('ir.attachment').create(cr, uid, 
+                ir_attachment = self.pool.get('ir.attachment').create(cr, uid,
                                                                       {'name': file_name,
                                                                        'datas': result,
                                                                        'datas_fname': file_name,
@@ -547,7 +547,7 @@ class survey_question_wiz(osv.osv_memory):
                                     value[field] = ans.answer
 
         else:
-            
+
             if not context.has_key('sur_name_id'):
                 return value
             if context.has_key('active') and context.get('active',False):
@@ -612,7 +612,7 @@ class survey_question_wiz(osv.osv_memory):
                     self.pool.get(context.get('object',False)).write(cr, uid, [int(context.get('cur_id',False))], {'response' : response_id})
                     self.pool.get(context.get('object',False)).survey_req_done(cr, uid, [int(context.get('cur_id'))], context)
                 else:
-                    self.pool.get(context.get('object',False)).write(cr, uid, [int(context.get('cur_id',False))], {'response' : response_id})        
+                    self.pool.get(context.get('object',False)).write(cr, uid, [int(context.get('cur_id',False))], {'response' : response_id})
         if sur_name_read['store_ans'] and type(safe_eval(sur_name_read['store_ans'])) == dict:
             sur_name_read['store_ans'] = safe_eval(sur_name_read['store_ans'])
             for key,val in sur_name_read['store_ans'].items():

@@ -33,9 +33,9 @@
 Periodical Employees evaluation and appraisals
 ==============================================
 
-By using this application you can maintain the motivational process by doing periodical evaluations of your employees' performance. The regular assessment of human resources can benefit your people as well your organization. 
+By using this application you can maintain the motivational process by doing periodical evaluations of your employees' performance. The regular assessment of human resources can benefit your people as well your organization.
 
-An evaluation plan can be assigned to each employee. These plans define the frequency and the way you manage your periodic personal evaluations. You will be able to define steps and attach interview forms to each step. 
+An evaluation plan can be assigned to each employee. These plans define the frequency and the way you manage your periodic personal evaluations. You will be able to define steps and attach interview forms to each step.
 
 Manages several types of evaluations: bottom-up, top-down, self-evaluations and the final evaluation by the manager.
 

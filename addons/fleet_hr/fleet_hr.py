@@ -17,7 +17,7 @@ class hr_employee(osv.Model):
         for employee in self.browse(cr, uid, ids, context=context):
             dl_soon = dl_over = False
             md_soon = md_over = False
-            
+
             if employee.driver_license_exp:
                 if today > Date(employee.driver_license_exp):
                     dl_over = True

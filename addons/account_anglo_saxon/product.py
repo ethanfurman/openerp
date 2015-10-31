@@ -1,5 +1,5 @@
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2009 Tiny SPRL (<http://tiny.be>).
 #
@@ -14,7 +14,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -31,7 +31,7 @@ class product_category(osv.osv):
             view_load=True,
             help="This account will be used to value price difference between purchase price and cost price."),
 
-        #Redefine fields to change help text for anglo saxon methodology.            
+        #Redefine fields to change help text for anglo saxon methodology.
         'property_account_income_categ': fields.property(
             'account.account',
             type='many2one',
@@ -60,7 +60,7 @@ class product_template(osv.osv):
             string="Price Difference Account",
             view_load=True,
             help="This account will be used to value price difference between purchase price and cost price."),
-            
+
         #Redefine fields to change help text for anglo saxon methodology.
         'property_account_income': fields.property(
             'account.account',

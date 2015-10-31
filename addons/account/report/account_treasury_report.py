@@ -35,10 +35,10 @@ class account_treasury_report(osv.osv):
         current_sum = dict((company, 0.0) for company in all_companies)
         res = dict((id, dict((fn, 0.0) for fn in field_names)) for id in all_treasury_lines)
         for record in self.browse(cr, uid, all_treasury_lines, context=context):
-            res[record.id]['starting_balance'] = current_sum[record.company_id.id] 
+            res[record.id]['starting_balance'] = current_sum[record.company_id.id]
             current_sum[record.company_id.id] += record.balance
             res[record.id]['ending_balance'] = current_sum[record.company_id.id]
-        return res    
+        return res
 
     _columns = {
         'fiscalyear_id': fields.many2one('account.fiscalyear', 'Fiscalyear', readonly=True),

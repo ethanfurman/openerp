@@ -35,12 +35,12 @@ class ir_attachment(osv.osv):
 
     External attachment storage
     ---------------------------
-    
+
     The 'data' function field (_data_get,data_set) is implemented using
     _file_read, _file_write and _file_delete which can be overridden to
     implement other storage engines, shuch methods should check for other
     location pseudo uri (example: hdfs://hadoppserver)
-    
+
     The default implementation is the file:dirname location that stores files
     on the local filesystem using name based on their sha1 hash
     """
@@ -56,7 +56,7 @@ class ir_attachment(osv.osv):
                 if res_name:
                     field = self._columns.get('res_name',False)
                     if field and len(res_name) > field.size:
-                        res_name = res_name[:field.size-3] + '...' 
+                        res_name = res_name[:field.size-3] + '...'
                 data[attachment.id] = res_name
             else:
                 data[attachment.id] = False

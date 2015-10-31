@@ -76,7 +76,7 @@ account_followup_stat_by_partner()
 
 
 class account_followup_sending_results(osv.osv_memory):
-    
+
     def do_report(self, cr, uid, ids, context=None):
         if context is None:
             context = {}
@@ -105,7 +105,7 @@ class account_followup_sending_results(osv.osv_memory):
         'needprinting':_get_need_printing,
         'description':_get_description,
     }
- 
+
 account_followup_sending_results()
 
 
@@ -113,10 +113,10 @@ class account_followup_print(osv.osv_memory):
     _name = 'account_followup.print'
     _description = 'Print Follow-up & Send Mail to Customers'
     _columns = {
-        'date': fields.date('Follow-up Sending Date', required=True, 
+        'date': fields.date('Follow-up Sending Date', required=True,
                             help="This field allow you to select a forecast date to plan your follow-ups"),
         'followup_id': fields.many2one('account_followup.followup', 'Follow-Up', required=True, readonly = True),
-        'partner_ids': fields.many2many('account_followup.stat.by.partner', 'partner_stat_rel', 
+        'partner_ids': fields.many2many('account_followup.stat.by.partner', 'partner_stat_rel',
                                         'osv_memory_id', 'partner_id', 'Partners', required=True),
         'company_id':fields.related('followup_id', 'company_id', type='many2one',
                                     relation='res.company', store=True, readonly=True),
@@ -126,7 +126,7 @@ class account_followup_print(osv.osv_memory):
                                     help='Do not change message text, if you want to send email in partner language, or configure from company'),
         'email_body': fields.text('Email Body'),
         'summary': fields.text('Summary', readonly=True),
-        'test_print': fields.boolean('Test Print', 
+        'test_print': fields.boolean('Test Print',
                                      help='Check if you want to print follow-ups without changing follow-up level.'),
     }
 
@@ -188,20 +188,20 @@ class account_followup_print(osv.osv_memory):
         #update the follow-up level on account.move.line
         for id in to_update.keys():
             if to_update[id]['partner_id'] in partner_list:
-                self.pool.get('account.move.line').write(cr, uid, [int(id)], {'followup_line_id': to_update[id]['level'], 
+                self.pool.get('account.move.line').write(cr, uid, [int(id)], {'followup_line_id': to_update[id]['level'],
                                                                               'followup_date': date})
 
     def clear_manual_actions(self, cr, uid, partner_list, context=None):
         # Partnerlist is list to exclude
         # Will clear the actions of partners that have no due payments anymore
         partner_list_ids = [partner.partner_id.id for partner in self.pool.get('account_followup.stat.by.partner').browse(cr, uid, partner_list, context=context)]
-        ids = self.pool.get('res.partner').search(cr, uid, ['&', ('id', 'not in', partner_list_ids), '|', 
-                                                             ('payment_responsible_id', '!=', False), 
+        ids = self.pool.get('res.partner').search(cr, uid, ['&', ('id', 'not in', partner_list_ids), '|',
+                                                             ('payment_responsible_id', '!=', False),
                                                              ('payment_next_action_date', '!=', False)], context=context)
 
         partners_to_clear = []
-        for part in self.pool.get('res.partner').browse(cr, uid, ids, context=context): 
-            if not part.unreconciled_aml_ids: 
+        for part in self.pool.get('res.partner').browse(cr, uid, ids, context=context):
+            if not part.unreconciled_aml_ids:
                 partners_to_clear.append(part.id)
         self.pool.get('res.partner').action_done(cr, uid, partners_to_clear, context=context)
         return len(partners_to_clear)
@@ -225,7 +225,7 @@ class account_followup_print(osv.osv_memory):
         #clear the manual actions if nothing is due anymore
         nbactionscleared = self.clear_manual_actions(cr, uid, partner_list, context=context)
         if nbactionscleared > 0:
-            restot['resulttext'] = restot['resulttext'] + "<li>" +  _("%s partners have no credits and as such the action is cleared") %(str(nbactionscleared)) + "</li>" 
+            restot['resulttext'] = restot['resulttext'] + "<li>" +  _("%s partners have no credits and as such the action is cleared") %(str(nbactionscleared)) + "</li>"
         res = restot['action']
 
         #return the next action
@@ -287,7 +287,7 @@ class account_followup_print(osv.osv_memory):
             "FROM account_followup_followup_line "\
             "WHERE followup_id=%s "\
             "ORDER BY delay", (fup_id,))
-        
+
         #Create dictionary of tuples where first element is the date to compare with the due date and second element is the id of the next level
         for result in cr.dictfetchall():
             delay = datetime.timedelta(days=result['delay'])
@@ -296,7 +296,7 @@ class account_followup_print(osv.osv_memory):
 
         partner_list = []
         to_update = {}
-        
+
         #Fill dictionary of accountmovelines to_update with the partners that need to be updated
         for partner_id, followup_line_id, date_maturity,date, id in move_lines:
             if not partner_id:

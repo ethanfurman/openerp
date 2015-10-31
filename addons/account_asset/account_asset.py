@@ -78,7 +78,7 @@ class account_asset_asset(osv.osv):
 
     def unlink(self, cr, uid, ids, context=None):
         for asset in self.browse(cr, uid, ids, context=context):
-            if asset.account_move_line_ids: 
+            if asset.account_move_line_ids:
                 raise osv.except_osv(_('Error!'), _('You cannot delete an asset that contains posted depreciation lines.'))
         return super(account_asset_asset, self).unlink(cr, uid, ids, context=context)
 
@@ -229,7 +229,7 @@ class account_asset_asset(osv.osv):
             else:
                 val['currency_id'] = company.currency_id.id
         return {'value': val}
-    
+
     def onchange_purchase_salvage_value(self, cr, uid, ids, purchase_value, salvage_value, context=None):
         val = {}
         for asset in self.browse(cr, uid, ids, context=context):
@@ -237,7 +237,7 @@ class account_asset_asset(osv.osv):
                 val['value_residual'] = purchase_value - salvage_value
             if salvage_value:
                 val['value_residual'] = purchase_value - salvage_value
-        return {'value': val}    
+        return {'value': val}
 
     _columns = {
         'account_move_line_ids': fields.one2many('account.move.line', 'asset_id', 'Entries', readonly=True, states={'draft':[('readonly',False)]}),
@@ -347,7 +347,7 @@ class account_asset_asset(osv.osv):
         asset_id = super(account_asset_asset, self).create(cr, uid, vals, context=context)
         self.compute_depreciation_board(cr, uid, [asset_id], context=context)
         return asset_id
-    
+
     def open_entries(self, cr, uid, ids, context=None):
         if context is None:
             context = {}

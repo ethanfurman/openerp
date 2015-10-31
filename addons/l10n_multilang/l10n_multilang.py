@@ -99,7 +99,7 @@ class wizard_multi_charts_accounts(osv.osv_memory):
                 if lang not in installed_langs:
                     # the language is not installed, so we don't need to load its translations
                     continue
-                else: 
+                else:
                     # the language was already installed, so the po files have been loaded at the installation time
                     # and now we need to copy the translations of templates to the right objects
                     langs.append(lang)

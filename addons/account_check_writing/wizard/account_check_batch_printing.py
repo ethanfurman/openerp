@@ -73,7 +73,7 @@ class account_check_write(osv.osv_memory):
         if not check_layout:
             check_layout = 'top'
         return {
-            'type': 'ir.actions.report.xml', 
+            'type': 'ir.actions.report.xml',
             'report_name':check_layout_report[check_layout],
             'datas': {
                 'model':'account.voucher',

@@ -246,7 +246,7 @@ class mrp_production(osv.osv):
             if prod.workcenter_lines:
                 wf_service.trg_validate(uid, 'mrp.production.workcenter.line', prod.workcenter_lines[0].id, 'button_start_working', cr)
         return super(mrp_production,self).action_in_production(cr, uid, ids)
-    
+
     def action_cancel(self, cr, uid, ids, context=None):
         """ Cancels work order if production order is canceled.
         @return: Super method

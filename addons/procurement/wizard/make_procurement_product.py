@@ -26,19 +26,19 @@ from openerp.osv import fields, osv
 class make_procurement(osv.osv_memory):
     _name = 'make.procurement'
     _description = 'Make Procurements'
-    
+
     def onchange_product_id(self, cr, uid, ids, prod_id):
         """ On Change of Product ID getting the value of related UoM.
          @param self: The object pointer.
          @param cr: A database cursor
          @param uid: ID of the user currently logged in
-         @param ids: List of IDs selected 
-         @param prod_id: Changed ID of Product 
-         @return: A dictionary which gives the UoM of the changed Product 
+         @param ids: List of IDs selected
+         @param prod_id: Changed ID of Product
+         @return: A dictionary which gives the UoM of the changed Product
         """
         product = self.pool.get('product.product').browse(cr, uid, prod_id)
         return {'value': {'uom_id': product.uom_id.id}}
-    
+
     _columns = {
         'qty': fields.float('Quantity', digits=(16,2), required=True),
         'product_id': fields.many2one('product.product', 'Product', required=True, readonly=1),

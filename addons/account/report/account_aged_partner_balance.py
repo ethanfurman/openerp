@@ -160,7 +160,7 @@ class aged_trial_report(report_sxw.rml_parse, common_report_header):
                 args_list += (form[str(i)]['stop'],)
             args_list += (self.date_from,)
             self.cr.execute('''SELECT l.partner_id, SUM(l.debit-l.credit)
-                    FROM account_move_line AS l, account_account, account_move am 
+                    FROM account_move_line AS l, account_account, account_move am
                     WHERE (l.account_id = account_account.id) AND (l.move_id=am.id)
                         AND (am.state IN %s)
                         AND (account_account.type IN %s)

@@ -270,7 +270,7 @@ class mail_message(osv.Model):
         }
         if starred:
             values['read'] = False
- 
+
         notif_ids = notification_obj.search(cr, uid, domain, context=context)
 
         # all message have notifications: already set them as (un)starred
@@ -871,7 +871,7 @@ class mail_message(osv.Model):
         if message.subtype_id:
             subtype_id = message.subtype_id.id
         else:
-            [subtype_id] = self.pool.get('mail.message.subtype').search(cr, SUPERUSER_ID, [('name','=','Discussions')]) 
+            [subtype_id] = self.pool.get('mail.message.subtype').search(cr, SUPERUSER_ID, [('name','=','Discussions')])
 
         # all followers of the mail.message document have to be added as partners and notified
         if message.model and message.res_id:

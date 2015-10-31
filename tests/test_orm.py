@@ -7,7 +7,7 @@ DB = common.DB
 
 class TestORM(common.TransactionCase):
     """ test special behaviors of ORM CRUD functions
-    
+
         TODO: use real Exceptions types instead of Exception """
 
     def setUp(self):
@@ -67,7 +67,7 @@ class TestORM(common.TransactionCase):
         with self.assertRaises(Exception):
             self.partner.unlink(cr, uid2, [p1])
 
-        # Prepare mixed case 
+        # Prepare mixed case
         self.partner.unlink(cr, uid, [p2])
         # read mixed records: some deleted and some filtered
         with self.assertRaises(Exception):

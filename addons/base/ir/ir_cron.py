@@ -146,7 +146,7 @@ class ir_cron(osv.osv):
             must not be committed/rolled back!
         """
         try:
-            now = datetime.now() 
+            now = datetime.now()
             nextcall = datetime.strptime(job['nextcall'], DEFAULT_SERVER_DATETIME_FORMAT)
             numbercall = job['numbercall']
 

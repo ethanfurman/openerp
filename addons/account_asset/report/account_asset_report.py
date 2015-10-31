@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2010 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -42,12 +42,12 @@ class asset_asset_report(osv.osv):
         'unposted_value': fields.float('Unposted Amount', readonly=True),
         'company_id': fields.many2one('res.company', 'Company', readonly=True),
     }
-    
+
     def init(self, cr):
-    	tools.drop_view_if_exists(cr, 'asset_asset_report')
-     	cr.execute("""
-    	    create or replace view asset_asset_report as (
-                select 
+        tools.drop_view_if_exists(cr, 'asset_asset_report')
+        cr.execute("""
+            create or replace view asset_asset_report as (
+                select
                     min(dl.id) as id,
                     dl.name as name,
                     dl.depreciation_date as depreciation_date,
@@ -58,7 +58,7 @@ class asset_asset_report(osv.osv):
                       THEN a.purchase_value
                       ELSE 0
                       END) as gross_value,
-                    dl.amount as depreciation_value, 
+                    dl.amount as depreciation_value,
                     (CASE WHEN dl.move_check
                       THEN dl.amount
                       ELSE 0
@@ -76,12 +76,12 @@ class asset_asset_report(osv.osv):
                     a.company_id as company_id
                 from account_asset_depreciation_line dl
                     left join account_asset_asset a on (dl.asset_id=a.id)
-                group by 
+                group by
                     dl.amount,dl.asset_id,dl.depreciation_date,dl.name,
                     a.purchase_date, dl.move_check, a.state, a.category_id, a.partner_id, a.company_id,
                     a.purchase_value, a.id, a.salvage_value
         )""")
-	
+
 asset_asset_report()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

@@ -195,7 +195,7 @@ class hr_expense_expense(osv.osv):
         internal method used for computation of total amount of an expense in the company currency and
         in the expense currency, given the account_move_lines that will be created. It also do some small
         transformations at these account_move_lines (for multi-currency purposes)
-        
+
         :param account_move_lines: list of dict
         :rtype: tuple of 3 elements (a, b ,c)
             a: total in company currency
@@ -235,24 +235,24 @@ class hr_expense_expense(osv.osv):
                 raise osv.except_osv(_('Error!'), _('The employee must have a payable account set on his home address.'))
             company_currency = exp.company_id.currency_id.id
             diff_currency_p = exp.currency_id.id <> company_currency
-            
+
             #create the move that will contain the accounting entries
             move_id = move_obj.create(cr, uid, self.account_move_get(cr, uid, exp.id, context=context), context=context)
-        
+
             #one account.move.line per expense line (+taxes..)
             eml = self.move_line_get(cr, uid, exp.id, context=context)
-            
+
             #create one more move line, a counterline for the total on payable account
             total, total_currency, eml = self.compute_expense_totals(cr, uid, exp, company_currency, exp.name, eml, context=context)
             acc = exp.employee_id.address_home_id.property_account_payable.id
             eml.append({
                     'type': 'dest',
                     'name': '/',
-                    'price': total, 
-                    'account_id': acc, 
-                    'date_maturity': exp.date_confirm, 
-                    'amount_currency': diff_currency_p and total_currency or False, 
-                    'currency_id': diff_currency_p and exp.currency_id.id or False, 
+                    'price': total,
+                    'account_id': acc,
+                    'date_maturity': exp.date_confirm,
+                    'amount_currency': diff_currency_p and total_currency or False,
+                    'currency_id': diff_currency_p and exp.currency_id.id or False,
                     'ref': exp.name
                     })
 
@@ -277,9 +277,9 @@ class hr_expense_expense(osv.osv):
                 continue
             res.append(mres)
             tax_code_found= False
-            
+
             #Calculate tax according to default tax on product
-            
+
             taxes = []
             #Taken from product_id_onchange in account.invoice
             if line.product_id:
@@ -316,8 +316,8 @@ class hr_expense_expense(osv.osv):
                 tax_code_found = True
                 res[-1]['tax_code_id'] = tax_code_id
                 res[-1]['tax_amount'] = cur_obj.compute(cr, uid, exp.currency_id.id, company_currency, tax_amount, context={'date': exp.date_confirm})
-                
-                #Will create the tax here as we don't have the access 
+
+                #Will create the tax here as we don't have the access
                 assoc_tax = {
                              'type':'tax',
                              'name':tax['name'],

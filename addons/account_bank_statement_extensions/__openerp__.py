@@ -2,9 +2,9 @@
 ##############################################################################
 #
 #    OpenERP, Open Source Management Solution
-#    
+#
 #    Copyright (c) 2011 Noviat nv/sa (www.noviat.be). All rights reserved.
-# 
+#
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as
 #    published by the Free Software Foundation, either version 3 of the
@@ -36,9 +36,9 @@ This module adds:
     - traceability of changes to bank statement lines
     - bank statement line views
     - bank statements balances report
-    - performance improvements for digital import of bank statement (via 
+    - performance improvements for digital import of bank statement (via
       'ebanking_import' context flag)
-    - name_search on res.partner.bank enhanced to allow search on bank 
+    - name_search on res.partner.bank enhanced to allow search on bank
       and iban account numbers
     ''',
     'depends': ['account'],

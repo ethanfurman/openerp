@@ -381,7 +381,7 @@ class procurement_order(osv.osv):
         wkf_op_key = 'workflow.%s.%s' % (trigger, self._name)
         if context and not context.get(wkf_op_key, True):
             # make sure we don't have a trigger loop while processing triggers
-            return 
+            return
         return super(procurement_order,self)._workflow_trigger(cr, uid, ids, trigger, context=context)
 
     def action_produce_assign_service(self, cr, uid, ids, context=None):
@@ -408,7 +408,7 @@ class procurement_order(osv.osv):
     # XXX action_cancel() should accept a context argument
     def action_cancel(self, cr, uid, ids):
         """Cancel Procurements and either cancel or assign the related Stock Moves, depending on the procurement configuration.
-        
+
         @return: True
         """
         to_assign = []
@@ -503,11 +503,11 @@ class stock_warehouse_orderpoint(osv.osv):
         '''
         if not context:
             context = {}
-            
+
         for rule in self.browse(cr, uid, ids, context=context):
             if rule.product_id.uom_id.category_id.id != rule.product_uom.category_id.id:
                 return False
-            
+
         return True
 
     _columns = {

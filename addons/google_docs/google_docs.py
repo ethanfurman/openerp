@@ -30,7 +30,7 @@ try:
     import gdata.docs.data
     import gdata.docs.client
 
-    # API breakage madness in the gdata API - those guys are insane. 
+    # API breakage madness in the gdata API - those guys are insane.
     try:
         # gdata 2.0.15+
         gdata.docs.client.DocsClient.copy_resource
@@ -73,7 +73,7 @@ class google_docs_ir_attachment(osv.osv):
         '''
         #pool the google.login in google_base_account
         google_pool = self.pool.get('google.login')
-        #get gmail password and login. We use default_get() instead of a create() followed by a read() on the 
+        #get gmail password and login. We use default_get() instead of a create() followed by a read() on the
         # google.login object, because it is easier. The keys 'user' and 'password' ahve to be passed in the dict
         # but the values will be replaced by the user gmail password and login.
         user_config = google_pool.default_get(cr, uid, {'user' : '' , 'password' : ''}, context=context)
@@ -95,7 +95,7 @@ class google_docs_ir_attachment(osv.osv):
         # create the document in google docs
         title = "%s %s" % (context.get("name","Untitled Document."), datetime.today().strftime(DEFAULT_SERVER_DATETIME_FORMAT))
         local_resource = gdata.docs.data.Resource(gdata.docs.data.DOCUMENT_LABEL,title=title)
-        #create a new doc in Google Docs 
+        #create a new doc in Google Docs
         gdocs_resource = client.post(entry=local_resource, uri='https://docs.google.com/feeds/default/private/full/')
         # create an ir.attachment into the db
         self.create(cr, uid, {
@@ -141,7 +141,7 @@ class google_docs_ir_attachment(osv.osv):
         '''
         Function called by the js, when no google doc are yet associated with a record, with the aim to create one. It
         will first seek for a google.docs.config associated with the model `res_model` to find out what's the template
-        of google doc to copy (this is usefull if you want to start with a non-empty document, a type or a name 
+        of google doc to copy (this is usefull if you want to start with a non-empty document, a type or a name
         different than the default values). If no config is associated with the `res_model`, then a blank text document
         with a default name is created.
           :param res_model: the object for which the google doc is created
@@ -178,7 +178,7 @@ class config(osv.osv):
     _columns = {
         'model_id': fields.many2one('ir.model', 'Model', required=True),
         'gdocs_resource_id': fields.char('Google Resource ID to Use as Template', size=64, help='''
-This is the id of the template document, on google side. You can find it thanks to its URL: 
+This is the id of the template document, on google side. You can find it thanks to its URL:
 *for a text document with url like `https://docs.google.com/a/openerp.com/document/d/123456789/edit`, the ID is `document:123456789`
 *for a spreadsheet document with url like `https://docs.google.com/a/openerp.com/spreadsheet/ccc?key=123456789#gid=0`, the ID is `spreadsheet:123456789`
 *for a presentation (slide show) document with url like `https://docs.google.com/a/openerp.com/presentation/d/123456789/edit#slide=id.p`, the ID is `presentation:123456789`

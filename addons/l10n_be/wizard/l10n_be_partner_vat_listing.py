@@ -89,7 +89,7 @@ class partner_vat(osv.osv_memory):
             if record['turnover'] >= data['limit_amount']:
                 id_client = obj_vat_lclient.create(cr, uid, record, context=context)
                 partners.append(id_client)
-        
+
         if not partners:
             raise osv.except_osv(_('insufficient data!'), _('No data found for the selected year.'))
         context.update({'partner_ids': partners, 'year': data['year'], 'limit_amount': data['limit_amount']})

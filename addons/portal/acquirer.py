@@ -36,10 +36,10 @@ except ImportError:
 class acquirer(osv.Model):
     _name = 'portal.payment.acquirer'
     _description = 'Online Payment Acquirer'
-    
+
     _columns = {
         'name': fields.char('Name', required=True),
-        'form_template': fields.text('Payment form template (HTML)', translate=True, required=True), 
+        'form_template': fields.text('Payment form template (HTML)', translate=True, required=True),
         'visible': fields.boolean('Visible', help="Make this payment acquirer available in portal forms (Customer invoices, etc.)"),
     }
 
@@ -105,4 +105,4 @@ class acquirer(osv.Model):
             if content:
                 html_forms.append(content)
         html_block = '\n'.join(filter(None,html_forms))
-        return self._wrap_payment_block(cr, uid, html_block, amount, currency, context=context)  
+        return self._wrap_payment_block(cr, uid, html_block, amount, currency, context=context)

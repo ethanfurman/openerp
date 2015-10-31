@@ -388,7 +388,7 @@ class project_issue(base_stage, osv.osv):
                 context=context)
 
     def write(self, cr, uid, ids, vals, context=None):
-    
+
         #Update last action date every time the user changes the stage
         if 'stage_id' in vals:
             vals['date_action_last'] = time.strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT)
@@ -555,13 +555,13 @@ class project_issue(base_stage, osv.osv):
         """
         if context is None:
             context = {}
-        
+
         res = super(project_issue, self).message_post(cr, uid, thread_id, body=body, subject=subject, type=type, subtype=subtype, parent_id=parent_id, attachments=attachments, context=context, content_subtype=content_subtype, **kwargs)
-        
+
         if thread_id:
-            self.write(cr, uid, thread_id, {'date_action_last': time.strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT)}, context=context)    
-        
-        return res   
+            self.write(cr, uid, thread_id, {'date_action_last': time.strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT)}, context=context)
+
+        return res
 
 class project(osv.osv):
     _inherit = "project.project"

@@ -86,7 +86,7 @@ class journal_print(report_sxw.rml_parse, common_report_header):
         return False
 
     def tax_codes(self, period_id, journal_id):
-        ids_journal_period = self.pool.get('account.journal.period').search(self.cr, self.uid, 
+        ids_journal_period = self.pool.get('account.journal.period').search(self.cr, self.uid,
             [('journal_id', '=', journal_id), ('period_id', '=', period_id)])
         self.cr.execute(
             'select distinct tax_code_id from account_move_line ' \

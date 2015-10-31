@@ -50,7 +50,7 @@ become 'confirmed'. When the manufacturing order is done, all operations
 must become done.
 
 The field 'Working Hours' is the delay(stop date - start date).
-So, that we can compare the theoretic delay and real delay. 
+So, that we can compare the theoretic delay and real delay.
     """,
     'author': 'OpenERP SA',
     'website': 'http://www.openerp.com',
@@ -66,10 +66,10 @@ So, that we can compare the theoretic delay and real delay.
         'process/mrp_operation_process.xml',
         'mrp_operations_workflow_instance.xml'
     ],
-    'demo': [ 
+    'demo': [
              'mrp_operations_demo.yml'
     ],
-    'test': [ 
+    'test': [
 #        'test/workcenter_operations.yml',
     ],
     'installable': True,

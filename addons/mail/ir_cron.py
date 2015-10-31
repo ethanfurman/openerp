@@ -19,7 +19,7 @@ _logger = logging.getLogger(__name__)
 class ir_cron(osv.Model):
     _name = 'ir.cron'
     _inherit = 'ir.cron'
-     
+
     _columns = {
         'notify_ids': fields.many2many(
             'res.users',

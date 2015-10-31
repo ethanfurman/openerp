@@ -126,7 +126,7 @@ class _column(object):
         for a in args:
             if args[a]:
                 setattr(self, a, args[a])
- 
+
     def restart(self):
         pass
 
@@ -145,12 +145,12 @@ class _column(object):
         """Converts a field value to a suitable string representation for a record,
            e.g. when this field is used as ``rec_name``.
 
-           :param obj: the ``BaseModel`` instance this column belongs to 
+           :param obj: the ``BaseModel`` instance this column belongs to
            :param value: a proper value as returned by :py:meth:`~openerp.orm.osv.BaseModel.read`
                          for this column
         """
         # delegated to class method, so a column type A can delegate
-        # to a column type B. 
+        # to a column type B.
         return self._as_display_name(self, cr, uid, obj, value, context=None)
 
     @classmethod
@@ -248,7 +248,7 @@ class html(text):
         if x is None or x == False:
             return None
         return html_sanitize(x)
-        
+
     _symbol_set = (_symbol_c, _symbol_f)
 
 import __builtin__
@@ -305,12 +305,12 @@ class date(_column):
            :param dict context: the 'tz' key in the context should give the
                                 name of the User/Client timezone (otherwise
                                 UTC is used)
-           :rtype: str 
+           :rtype: str
         """
         today = timestamp or DT.datetime.now()
         context_today = None
         if context and context.get('tz'):
-            tz_name = context['tz']  
+            tz_name = context['tz']
         else:
             tz_name = model.pool.get('res.users').read(cr, SUPERUSER_ID, uid, ['tz'])['tz']
         if tz_name:
@@ -370,7 +370,7 @@ class datetime(_column):
         """
         assert isinstance(timestamp, DT.datetime), 'Datetime instance expected'
         if context and context.get('tz'):
-            tz_name = context['tz']  
+            tz_name = context['tz']
         else:
             registry = openerp.modules.registry.RegistryManager.get(cr.dbname)
             tz_name = registry.get('res.users').read(cr, SUPERUSER_ID, uid, ['tz'])['tz']
@@ -524,10 +524,10 @@ class many2one(_column):
     def search(self, cr, obj, args, name, value, offset=0, limit=None, uid=None, context=None):
         return obj.pool.get(self._obj).search(cr, uid, args+self._domain+[('name', 'like', value)], offset, limit, context=context)
 
-    
+
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
-        return value[1] if isinstance(value, tuple) else tools.ustr(value) 
+        return value[1] if isinstance(value, tuple) else tools.ustr(value)
 
 
 class one2many(_column):
@@ -623,10 +623,10 @@ class one2many(_column):
         domain = self._domain(obj) if callable(self._domain) else self._domain
         return obj.pool.get(self._obj).name_search(cr, uid, value, domain, operator, context=context,limit=limit)
 
-    
+
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
-        raise NotImplementedError('One2Many columns should not be used as record name (_rec_name)') 
+        raise NotImplementedError('One2Many columns should not be used as record name (_rec_name)')
 
 #
 # Values: (0, 0,  { fields })    create
@@ -815,7 +815,7 @@ class many2many(_column):
 
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
-        raise NotImplementedError('Many2Many columns should not be used as record name (_rec_name)') 
+        raise NotImplementedError('Many2Many columns should not be used as record name (_rec_name)')
 
 
 def get_nice_size(value):
@@ -1263,9 +1263,9 @@ class related(function):
             pass
 
 
-class sparse(function):   
+class sparse(function):
 
-    def convert_value(self, obj, cr, uid, record, value, read_value, context=None):        
+    def convert_value(self, obj, cr, uid, record, value, read_value, context=None):
         """
             + For a many2many field, a list of tuples is expected.
               Here is the list of tuple that are accepted, with the corresponding semantics ::
@@ -1322,7 +1322,7 @@ class sparse(function):
             if value is None:
                 # simply delete the key to unset it.
                 serialized.pop(field_name, None)
-            else: 
+            else:
                 serialized[field_name] = self.convert_value(obj, cr, uid, record, value, serialized.get(field_name), context=context)
             obj.write(cr, uid, ids, {self.serialization_field: serialized}, context=context)
         return True
@@ -1354,7 +1354,7 @@ class sparse(function):
     def __init__(self, serialization_field, **kwargs):
         self.serialization_field = serialization_field
         super(sparse, self).__init__(self._fnct_read, fnct_inv=self._fnct_write, multi='__sparse_multi', **kwargs)
-     
+
 
 
 # ---------------------------------------------------------
@@ -1382,16 +1382,16 @@ class dummy(function):
 
 class serialized(_column):
     """ A field able to store an arbitrary python data structure.
-    
+
         Note: only plain components allowed.
     """
-    
+
     def _symbol_set_struct(val):
         return simplejson.dumps(val)
 
     def _symbol_get_struct(self, val):
         return simplejson.loads(val or '{}')
-    
+
     _prefetch = False
     _type = 'serialized'
 

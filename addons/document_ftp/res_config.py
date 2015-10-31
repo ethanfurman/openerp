@@ -27,7 +27,7 @@ class documnet_ftp_setting(osv.osv_memory):
     _inherit = 'knowledge.config.settings'
     _columns = {
         'document_ftp_url': fields.char('Browse Documents', size=128,
-            help ="""Click the url to browse the documents""", readonly=True),               
+            help ="""Click the url to browse the documents""", readonly=True),
     }
 
     def get_default_ftp_config(self, cr, uid, fields, context=None):

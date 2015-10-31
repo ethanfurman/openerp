@@ -3,7 +3,7 @@
 #   mreithinger@web.de
 #
 #   This file is part of faces.
-#                                                                         
+#
 #   faces is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
 #   the Free Software Foundation; either version 2 of the License, or
@@ -36,7 +36,7 @@ def get_installation_path():
     except AttributeError:
         path = os.path.abspath(observer.__file__)
         path = os.path.split(path)[0]
-        
+
     path = os.path.normcase(path)
     return path
 
@@ -66,7 +66,7 @@ def get_template_path():
     except AttributeError:
         path = get_installation_path()
         path = os.path.join(path, "templates")
-        
+
     path = os.path.normcase(path)
     return path
 
@@ -92,13 +92,13 @@ def flatten(items):
 
     if not isinstance(items, list):
         yield items
-    
+
     stack = [iter(items)]
     while stack:
         for item in stack[-1]:
             if isinstance(item, tuple):
                 item = list(item)
-            
+
             if isinstance(item, list):
                 stack.append(iter(item))
                 break

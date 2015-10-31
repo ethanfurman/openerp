@@ -27,7 +27,7 @@ class PointOfSaleController(openerp.addons.web.http.Controller):
 
     @openerp.addons.web.http.httprequest
     def manifest(self, req, **kwargs):
-        """ This generates a HTML5 cache manifest files that preloads the categories and products thumbnails 
+        """ This generates a HTML5 cache manifest files that preloads the categories and products thumbnails
             and other ressources necessary for the point of sale to work offline """
 
         ml = ["CACHE MANIFEST"]
@@ -44,13 +44,13 @@ class PointOfSaleController(openerp.addons.web.http.Controller):
 
         imgdir = openerp.modules.get_module_resource('point_of_sale','static/src/img');
         load_css_img(imgdir,'/point_of_sale/static/src/img')
-        
+
         products = req.session.model('product.product')
         for p in products.search_read([('pos_categ_id','!=',False)], ['name']):
             product_id = p['id']
             url = "/web/binary/image?session_id=%s&model=product.product&field=image&id=%s" % (req.session_id, product_id)
             ml.append(url)
-        
+
         categories = req.session.model('pos.category')
         for c in categories.search_read([],['name']):
             category_id = c['id']
@@ -73,7 +73,7 @@ class PointOfSaleController(openerp.addons.web.http.Controller):
         A product has been scanned with success
         """
         print 'scan_item_success: ' + str(ean)
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def scan_item_error_unrecognized(self, request, ean):
@@ -81,7 +81,7 @@ class PointOfSaleController(openerp.addons.web.http.Controller):
         A product has been scanned without success
         """
         print 'scan_item_error_unrecognized: ' + str(ean)
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def help_needed(self, request):
@@ -89,7 +89,7 @@ class PointOfSaleController(openerp.addons.web.http.Controller):
         The user wants an help (ex: light is on)
         """
         print "help_needed"
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def help_canceled(self, request):
@@ -97,12 +97,12 @@ class PointOfSaleController(openerp.addons.web.http.Controller):
         The user stops the help request
         """
         print "help_canceled"
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def weighting_start(self, request):
         print "weighting_start"
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def weighting_read_kg(self, request):
@@ -112,12 +112,12 @@ class PointOfSaleController(openerp.addons.web.http.Controller):
     @openerp.addons.web.http.jsonrequest
     def weighting_end(self, request):
         print "weighting_end"
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def payment_request(self, request, price):
         """
-        The PoS will activate the method payment 
+        The PoS will activate the method payment
         """
         print "payment_request: price:"+str(price)
         return 'ok'
@@ -125,32 +125,32 @@ class PointOfSaleController(openerp.addons.web.http.Controller):
     @openerp.addons.web.http.jsonrequest
     def payment_status(self, request):
         print "payment_status"
-        return { 'status':'waiting' } 
+        return { 'status':'waiting' }
 
     @openerp.addons.web.http.jsonrequest
     def payment_cancel(self, request):
         print "payment_cancel"
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def transaction_start(self, request):
         print 'transaction_start'
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def transaction_end(self, request):
         print 'transaction_end'
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def cashier_mode_activated(self, request):
         print 'cashier_mode_activated'
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def cashier_mode_deactivated(self, request):
         print 'cashier_mode_deactivated'
-        return 
+        return
 
     @openerp.addons.web.http.jsonrequest
     def open_cashbox(self, request):

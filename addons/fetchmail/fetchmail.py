@@ -198,7 +198,7 @@ openerp_mailgate: "|/path/to/openerp-mailgate.py --host=localhost -u %(uid)d -p 
                     result, data = imap_server.search(None, '(UNSEEN)')
                     for num in data[0].split():
                         result, data = imap_server.fetch(num, '(RFC822)')
-                        res_id = mail_thread.message_process(cr, uid, server.object_id.model, 
+                        res_id = mail_thread.message_process(cr, uid, server.object_id.model,
                                                              data[0][1],
                                                              save_original=server.original,
                                                              strip_attachments=(not server.attach),

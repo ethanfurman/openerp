@@ -26,7 +26,7 @@ from openerp import netsvc
 
 class StockMove(osv.osv):
     _inherit = 'stock.move'
-    
+
     _columns = {
         'production_id': fields.many2one('mrp.production', 'Production', select=True),
     }
@@ -35,7 +35,7 @@ class StockMove(osv.osv):
         new_moves = super(StockMove, self).create_chained_picking(cr, uid, moves, context=context)
         self.write(cr, uid, [x.id for x in new_moves], {'production_id': False}, context=context)
         return new_moves
-    
+
     def _action_explode(self, cr, uid, move, context=None):
         """ Explodes pickings.
         @param move: Stock moves
@@ -59,7 +59,7 @@ class StockMove(osv.osv):
                 state = 'confirmed'
                 if move.state == 'assigned':
                     state = 'assigned'
-                for line in res[0]: 
+                for line in res[0]:
                     valdef = {
                         'picking_id': move.picking_id.id,
                         'product_id': line['product_id'],
@@ -101,13 +101,13 @@ class StockMove(osv.osv):
                     wf_service.trg_validate(uid, 'procurement.order', m, 'button_confirm', cr)
                     wf_service.trg_validate(uid, 'procurement.order', m, 'button_wait_done', cr)
         return processed_ids
-    
+
     def action_consume(self, cr, uid, ids, product_qty, location_id=False, context=None):
         """ Consumed product with specific quatity from specific source location.
         @param product_qty: Consumed product quantity
         @param location_id: Source location
         @return: Consumed lines
-        """       
+        """
         res = []
         production_obj = self.pool.get('mrp.production')
         wf_service = netsvc.LocalService("workflow")
@@ -126,13 +126,13 @@ class StockMove(osv.osv):
                 production_obj.write(cr, uid, production_ids, {'move_lines': [(4, new_move)]})
                 res.append(new_move)
         return res
-    
+
     def action_scrap(self, cr, uid, ids, product_qty, location_id, context=None):
         """ Move the scrap/damaged product into scrap location
         @param product_qty: Scraped product quantity
         @param location_id: Scrap location
         @return: Scraped lines
-        """  
+        """
         res = []
         production_obj = self.pool.get('mrp.production')
         wf_service = netsvc.LocalService("workflow")

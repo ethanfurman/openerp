@@ -55,7 +55,7 @@ class base_stage(object):
         if context.get('portal'):
             user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
             return user.email
-        return False        
+        return False
 
     def _get_default_user(self, cr, uid, context=None):
         """ Gives current user id

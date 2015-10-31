@@ -94,10 +94,10 @@ class crm_lead_report(osv.osv):
             ('opportunity','Opportunity'),
         ],'Type', help="Type is used to separate Leads and Opportunities"),
     }
-    
-    
-    
-    
+
+
+
+
     def init(self, cr):
 
         """

@@ -22,7 +22,7 @@ class TestACL(common.TransactionCase):
 
     def test_field_visibility_restriction(self):
         """Check that model-level ``groups`` parameter effectively restricts access to that
-           field for users who do not belong to one of the explicitly allowed groups""" 
+           field for users who do not belong to one of the explicitly allowed groups"""
         # Verify the test environment first
         original_fields = self.res_currency.fields_get(self.cr, self.demo_uid, [])
         form_view = self.res_currency.fields_view_get(self.cr, self.demo_uid, False, 'form')
@@ -65,7 +65,7 @@ class TestACL(common.TransactionCase):
         has_tech_feat = self.res_users.has_group(self.cr, self.demo_uid, GROUP_TECHNICAL_FEATURES)
         self.assertFalse(has_tech_feat, "`demo` user should not belong to the restricted group")
         self.assert_(self.res_partner.read(self.cr, self.demo_uid, [1], ['bank_ids']))
-        self.assert_(self.res_partner.write(self.cr, self.demo_uid, [1], {'bank_ids': []})) 
+        self.assert_(self.res_partner.write(self.cr, self.demo_uid, [1], {'bank_ids': []}))
 
         # Now restrict access to the field and check it's forbidden
         self.res_partner._columns['bank_ids'].groups = GROUP_TECHNICAL_FEATURES
@@ -79,8 +79,8 @@ class TestACL(common.TransactionCase):
         has_tech_feat = self.res_users.has_group(self.cr, self.demo_uid, GROUP_TECHNICAL_FEATURES)
         self.assertTrue(has_tech_feat, "`demo` user should now belong to the restricted group")
         self.assert_(self.res_partner.read(self.cr, self.demo_uid, [1], ['bank_ids']))
-        self.assert_(self.res_partner.write(self.cr, self.demo_uid, [1], {'bank_ids': []})) 
-        
+        self.assert_(self.res_partner.write(self.cr, self.demo_uid, [1], {'bank_ids': []}))
+
         #cleanup
         self.tech_group.write({'users': [(3, self.demo_uid)]})
         self.res_partner._columns['bank_ids'].groups = False

@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) conexus.at
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -24,11 +24,11 @@ from openerp.osv import osv
 from openerp import addons
 
 class AccountWizard_cd(osv.osv_memory):
-	_inherit='wizard.multi.charts.accounts'
-	
-	_defaults = {
-		'code_digits' : 0,
-	}
+    _inherit='wizard.multi.charts.accounts'
+
+    _defaults = {
+        'code_digits' : 0,
+    }
 
 AccountWizard_cd()
 

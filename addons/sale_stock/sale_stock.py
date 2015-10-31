@@ -38,7 +38,7 @@ sale_shop()
 
 class sale_order(osv.osv):
     _inherit = "sale.order"
-    
+
     def copy(self, cr, uid, id, default=None, context=None):
         if not default:
             default = {}
@@ -47,7 +47,7 @@ class sale_order(osv.osv):
             'picking_ids': [],
         })
         return super(sale_order, self).copy(cr, uid, id, default, context=context)
-    
+
     def shipping_policy_change(self, cr, uid, ids, policy, context=None):
         if not policy:
             return {}
@@ -113,7 +113,7 @@ class sale_order(osv.osv):
             else:
                 res[order.id] = tmp[order.id]['total'] and (100.0 * tmp[order.id]['picked'] / tmp[order.id]['total']) or 0.0
         return res
-    
+
     _columns = {
           'state': fields.selection([
             ('draft', 'Draft Quotation'),
@@ -142,7 +142,7 @@ class sale_order(osv.osv):
         'picking_ids': fields.one2many('stock.picking.out', 'sale_id', 'Related Picking', readonly=True, help="This is a list of delivery orders that has been generated for this sales order."),
         'shipped': fields.boolean('Delivered', readonly=True, help="It indicates that the sales order has been delivered. This field is updated only after the scheduler(s) have been launched."),
         'picked_rate': fields.function(_picked_rate, string='Picked', type='float'),
-        'invoice_quantity': fields.selection([('order', 'Ordered Quantities'), ('procurement', 'Shipped Quantities')], 'Invoice on', 
+        'invoice_quantity': fields.selection([('order', 'Ordered Quantities'), ('procurement', 'Shipped Quantities')], 'Invoice on',
                                              help="The sales order will automatically create the invoice proposition (draft invoice).\
                                               You have to choose  if you want your invoice based on ordered ", required=True, readonly=True, states={'draft': [('readonly', False)]}),
     }
@@ -238,7 +238,7 @@ class sale_order(osv.osv):
         """ Convert date values expressed in user's timezone to
         server-side UTC timestamp, assuming a default arbitrary
         time of 12:00 AM - because a time is needed.
-    
+
         :param str userdate: date string in in user time zone
         :return: UTC datetime string for server-side use
         """
@@ -485,7 +485,7 @@ class sale_order_line(osv.osv):
         return res
 
     _inherit = 'sale.order.line'
-    _columns = { 
+    _columns = {
         'delay': fields.float('Delivery Lead Time', required=True, help="Number of days between the order confirmation and the shipping of the products to the customer", readonly=True, states={'draft': [('readonly', False)]}),
         'procurement_id': fields.many2one('procurement.order', 'Procurement'),
         'property_ids': fields.many2many('mrp.property', 'sale_order_line_property_rel', 'order_id', 'property_id', 'Properties', readonly=True, states={'draft': [('readonly', False)]}),
@@ -520,7 +520,7 @@ class sale_order_line(osv.osv):
                 if move_line.state != 'cancel':
                     raise osv.except_osv(
                             _('Cannot cancel sales order line!'),
-                            _('You must first cancel stock moves attached to this sales order line.'))   
+                            _('You must first cancel stock moves attached to this sales order line.'))
         return res
 
     def copy_data(self, cr, uid, id, default=None, context=None):

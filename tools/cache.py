@@ -50,7 +50,7 @@ class ormcache(object):
            return self.method(self2, cr, *args)
 
     def clear(self, self2, *args):
-        """ Remove *args entry from the cache or all keys if *args is undefined 
+        """ Remove *args entry from the cache or all keys if *args is undefined
         """
         d = self.lru(self2)
         if args:

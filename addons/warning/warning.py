@@ -136,7 +136,7 @@ class account_invoice(osv.osv):
                 'message': message
                 }
         result =  super(account_invoice, self).onchange_partner_id(cr, uid, ids, type, partner_id,
-            date_invoice=date_invoice, payment_term=payment_term, 
+            date_invoice=date_invoice, payment_term=payment_term,
             partner_bank_id=partner_bank_id, company_id=company_id)
 
         if result.get('warning',False):
@@ -175,7 +175,7 @@ class stock_picking(osv.osv):
 
 stock_picking()
 
-# FIXME:(class stock_picking_in and stock_picking_out) this is a temporary workaround because of a framework bug (ref: lp:996816). 
+# FIXME:(class stock_picking_in and stock_picking_out) this is a temporary workaround because of a framework bug (ref: lp:996816).
 # It should be removed as soon as the bug is fixed
 class stock_picking_in(osv.osv):
     _inherit = 'stock.picking.in'

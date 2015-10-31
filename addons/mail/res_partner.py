@@ -69,7 +69,7 @@ class res_partner_mail(osv.Model):
                 subject=subject,
                 body=body,
                 ))
-                                                                                            
+
     def message_post(self, cr, uid, thread_id, **kwargs):
         """ Override related to res.partner. In case of email message, set it as
             private:

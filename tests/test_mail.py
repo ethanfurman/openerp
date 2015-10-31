@@ -133,7 +133,7 @@ THUNDERBIRD_16_REPLY1_SAN = """    <div>On 11/08/2012 05:29 PM,
     Ok for me. I am replying directly below your mail, using
     Thunderbird, with a signature.<br><br>
     Did you receive my email about my new laptop, by the way ?<br><br>
-    Raoul.<br><pre>-- 
+    Raoul.<br><pre>--
 Raoul Grosbedonn&#233;e
 </pre>"""
 
@@ -146,17 +146,17 @@ Trouloulou pouet pouet. Je ne vais quand même pas écrire de vrais mails, non m
 
 > 2012/10/27 Bert Tartopoils :
 >> Diantre, me disè-je en envoyant un message similaire à Martine, mais comment vas-tu (quote)?
->> 
+>>
 >> A la base le contenu était un vrai mail, mais je l'ai quand même réécrit pour ce test, histoire de dire que, quand même, on ne met pas n'importe quoi ici. (quote)
->> 
+>>
 >> Et sinon bon courage pour trouver tes clefs (quote).
->> 
+>>
 >> Bert TARTOPOILS
 >> bert.tartopoils@miam.miam
->> 
-> 
-> 
-> -- 
+>>
+>
+>
+> --
 > Raoul Grosbedon
 
 Bert TARTOPOILS
@@ -229,7 +229,7 @@ class TestSanitizer(unittest2.TestCase):
         for attr in ['javascript']:
             self.assertNotIn(attr, sanitized_html, 'html_sanitize did not remove enough unwanted attributes')
 
-        emails =[("Charles <charles.bidule@truc.fr>", "Charles &lt;charles.bidule@truc.fr&gt;"), 
+        emails =[("Charles <charles.bidule@truc.fr>", "Charles &lt;charles.bidule@truc.fr&gt;"),
                 ("Dupuis <'tr/-: ${dupuis#$'@truc.baz.fr>", "Dupuis &lt;'tr/-: ${dupuis#$'@truc.baz.fr&gt;"),
                 ("Technical <service/technical+2@open.com>", "Technical &lt;service/technical+2@open.com&gt;"),
                 ("Div nico <div-nico@open.com>", "Div nico &lt;div-nico@open.com&gt;")]

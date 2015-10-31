@@ -122,8 +122,8 @@ class mrp_production(osv.osv):
         return picking_id
 
     def _get_subproduct_factor(self, cr, uid, production_id, move_id=None, context=None):
-        """Compute the factor to compute the qty of procucts to produce for the given production_id. By default, 
-            it's always equal to the quantity encoded in the production order or the production wizard, but with 
+        """Compute the factor to compute the qty of procucts to produce for the given production_id. By default,
+            it's always equal to the quantity encoded in the production order or the production wizard, but with
             the module mrp_byproduct installed it can differ for byproducts having type 'variable'.
         :param production_id: ID of the mrp.order
         :param move_id: ID of the stock move that needs to be produced. Identify the product to produce.

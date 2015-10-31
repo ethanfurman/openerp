@@ -3,7 +3,7 @@
 #   mreithinger@web.de
 #
 #   This file is part of faces.
-#                                                                         
+#
 #   faces is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
 #   the Free Software Foundation; either version 2 of the License, or
@@ -31,7 +31,7 @@ class TimeScale(object):
         self.data_calendar = calendar
         self._create_chart_calendar()
         self.now = self.to_num(self.data_calendar.now)
-                
+
 
     def to_datetime(self, xval):
         return xval.to_datetime()
@@ -63,7 +63,7 @@ class TimeScale(object):
         #pad worktime slots of calendar (all days should be equally long)
         slot_sum = lambda slots: sum(map(lambda slot: slot[1] - slot[0], slots))
         day_sum = lambda day: slot_sum(dcal.get_working_times(day))
-        
+
         max_work_time = max(map(day_sum, range(7)))
 
         #working_time should have 2/3

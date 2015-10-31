@@ -28,7 +28,7 @@ class account_voucher(osv.osv):
     _inherit = 'account.voucher'
 
     def _make_journal_search(self, cr, uid, ttype, context=None):
-        if context is None: 
+        if context is None:
             context = {}
         journal_pool = self.pool.get('account.journal')
         if context.get('write_check',False) :
@@ -70,7 +70,7 @@ class account_voucher(osv.osv):
 
         check_layout = self.browse(cr, uid, ids[0], context=context).company_id.check_layout
         return {
-            'type': 'ir.actions.report.xml', 
+            'type': 'ir.actions.report.xml',
             'report_name':check_layout_report[check_layout],
             'datas': {
                     'model':'account.voucher',

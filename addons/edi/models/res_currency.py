@@ -19,7 +19,7 @@
 #
 ##############################################################################
 
-from openerp.osv import osv 
+from openerp.osv import osv
 from edi import EDIMixin
 from openerp import SUPERUSER_ID
 

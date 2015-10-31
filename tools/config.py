@@ -465,7 +465,7 @@ class configmanager(object):
         #    die(not self.options['db_name'], 'init requires a database to be specified')
         #if self.options['update']:
         #    die(not self.options['db_name'], 'update requires a database to be specified')
-        
+
         # TODO checking the type of the parameters should be done for every
         # parameters, not just the timezone.
         # The call to get_server_timezone() sets the timezone; this should

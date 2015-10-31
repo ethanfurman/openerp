@@ -37,8 +37,8 @@ class crm_configuration(osv.osv_memory):
                     This installs the module crm_claim."""),
         'module_crm_helpdesk':fields.boolean("Manage Helpdesk and Support",
             help="""Allows you to communicate with Customer,  process Customer query, and provide better help and support. This installs the module crm_helpdesk."""),
-        
-        
+
+
     }
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

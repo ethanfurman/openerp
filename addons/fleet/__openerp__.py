@@ -31,7 +31,7 @@ Vehicle, leasing, insurances, cost
 ==================================
 With this module, OpenERP helps you managing all your vehicles, the
 contracts associated to those vehicle as well as services, fuel log
-entries, costs and many other features necessary to the management 
+entries, costs and many other features necessary to the management
 of your fleet of vehicle(s)
 
 Main Features

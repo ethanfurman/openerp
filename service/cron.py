@@ -61,7 +61,7 @@ def start_service():
     threads it spawns are not marked daemon).
 
     """
-    
+
     # Force call to strptime just before starting the cron thread
     # to prevent time.strptime AttributeError within the thread.
     # See: http://bugs.python.org/issue7980

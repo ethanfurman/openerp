@@ -3,7 +3,7 @@
 #   mreithinger@web.de
 #
 #   This file is part of faces.
-#                                                                         
+#
 #   faces is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
 #   the Free Software Foundation; either version 2 of the License, or
@@ -45,12 +45,12 @@ def get_gettext():
     trans = _get_translation()
     if trans: return trans.ugettext
     return lambda msg: msg
-        
+
 
 def get_encoding():
     trans = _get_translation()
     if trans: return trans.charset()
     return locale.getpreferredencoding()
-    
+
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

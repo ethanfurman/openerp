@@ -27,9 +27,9 @@
     'description': """
 Invoicing & Payments by Accounting Voucher & Receipts
 =====================================================
-The specific and easy-to-use Invoicing system in OpenERP allows you to keep track of your accounting, even when you are not an accountant. It provides an easy way to follow up on your suppliers and customers. 
+The specific and easy-to-use Invoicing system in OpenERP allows you to keep track of your accounting, even when you are not an accountant. It provides an easy way to follow up on your suppliers and customers.
 
-You could use this simplified accounting in case you work with an (external) account to keep your books, and you still want to keep track of payments. 
+You could use this simplified accounting in case you work with an (external) account to keep your books, and you still want to keep track of payments.
 
 The Invoicing system includes receipts and vouchers (an easy way to keep track of sales and purchases). It also offers you an easy method of registering payments, without having to encode complete abstracts of account.
 

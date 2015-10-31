@@ -139,7 +139,7 @@ class purchase_order(osv.osv):
                 invoiced = True
             res[purchase.id] = invoiced
         return res
-    
+
     def _get_journal(self, cr, uid, context=None):
         if context is None:
             context = {}
@@ -149,7 +149,7 @@ class purchase_order(osv.osv):
         res = journal_obj.search(cr, uid, [('type', '=', 'purchase'),
                                             ('company_id', '=', company_id)],
                                                 limit=1)
-        return res and res[0] or False  
+        return res and res[0] or False
 
     STATE_SELECTION = [
         ('draft', 'Draft PO'),
@@ -416,7 +416,7 @@ class purchase_order(osv.osv):
         try:
             compose_form_id = ir_model_data.get_object_reference(cr, uid, 'mail', 'email_compose_message_wizard_form')[1]
         except ValueError:
-            compose_form_id = False 
+            compose_form_id = False
         ctx = dict(context)
         ctx.update({
             'default_model': 'purchase.order',
@@ -599,7 +599,7 @@ class purchase_order(osv.osv):
         """ Convert date values expressed in user's timezone to
         server-side UTC timestamp, assuming a default arbitrary
         time of 12:00 AM - because a time is needed.
-    
+
         :param str userdate: date string in in user time zone
         :return: UTC datetime string for server-side use
         """

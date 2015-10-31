@@ -26,7 +26,7 @@ from openerp_sxw2rml import sxw2rml
 from StringIO import StringIO
 from openerp import pooler
 from openerp import addons
- 
+
 
 class report_xml(osv.osv):
     _inherit = 'ir.actions.report.xml'
@@ -53,8 +53,8 @@ class report_xml(osv.osv):
         if file_type=='odt':
             fp = open(addons.get_module_resource('base_report_designer','openerp_sxw2rml', 'normalized_odt2rml.xsl'),'rb')
         report = pool.get('ir.actions.report.xml').write(cr, uid, [report_id], {
-            'report_sxw_content': base64.decodestring(file_sxw), 
-            'report_rml_content': str(sxw2rml(sxwval, xsl=fp.read())), 
+            'report_sxw_content': base64.decodestring(file_sxw),
+            'report_rml_content': str(sxw2rml(sxwval, xsl=fp.read())),
         })
 
         # FIXME: this should be moved to an override of the ir.actions.report_xml.create() method

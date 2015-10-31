@@ -33,7 +33,7 @@
     extendable HTTP protocols.
 
     The OpenERP server defines a single instance of a HTTP server, listening at
-    the standard 8069, 8071 ports (well, it is 2 servers, and ports are 
+    the standard 8069, 8071 ports (well, it is 2 servers, and ports are
     configurable, of course). This "single" server then uses a `MultiHTTPHandler`
     to dispatch requests to the appropriate channel protocol, like the XML-RPC,
     static HTTP, DAV or other.
@@ -66,13 +66,13 @@ class HttpLogHandler:
     Please define self._logger at each class that is derived from this
     """
     _logger = None
-    
+
     def log_message(self, format, *args):
         self._logger.debug(format % args) # todo: perhaps other level
 
     def log_error(self, format, *args):
         self._logger.error(format % args)
-        
+
     def log_exception(self, format, *args):
         self._logger.exception(format, *args)
 
@@ -114,14 +114,14 @@ class StaticHTTPHandler(HttpLogHandler, FixSendError, HttpOptions, HTTPHandler):
 def init_static_http():
     if not tools.config.get('static_http_enable', False):
         return
-    
+
     document_root = tools.config.get('static_http_document_root', False)
     assert document_root, "Document root must be specified explicitly to enable static HTTP service (option --static-http-document-root)"
-    
+
     base_path = tools.config.get('static_http_url_prefix', '/')
-    
+
     reg_http_service(base_path, StaticHTTPHandler)
-    
+
     _logger.info("Registered HTTP dir %s for %s", document_root, base_path)
 
 import security
@@ -144,7 +144,7 @@ class OpenERPAuthProvider(AuthProvider):
             _logger.debug("Fail auth: %s" % e )
             return False
 
-    def checkRequest(self,handler,path, db=False):        
+    def checkRequest(self,handler,path, db=False):
         auth_str = handler.headers.get('Authorization',False)
         try:
             if not db:
@@ -158,9 +158,9 @@ class OpenERPAuthProvider(AuthProvider):
             else:
                 #FIXME!
                 _logger.info("Wrong path: %s, failing auth" %path)
-                raise AuthRejectedExc("Authorization failed. Wrong sub-path.") 
+                raise AuthRejectedExc("Authorization failed. Wrong sub-path.")
         if self.auth_creds.get(db):
-            return True 
+            return True
         if auth_str and auth_str.startswith('Basic '):
             auth_str=auth_str[len('Basic '):]
             (user,passwd) = base64.decodestring(auth_str).split(':')

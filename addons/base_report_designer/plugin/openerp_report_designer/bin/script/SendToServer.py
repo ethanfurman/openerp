@@ -201,7 +201,7 @@ class SendtoServer(unohelper.Base, XJobExecutor):
             if self.win.getListBoxSelectedItem("lstResourceType")=='OpenOffice':
                 params['report_type']=file_type
             self.sock.execute(database, uid, self.password, 'ir.actions.report.xml', 'write', int(docinfo.getUserFieldValue(2)), params)
-            
+
             # Call upload_report as the *last* step, as it will call register_all() and cause the report service
             # to be loaded - which requires all the data to be correct in the database
             self.sock.execute(database, uid, self.password, 'ir.actions.report.xml', 'upload_report', int(docinfo.getUserFieldValue(2)),base64.encodestring(data),file_type,{})

@@ -153,11 +153,11 @@ class base_state(object):
             update_values = {}
         update_values['state'] = state_name
         return self.write(cr, uid, ids, update_values, context=context)
-    
+
     # ******************************
     # Notifications
     # ******************************
-    
+
     def case_get_note_msg_prefix(self, cr, uid, id, context=None):
         return ''
 

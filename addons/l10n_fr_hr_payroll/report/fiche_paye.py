@@ -62,7 +62,7 @@ class fiche_paye_parser(report_sxw.rml_parse):
 
 
     def get_employer_line(self, obj, parent_line):
-        
+
         payslip_line = self.pool.get('hr.payslip.line')
 
         line_ids = payslip_line.search(self.cr, self.uid, [('slip_id', '=', obj.id), ('salary_rule_id.parent_rule_id.id', '=', parent_line.salary_rule_id.id )])

@@ -7,7 +7,7 @@ class CashBox(osv.osv_memory):
     _register = False
     _columns = {
         'name' : fields.char('Reason', size=64, required=True),
-        # Attention, we don't set a domain, because there is a journal_type key 
+        # Attention, we don't set a domain, because there is a journal_type key
         # in the context of the action
         'amount' : fields.float('Amount',
                                 digits_compute = dp.get_precision('Account'),
@@ -31,7 +31,7 @@ class CashBox(osv.osv_memory):
                 if not record.journal_id:
                     raise osv.except_osv(_('Error!'),
                                          _("Please check that the field 'Journal' is set on the Bank Statement"))
-                    
+
                 if not record.journal_id.internal_account_id:
                     raise osv.except_osv(_('Error!'),
                                          _("Please check that the field 'Internal Transfers Account' is set on the payment method '%s'.") % (record.journal_id.name,))

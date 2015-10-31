@@ -52,12 +52,12 @@ class Text2(xml.dom.minidom.Text):
 
 class Prop2xml(object):
     """ A helper class to convert property structs to DAV:XML
-    
-        Written to generalize the use of _prop_child(), a class is 
-        needed to hold some persistent data accross the recursions 
+
+        Written to generalize the use of _prop_child(), a class is
+        needed to hold some persistent data accross the recursions
         of _prop_elem_child().
     """
-    
+
     def __init__(self, doc, namespaces, nsnum):
         """ Init the structure
         @param doc the xml doc element
@@ -88,7 +88,7 @@ class Prop2xml(object):
                     string: text node
                     tuple ('elem', 'ns') for empty sub-node <ns:elem />
                     tuple ('elem', 'ns', sub-elems) for sub-node with elements
-                    tuple ('elem', 'ns', sub-elems, {attrs}) for sub-node with 
+                    tuple ('elem', 'ns', sub-elems, {attrs}) for sub-node with
                             optional elements and attributes
                     list, of above tuples
         """
@@ -298,7 +298,7 @@ PROPFIND.mk_propname_response = mk_propname_response
 
 def mk_lock_response(self, uri, props):
     """ Prepare the data response to a DAV LOCK command
-    
+
     This function is here, merely to be in the same file as the
     ones above, that have similar code.
     """
@@ -323,7 +323,7 @@ def mk_lock_response(self, uri, props):
         # When the request has been relative, we don't have enough data to
         # reply with absolute url here.
         hurl = '%s%s' % (davpath, urllib.quote(fileloc))
-        
+
     props.append( ('lockroot', 'DAV:', ('href', 'DAV:', (hurl))))
     pld = doc.createElement('D:lockdiscovery')
     ms.appendChild(pld)

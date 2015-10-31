@@ -33,7 +33,7 @@ class procurement_order(osv.osv):
     def action_check_finished(self, cr, uid, ids):
         res = super(procurement_order, self).action_check_finished(cr, uid, ids)
         return res and self.check_task_done(cr, uid, ids)
-    
+
     def check_task_done(self, cr, uid, ids, context=None):
         """ Checks if task is done or not.
         @return: True or False.
@@ -83,7 +83,7 @@ class procurement_order(osv.osv):
                 'project_id':  project and project.id or False,
                 'company_id': procurement.company_id.id,
             },context=context)
-            self.write(cr, uid, [procurement.id], {'task_id': task_id, 'state': 'running', 'message':_('Task created.')}, context=context)            
+            self.write(cr, uid, [procurement.id], {'task_id': task_id, 'state': 'running', 'message':_('Task created.')}, context=context)
         self.project_task_create_note(cr, uid, ids, context=context)
         return task_id
 

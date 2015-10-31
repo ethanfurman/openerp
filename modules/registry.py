@@ -58,7 +58,7 @@ class Registry(object):
         self.db_name = db_name
         self.db = openerp.sql_db.db_connect(db_name)
 
-        # Indicates that the registry is 
+        # Indicates that the registry is
         self.ready = False
 
         # Inter-process signaling (used only when openerp.multi_process is True):

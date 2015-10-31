@@ -34,7 +34,7 @@ def get_journal(self, cr, uid, context=None):
          @param context: A standard dictionary
          @return :Return the list of journal
     """
-    
+
     journal_obj = self.pool.get('account.journal')
     statement_obj = self.pool.get('account.bank.statement')
 

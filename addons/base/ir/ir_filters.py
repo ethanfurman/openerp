@@ -43,7 +43,7 @@ class ir_filters(osv.osv):
             ``name``, ``is_default``, ``domain``, ``user_id`` (m2o tuple) and
             ``context`` of the matching ``ir.filters``.
         """
-        # available filters: private filters (user_id=uid) and public filters (uid=NULL) 
+        # available filters: private filters (user_id=uid) and public filters (uid=NULL)
         filter_ids = self.search(cr, uid,
             [('model_id','=',model),('user_id','in',[uid, False])])
         my_filters = self.read(cr, uid, filter_ids,
@@ -113,7 +113,7 @@ class ir_filters(osv.osv):
     _sql_constraints = [
         # Partial constraint, complemented by unique index (see below)
         # Still useful to keep because it provides a proper error message when a violation
-        # occurs, as it shares the same prefix as the unique index. 
+        # occurs, as it shares the same prefix as the unique index.
         ('name_model_uid_unique', 'unique (name, model_id, user_id)', 'Filter names must be unique'),
     ]
 

@@ -90,7 +90,7 @@ class res_users(osv.Model):
         # TODO change SUPERUSER_ID into user.id but catch errors
         return self.pool.get('res.partner').message_post(cr, SUPERUSER_ID, [user.partner_id.id],
             body=body, context=context)
-        
+
     def write(self, cr, uid, ids, vals, context=None):
         # User alias is sync'ed with login
         if vals.get('login'):

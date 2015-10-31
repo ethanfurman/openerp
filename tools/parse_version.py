@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2009 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -81,7 +81,7 @@ def parse_version(s):
     return tuple(parts)
 
 if __name__ == '__main__':
-        
+
         def cmp(a, b):
             msg = '%s < %s == %s' % (a, b, a < b)
             assert a < b, msg
@@ -95,9 +95,9 @@ if __name__ == '__main__':
                 if verbose:
                     print v, pv
             reduce(cmp, pvs)
-        
+
         chk(('0', '4.2', '4.2.3.4', '5.0.0-alpha', '5.0.0-rc1', '5.0.0-rc1.1', '5.0.0_rc2', '5.0.0_rc3', '5.0.0'), False)
-        chk(('5.0.0-0_rc3', '5.0.0-1dev', '5.0.0-1'), False) 
-        
+        chk(('5.0.0-0_rc3', '5.0.0-1dev', '5.0.0-1'), False)
+
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

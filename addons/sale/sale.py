@@ -314,7 +314,7 @@ class sale_order(osv.osv):
             return {'value': {'partner_invoice_id': False, 'partner_shipping_id': False,  'payment_term': False, 'fiscal_position': False}}
 
         part = self.pool.get('res.partner').browse(cr, uid, part, context=context)
-        #if the chosen partner is not a company and has a parent company, use the parent to choose the delivery, the 
+        #if the chosen partner is not a company and has a parent company, use the parent to choose the delivery, the
         #invoicing addresses and all the fields related to the partner.
         if part.parent_id and not part.is_company:
             part = part.parent_id
@@ -532,7 +532,7 @@ class sale_order(osv.osv):
                     self.write(cr, uid, [o.id], {'state': 'progress'})
                     cr.execute('insert into sale_order_invoice_rel (order_id,invoice_id) values (%s,%s)', (o.id, res))
                 #remove last '|' in invoice_ref
-                if len(invoice_ref) >= 1: 
+                if len(invoice_ref) >= 1:
                     invoice_ref = invoice_ref[:-1]
                 invoice.write(cr, uid, [res], {'origin': invoice_ref, 'name': invoice_ref})
             else:
@@ -621,7 +621,7 @@ class sale_order(osv.osv):
         try:
             compose_form_id = ir_model_data.get_object_reference(cr, uid, 'mail', 'email_compose_message_wizard_form')[1]
         except ValueError:
-            compose_form_id = False 
+            compose_form_id = False
         ctx = dict(context)
         ctx.update({
             'default_model': 'sale.order',
@@ -677,7 +677,7 @@ class sale_order_line(osv.osv):
         res = dict.fromkeys(ids, False)
         for this in self.browse(cr, uid, ids, context=context):
             res[this.id] = this.invoice_lines and \
-                all(iline.invoice_id.state != 'cancel' for iline in this.invoice_lines) 
+                all(iline.invoice_id.state != 'cancel' for iline in this.invoice_lines)
         return res
 
     def _order_lines_from_invoice(self, cr, uid, ids, context=None):

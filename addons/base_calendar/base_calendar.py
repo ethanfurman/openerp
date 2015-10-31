@@ -349,7 +349,7 @@ class calendar_attendee(osv.osv):
                         ('tentative', 'Uncertain'),
                         ('declined', 'Declined'),
                         ('accepted', 'Accepted'),
-                        ('delegated', 'Delegated')], 'Status', readonly=True, 
+                        ('delegated', 'Delegated')], 'Status', readonly=True,
                         help="Status of the attendee's participation"),
         'rsvp':  fields.boolean('Required Reply?',
                     help="Indicats whether the favor of a reply is requested"),
@@ -401,7 +401,7 @@ class calendar_attendee(osv.osv):
 
     def copy(self, cr, uid, id, default=None, context=None):
         raise osv.except_osv(_('Warning!'), _('You cannot duplicate a calendar attendee.'))
-    
+
     def onchange_partner_id(self, cr, uid, ids, partner_id,context=None):
         """
         Make entry on email and availbility on change of partner_id field.
@@ -412,12 +412,12 @@ class calendar_attendee(osv.osv):
         @param context: a standard dictionary for contextual values
         @return: dictionary of values which put value in email and availability fields
         """
-        
+
         if not partner_id:
             return {'value': {'email': ''}}
         partner = self.pool.get('res.partner').browse(cr, uid, partner_id, context=context)
         return {'value': {'email': partner.email}}
-    
+
     def get_ics_file(self, cr, uid, event_obj, context=None):
         """
         Returns iCalendar file for the event invitation.

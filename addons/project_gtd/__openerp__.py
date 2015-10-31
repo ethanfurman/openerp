@@ -27,7 +27,7 @@
     'sequence': 100,
     'summary': 'Personal Tasks, Contexts, Timeboxes',
     'description': """
-Implement concepts of the "Getting Things Done" methodology 
+Implement concepts of the "Getting Things Done" methodology
 ===========================================================
 
 This module implements a simple personal to-do list based on tasks. It adds an editable list of tasks simplified to the minimum required fields in the project application.

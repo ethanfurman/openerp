@@ -46,7 +46,7 @@ def stop_openerp():
 class BaseCase(unittest2.TestCase):
     """
     Subclass of TestCase for common OpenERP-specific code.
-    
+
     This class is abstract and expects self.cr and self.uid to be initialized by subclasses.
     """
 

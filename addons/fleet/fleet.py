@@ -157,7 +157,7 @@ class fleet_vehicle_model(osv.Model):
 
     _columns = {
         'name': fields.function(_model_name_get_fnc, type="char", string='Name', store=True),
-        'modelname': fields.char('Model name', size=32, required=True), 
+        'modelname': fields.char('Model name', size=32, required=True),
         'brand_id': fields.many2one('fleet.vehicle.model.brand', 'Model Brand', help='Brand of the vehicle'),
         'vendors': fields.many2many('res.partner', 'fleet_vehicle_model_vendors', 'model_id', 'partner_id', string='Vendors'),
         'image': fields.related('brand_id', 'image', type="binary", string="Logo"),
@@ -528,7 +528,7 @@ class fleet_vehicle_log_fuel(osv.Model):
         #liter => total is computed as 3.0, then trigger an onchange that recomputes price_per_liter as 3/2=1 (instead
         #of 3.0/2=1.5)
         #If there is no change in the result, we return an empty dict to prevent an infinite loop due to the 3 intertwine
-        #onchange. And in order to verify that there is no change in the result, we have to limit the precision of the 
+        #onchange. And in order to verify that there is no change in the result, we have to limit the precision of the
         #computation to 2 decimal
         liter = float(liter)
         price_per_liter = float(price_per_liter)
@@ -548,7 +548,7 @@ class fleet_vehicle_log_fuel(osv.Model):
         #liter => total is computed as 3.0, then trigger an onchange that recomputes price_per_liter as 3/2=1 (instead
         #of 3.0/2=1.5)
         #If there is no change in the result, we return an empty dict to prevent an infinite loop due to the 3 intertwine
-        #onchange. And in order to verify that there is no change in the result, we have to limit the precision of the 
+        #onchange. And in order to verify that there is no change in the result, we have to limit the precision of the
         #computation to 2 decimal
         liter = float(liter)
         price_per_liter = float(price_per_liter)
@@ -568,7 +568,7 @@ class fleet_vehicle_log_fuel(osv.Model):
         #liter => total is computed as 3.0, then trigger an onchange that recomputes price_per_liter as 3/2=1 (instead
         #of 3.0/2=1.5)
         #If there is no change in the result, we return an empty dict to prevent an infinite loop due to the 3 intertwine
-        #onchange. And in order to verify that there is no change in the result, we have to limit the precision of the 
+        #onchange. And in order to verify that there is no change in the result, we have to limit the precision of the
         #computation to 2 decimal
         liter = float(liter)
         price_per_liter = float(price_per_liter)
@@ -610,7 +610,7 @@ class fleet_vehicle_log_fuel(osv.Model):
                 target = False
             mpg = False
             if target:
-                mpg = (rec.odometer - target.odometer) / rec.liter 
+                mpg = (rec.odometer - target.odometer) / rec.liter
             result[rec.id][prop] = mpg
         return result
 
@@ -832,7 +832,7 @@ class fleet_vehicle_log_contract(osv.Model):
             'nodestroy': True,
             'domain': '[]',
             'res_id': newid,
-            'context': {'active_id':newid}, 
+            'context': {'active_id':newid},
         }
 
     def _get_default_contract_type(self, cr, uid, context=None):

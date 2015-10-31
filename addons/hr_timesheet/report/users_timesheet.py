@@ -88,7 +88,7 @@ class report_custom(report_rml):
         date_xml.append('<cols>2.5cm%s,2cm</cols>\n' % (',0.7cm' * lengthmonth(som.year, som.month)))
 
         emp_xml=''
-        emp_obj = pooler.get_pool(cr.dbname).get('hr.employee')        
+        emp_obj = pooler.get_pool(cr.dbname).get('hr.employee')
         for id in data['form']['employee_ids']:
             user = emp_obj.browse(cr, uid, id).user_id.id
             empl_name = emp_obj.browse(cr, uid, id).name

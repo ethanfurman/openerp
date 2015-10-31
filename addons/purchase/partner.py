@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2010 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -46,10 +46,10 @@ class res_partner(osv.osv):
     _columns = {
         'property_product_pricelist_purchase': fields.property(
           'product.pricelist',
-          type='many2one', 
-          relation='product.pricelist', 
+          type='many2one',
+          relation='product.pricelist',
           domain=[('type','=','purchase')],
-          string="Purchase Pricelist", 
+          string="Purchase Pricelist",
           view_load=True,
           help="This pricelist will be used, instead of the default one, for purchases from the current partner"),
         'purchase_order_count': fields.function(_purchase_order_count, string='# of Purchase Order', type='integer'),
