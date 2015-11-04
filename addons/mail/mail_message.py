@@ -574,8 +574,6 @@ class mail_message(osv.Model):
         model_access_obj = self.pool.get('ir.model.access')
         allowed_ids = set()
         for doc_model, doc_dict in model_ids.iteritems():
-            if doc_model == 'crm.phonecall':
-                continue
             if not model_access_obj.check(cr, uid, doc_model, 'read', False):
                 continue
             allowed_ids |= self._find_allowed_model_wise(cr, uid, doc_model, doc_dict, context=context)

@@ -124,7 +124,7 @@
                                 </group>
                             </group>
                             <group>
-                                <field name="alarm_id" widget="selection"/>
+                                <field name="alarm_id" widget="selection" groups="base.group_no_one"/>
                                 <field name="class"/>
                                 <field name="show_as"/>
                                 <field name="rrule" invisible="1" readonly="1"/>

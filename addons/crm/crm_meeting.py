@@ -30,21 +30,9 @@ class crm_meeting(osv.Model):
     """ Model for CRM meetings """
     _inherit = 'crm.meeting'
     _columns = {
+        'phonecall_id': fields.many2one ('crm.phonecall', 'Phonecall'),
         'opportunity_id': fields.many2one ('crm.lead', 'Opportunity', domain="[('type', '=', 'opportunity')]"),
-        'event_type': fields.selection([
-                ('meeting', 'Meeting'),
-                ('phonecall', 'Phone Call'),
-                ('deadline', 'Deadline'),
-                ('timeoff', 'Time Off'),
-                ('work', 'Work'),
-                ],
-                string='Type',
-                ),
     }
-
-    _defaults = {
-        'event_type': 'meeting',
-        }
 
 
 class calendar_attendee(osv.osv):

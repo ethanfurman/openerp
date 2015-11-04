@@ -54,7 +54,7 @@ class crm_phonecall2phonecall(osv.osv_memory):
         value = {}
         if context is None:
             context = {}
-        phonecall = self.pool.get('crm.meeting')
+        phonecall = self.pool.get('crm.phonecall')
         phonecall_ids = context and context.get('active_ids') or []
         for this in self.browse(cr, uid, ids, context=context):
             phocall_ids = phonecall.schedule_another_phonecall(cr, uid, phonecall_ids, this.date, this.name, \
@@ -74,7 +74,7 @@ class crm_phonecall2phonecall(osv.osv_memory):
         record_id = context and context.get('active_id', False) or False
         res.update({'action': 'schedule', 'date': time.strftime('%Y-%m-%d %H:%M:%S')})
         if record_id:
-            phonecall = self.pool.get('crm.meeting').browse(cr, uid, record_id, context=context)
+            phonecall = self.pool.get('crm.phonecall').browse(cr, uid, record_id, context=context)
 
             categ_id = False
             data_obj = self.pool.get('ir.model.data')

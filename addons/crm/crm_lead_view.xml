@@ -72,7 +72,7 @@
                 id="act_crm_opportunity_crm_phonecall_new"
                 name="Phone calls"
                 groups="base.group_sale_salesman"
-                res_model="crm.meeting"
+                res_model="crm.phonecall"
                 view_mode="tree,calendar,form"
                 context="{'default_duration': 1.0 ,'default_opportunity_id': active_id}"
                 view_type="form"/>

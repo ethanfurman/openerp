@@ -62,7 +62,7 @@ class crm_opportunity2phonecall(osv.osv_memory):
         value = {}
         if context is None:
             context = {}
-        phonecall = self.pool.get('crm.meeting')
+        phonecall = self.pool.get('crm.phonecall')
         opportunity_ids = context and context.get('active_ids') or []
         opportunity = self.pool.get('crm.lead')
         data = self.browse(cr, uid, ids, context=context)[0]

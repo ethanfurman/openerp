@@ -1544,9 +1544,8 @@ class calendar_event(osv.osv):
             ids = [ids]
         res = False
         attendee_obj=self.pool.get('calendar.attendee')
-        for i, event_id in enumerate(ids[:]):
+        for event_id in ids[:]:
             if len(str(event_id).split('-')) == 1:
-                ids[i] = int(event_id)
                 continue
 
             real_event_id = base_calendar_id2real_id(event_id)

@@ -24,7 +24,7 @@ import time
 from lxml import etree
 from openerp.osv import fields
 from openerp.osv import osv
-from openerp import tools, SUPERUSER_ID
+from openerp import tools
 from openerp.tools.translate import _
 
 MAX_LEVEL = 15
@@ -182,7 +182,7 @@ class crm_case_section(osv.osv):
         mail_alias = self.pool.get('mail.alias')
         alias_ids = [team.alias_id.id for team in self.browse(cr, uid, ids, context=context) if team.alias_id ]
         res = super(crm_case_section, self).unlink(cr, uid, ids, context=context)
-        mail_alias.unlink(cr, SUPERUSER_ID, alias_ids, context=context)
+        mail_alias.unlink(cr, uid, alias_ids, context=context)
         return res
 
 class crm_case_categ(osv.osv):
