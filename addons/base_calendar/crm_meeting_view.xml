@@ -45,6 +45,7 @@
                         <h2>
                             <field name="partner_ids" widget="many2many_tags"
                                 context="{'force_email':True}"
+                                domain="[('user_ids','!=',False)]"
                                 on_change="onchange_partner_ids(partner_ids)"/>
                         </h2>
                     </div>
