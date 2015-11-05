@@ -23,6 +23,7 @@ from datetime import datetime, timedelta, date
 from dateutil import parser
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
+from openerp import SUPERUSER_ID
 from openerp.osv import fields, osv
 from openerp.service import web_services
 from openerp.tools.translate import _
@@ -591,13 +592,8 @@ class calendar_attendee(osv.osv):
         if context is None:
             context = {}
 
-        for vals in self.browse(cr, uid, ids, context=context):
-            if vals.ref and vals.ref.user_id:
-                mod_obj = self.pool.get(vals.ref._name)
-                res=mod_obj.read(cr,uid,[vals.ref.id],['duration','class'],context)
-                defaults = {'user_id': vals.user_id.id, 'organizer_id': vals.ref.user_id.id,'duration':res[0]['duration'],'class':res[0]['class']}
-                mod_obj.copy(cr, uid, vals.ref.id, default=defaults, context=context)
-            self.write(cr, uid, vals.id, {'state': 'accepted'}, context)
+        for attendee in self.browse(cr, uid, ids, context=context):
+            self.write(cr, uid, attendee.id, {'state': 'accepted'}, context)
 
         return True
 
@@ -1115,12 +1111,14 @@ class calendar_event(osv.osv):
             help="If the active field is set to true, it will allow you to hide the event alarm information without removing it."),
         'recurrency': fields.boolean('Recurrent', help="Recurrent Meeting"),
         'partner_ids': fields.many2many('res.partner', string='Attendees', states={'done': [('readonly', True)]}),
+        'master_event_id': fields.integer('Master Event'),
     }
 
     def create_attendees(self, cr, uid, ids, context):
-        att_obj = self.pool.get('calendar.attendee')
-        user_obj = self.pool.get('res.users')
-        current_user = user_obj.browse(cr, uid, uid, context=context)
+        calendar_attendee = self.pool.get('calendar.attendee')
+        res_users = self.pool.get('res.users')
+        current_user = res_users.browse(cr, uid, uid, context=context)
+        new_attendee_ids = {}
         for event in self.browse(cr, uid, ids, context):
             attendees = {}
             for att in event.attendee_ids:
@@ -1133,8 +1131,8 @@ class calendar_event(osv.osv):
                 att_id = self.pool.get('calendar.attendee').create(cr, uid, {
                     'partner_id': partner.id,
                     'user_id': partner.user_ids and partner.user_ids[0].id or False,
-                    'ref': self._name+','+str(event.id),
-                    'email': partner.email
+                    'ref': self._name + ',' + str(event.id),
+                    'email': partner.email,
                 }, context=context)
                 if partner.email:
                     mail_to = mail_to + " " + partner.email
@@ -1142,11 +1140,12 @@ class calendar_event(osv.osv):
                     'attendee_ids': [(4, att_id)]
                 }, context=context)
                 new_attendees.append(att_id)
+            new_attendee_ids[event.id] = new_attendees
 
             if mail_to and current_user.email:
-                att_obj._send_mail(cr, uid, new_attendees, mail_to,
+                calendar_attendee._send_mail(cr, uid, new_attendees, mail_to,
                     email_from = current_user.email, context=context)
-        return True
+        return new_attendee_ids
 
     def default_organizer(self, cr, uid, context=None):
         user_pool = self.pool.get('res.users')
@@ -1565,18 +1564,65 @@ class calendar_event(osv.osv):
         self.unlink_events(cr, uid, ids, context=context)
         return res
 
+    # primary use-case: setting up appointments for oneself
+    # - user_id (Responsible) is uid and should be added to partner_ids (Attendees)
+    # - partner_ids are only openerp users
+    # 
+    # secondary use-case: allow setting up a meeting that is owned by a group
+    # - user_id (Responsible) should be mail group pointer (possible a fake user with an
+    #   internal flag or something) 
+    # - partner_ids could include non-user partners
+    #
+    # tertiary use-case: setting up appointments for somebody else
+    # - user_id (Responsible) is not uid but should be added to partner_ids (Attendees)
+    # - partner_ids are only openerp users
+    #
+    # if an attendee declines:
+    # - their version of the appointment is removed
+    # - a notification is sent to other attendees
+    # if the declining attendee is the meeting owner
+    # - the meeting is cancelled and deleted from all attendees
+    # - a notification is sent to all attendees
+
     def create(self, cr, uid, vals, context=None):
         if context is None:
             context = {}
+        res_partner = self.pool.get('res.partner')
+        res_users = self.pool.get('res.users')
+        resp_partner_id = res_users.browse(cr, SUPERUSER_ID, vals['user_id']).partner_id.id
+        partner_ids = vals['partner_ids']
+        if resp_partner_id not in partner_ids[0][2]:
+            partner_ids[0][2].append(resp_partner_id)
 
         if vals.get('vtimezone', '') and vals.get('vtimezone', '').startswith('/freeassociation.sourceforge.net/tzfile/'):
             vals['vtimezone'] = vals['vtimezone'][40:]
 
-        res = super(calendar_event, self).create(cr, uid, vals, context)
+        # create master copy
+        new_id = super(calendar_event, self).create(cr, uid, vals, context)
+        # if other attendees, create copies
+        other_ids = []
+        remaining_ids = partner_ids[0][2][:]
+        remaining_ids.remove(resp_partner_id)
+        for partner in res_partner.browse(cr, SUPERUSER_ID, remaining_ids):
+            # if partner is not a local user, ignore
+            if not partner.user_ids:
+                continue
+            vals['user_id'] = partner.user_ids[0].id
+            other_ids.append(super(calendar_event, self).create(cr, SUPERUSER_ID, vals, context))
+        # add alarm to primary appointment only
         alarm_obj = self.pool.get('res.alarm')
-        alarm_obj.do_alarm_create(cr, uid, [res], self._name, 'date', context=context)
-        self.create_attendees(cr, uid, [res], context)
-        return res
+        alarm_obj.do_alarm_create(cr, uid, [new_id], self._name, 'date', context=context)
+        # create attendees on primary appointment
+        attendee_ids = self.create_attendees(cr, uid, [new_id], context)[new_id]
+        if other_ids:
+            # link attendees to other appointments
+            res = super(calendar_event, self).write(
+                    cr, SUPERUSER_ID, other_ids,
+                    {'attendee_ids':[[6, 0, attendee_ids]], 'master_event_id':new_id},
+                    )
+            if not res:
+                raise ERPError('Error', 'Unable to link attendees to all events')
+        return new_id
 
     def do_tentative(self, cr, uid, ids, context=None, *args):
         """ Makes event invitation as Tentative
@@ -1756,4 +1802,4 @@ class virtual_report_spool(web_services.report_spool):
 
 virtual_report_spool()
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
+# vim:expandtab:tabstop=4:softtabstop=4:shiftwidth=4:
