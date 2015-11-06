@@ -25,6 +25,7 @@ from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from openerp import SUPERUSER_ID
 from openerp.osv import fields, osv
+from openerp.osv.osv import except_osv as ERPError
 from openerp.service import web_services
 from openerp.tools.translate import _
 import pytz
@@ -567,6 +568,15 @@ class calendar_attendee(osv.osv):
         user = usr_obj.browse(cr, uid, user_id, *args)
         return {'value': {'email': user.email, 'availability':user.availability}}
 
+    def _check_permission(self, cr, uid, ids, context=None):
+        for attendee in self.browse(cr, uid, ids, context=context):
+            if not (
+                uid == SUPERUSER_ID or
+                not attendee.user_id or
+                attendee.user_id and attendee.user_id.id == uid
+                ):
+                    raise ERPError('Error', 'You can only change your own status.')
+
     def do_tentative(self, cr, uid, ids, context=None, *args):
         """
         Makes event invitation as Tentative.
@@ -577,25 +587,20 @@ class calendar_attendee(osv.osv):
         @param *args: get Tupple value
         @param context: a standard dictionary for contextual values
         """
+        self._check_permission(cr, uid, ids, context)
         return self.write(cr, uid, ids, {'state': 'tentative'}, context)
 
     def do_accept(self, cr, uid, ids, context=None, *args):
         """
-        Update state of invitation as Accepted and if the invited user is other
-        then event user it will make a copy of this event for invited user.
+        Update state of invitation as Accepted.
         @param cr: the current row, from the database cursor
         @param uid: the current user's ID for security checks
         @param ids: list of calendar attendee's IDs
         @param context: a standard dictionary for contextual values
         @return: True
         """
-        if context is None:
-            context = {}
-
-        for attendee in self.browse(cr, uid, ids, context=context):
-            self.write(cr, uid, attendee.id, {'state': 'accepted'}, context)
-
-        return True
+        self._check_permission(cr, uid, ids, context)
+        return self.write(cr, uid, ids, {'state': 'accepted'}, context)
 
     def do_decline(self, cr, uid, ids, context=None, *args):
         """
@@ -607,8 +612,7 @@ class calendar_attendee(osv.osv):
         @param *args: get Tupple value
         @param context: a standard dictionary for contextual values
         """
-        if context is None:
-            context = {}
+        self._check_permission(cr, uid, ids, context)
         return self.write(cr, uid, ids, {'state': 'declined'}, context)
 
     def create(self, cr, uid, vals, context=None):
@@ -629,6 +633,10 @@ class calendar_attendee(osv.osv):
             vals['cn'] = vals.get("cn")
         res = super(calendar_attendee, self).create(cr, uid, vals, context=context)
         return res
+
+    def unlink(self, cr, uid, ids, context=None):
+        self._check_permission(cr, uid, ids, context)
+        return super(calendar_attendee, self).unlink(cr, uid, ids, context)
 
 calendar_attendee()
 
@@ -1136,7 +1144,7 @@ class calendar_event(osv.osv):
                 }, context=context)
                 if partner.email:
                     mail_to = mail_to + " " + partner.email
-                self.write(cr, uid, [event.id], {
+                self.write(cr, SUPERUSER_ID, [event.id], {
                     'attendee_ids': [(4, att_id)]
                 }, context=context)
                 new_attendees.append(att_id)
@@ -1390,6 +1398,12 @@ class calendar_event(osv.osv):
                 return True
 
     def write(self, cr, uid, ids, vals, context=None, check=True, update_check=True):
+        # only event owners can make changes (and admin)
+        # so get existing data and compare user_id with uid
+        if uid != SUPERUSER_ID:
+            for record in self.read(cr, SUPERUSER_ID, ids, fields=['id', 'user_id']):
+                if uid != record['user_id'][0]:
+                    raise ERPError('Error', 'You can only change your own events.')
         def _only_changes_to_apply_on_real_ids(field_names):
             ''' return True if changes are only to be made on the real ids'''
             for field in field_names:
@@ -1445,7 +1459,7 @@ class calendar_event(osv.osv):
         if vals.get('vtimezone', '') and vals.get('vtimezone', '').startswith('/freeassociation.sourceforge.net/tzfile/'):
             vals['vtimezone'] = vals['vtimezone'][40:]
 
-        res = super(calendar_event, self).write(cr, uid, ids, vals, context=context)
+        res = super(calendar_event, self).write(cr, SUPERUSER_ID, ids, vals, context=context)
         if vals.get('partner_ids', False):
             self.create_attendees(cr, uid, ids, context)
 
@@ -1541,6 +1555,11 @@ class calendar_event(osv.osv):
     def unlink(self, cr, uid, ids, context=None):
         if not isinstance(ids, list):
             ids = [ids]
+        records = self.read(cr, SUPERUSER_ID, ids, fields=['id', 'user_id'])
+        if uid != SUPERUSER_ID:
+            for record in records:
+                if uid != record['user_id'][0]:
+                    raise ERPError('Error', 'You can only delete your own events.')
         res = False
         attendee_obj=self.pool.get('calendar.attendee')
         for event_id in ids[:]:
@@ -1555,9 +1574,17 @@ class calendar_event(osv.osv):
             exdate = (data['exdate'] and (data['exdate'] + ',')  or '') + date_new
             self.write(cr, uid, [real_event_id], {'exdate': exdate})
             ids.remove(event_id)
-        for event in self.browse(cr, uid, ids, context=context):
-            if event.attendee_ids:
-                attendee_obj.unlink(cr, uid, [x.id for x in event.attendee_ids], context=context)
+        for event in self.browse(cr, SUPERUSER_ID, ids, context=context):
+            for attendee in event.attendee_ids:
+                # attendee_obj.unlink(cr, uid, [x.id for x in event.attendee_ids], context=context)
+                if event.master_event_id:
+                    # not the master event
+                    # decline the user's invite (not anyone else's) but do not delete
+                    if attendee.user_id.id == uid:
+                        attendee.write({'state':'declined'})
+                else:
+                    # this is the master event, delete everything
+                    attendee_obj.unlink(cr, SUPERUSER_ID, [x.id for x in event.attendee_ids], context=context)
 
         res = super(calendar_event, self).unlink(cr, uid, ids, context=context)
         self.pool.get('res.alarm').do_alarm_unlink(cr, uid, ids, self._name)
