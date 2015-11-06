@@ -1574,18 +1574,20 @@ class calendar_event(osv.osv):
             exdate = (data['exdate'] and (data['exdate'] + ',')  or '') + date_new
             self.write(cr, uid, [real_event_id], {'exdate': exdate})
             ids.remove(event_id)
+        copies_to_remove = set()
         for event in self.browse(cr, SUPERUSER_ID, ids, context=context):
             for attendee in event.attendee_ids:
-                # attendee_obj.unlink(cr, uid, [x.id for x in event.attendee_ids], context=context)
                 if event.master_event_id:
                     # not the master event
                     # decline the user's invite (not anyone else's) but do not delete
                     if attendee.user_id.id == uid:
                         attendee.write({'state':'declined'})
                 else:
-                    # this is the master event, delete everything
+                    # this is the master event, delete all attendees, delete all copies of this event
                     attendee_obj.unlink(cr, SUPERUSER_ID, [x.id for x in event.attendee_ids], context=context)
+                    copies_to_remove |= set(self.search(cr, SUPERUSER_ID, [('master_event_id','=',event.id)], context))
 
+        ids = list(set(ids) | copies_to_remove)
         res = super(calendar_event, self).unlink(cr, uid, ids, context=context)
         self.pool.get('res.alarm').do_alarm_unlink(cr, uid, ids, self._name)
         self.unlink_events(cr, uid, ids, context=context)
