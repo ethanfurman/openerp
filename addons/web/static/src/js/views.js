@@ -10,24 +10,35 @@ function addOeMainWindow() {
     var newChildren = [];
     var currentChild, getAttr, oldClass, newClass;
     var i;
+    var found = false;
     for (i=0; i<document.childNodes.length; i+=1) {
         newChildren.push(document.childNodes[i]);
     }
+    newChildren.push(undefined);
     while (newChildren.length > 0) {
         currentChild = newChildren.shift();
-        getAttr = currentChild.getAttribute;
-        if (getAttr !== undefined) {
-            oldClass = currentChild.getAttribute("class");
-            if (/oe_view_manager/.test(oldClass)) {
-                if (!/oe_main_window/.test(oldClass)) {
-                    newClass = oldClass + " oe_main_window";
-                    currentChild.setAttribute("class", newClass);
-                }
+        if (currentChild === undefined) {
+            if (found) {
                 return;
             }
+        } else {
+            getAttr = currentChild.getAttribute;
+            if (getAttr !== undefined) {
+                oldClass = currentChild.getAttribute("class");
+                if (/oe_view_manager/.test(oldClass)) {
+                    if (!/oe_main_window/.test(oldClass)) {
+                        newClass = oldClass + " oe_main_window";
+                        currentChild.setAttribute("class", newClass);
+                    }
+                    found = true;
+                }
+            }
         }
-        for (i=0; i<currentChild.childNodes.length; i+=1) {
-            newChildren.push(currentChild.childNodes[i]);
+        if (currentChild !== undefined && currentChild.childNodes.length) {
+            for (i=0; i<currentChild.childNodes.length; i+=1) {
+                newChildren.push(currentChild.childNodes[i]);
+            }
+            newChildren.push(undefined);
         }
     }
     return;
