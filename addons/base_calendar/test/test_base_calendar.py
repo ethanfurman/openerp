@@ -103,6 +103,14 @@ class TestBaseCalendar(common.TransactionCase):
         self.assertIn(self.test_pid2, partner_ids)
         return event
 
+    def test_slave_events_created_with_master_event(self):
+        "extra partners specified at initial creation should trigger slave events at the same time"
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        event2copies = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)
+        self.assertEqual(len(event2copies), 1)
+        self.assertEqual(event2copies[0].user_id.id, self.test_uid2)
+
     def test_unallowed_changes_on_master_event(self):
         "changing name, description, location, tags, attendees, etc, not allowed unless user is master event owner"
         cr, uid, context = self.cr, self.uid, self.context
