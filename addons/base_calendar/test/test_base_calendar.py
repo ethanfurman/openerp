@@ -103,9 +103,38 @@ class TestBaseCalendar(common.TransactionCase):
         self.assertIn(self.test_pid2, partner_ids)
         return event
 
-    @skip(True)
-    def test_unallowed_changes(self):
-        pass
+    def test_unallowed_changes_on_master_event(self):
+        "changing name, description, location, tags, attendees, etc, not allowed unless user is master event owner"
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        for k, v in (
+                ('name', 'Lunch intermission'),
+                ('description', 'a midday break'),
+                ('location', 'whereever'),
+                ('organizer', 'you, yourself, and... you?'),
+                ('date', DateTime.now()),
+                ('duration', 2.5),
+                ('user_id', self.test_uid2),
+                ('partner_ids', ([6, False, []])),
+                ):
+            self.assertRaises(ERPError, self.calendar_event.write, cr, self.test_uid2, [event2.id], {k: v}, context)
+
+    def test_unallowed_changes_on_shared_event(self):
+        "changing name, description, location, tags, attendees, etc, not allowed on event slaves"
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        event2copy = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)[0]
+        for k, v in (
+                ('name', 'Lunch intermission'),
+                ('description', 'a midday break'),
+                ('location', 'whereever'),
+                ('organizer', 'you, yourself, and... you?'),
+                ('date', DateTime.now()),
+                ('duration', 2.5),
+                ('user_id', self.test_uid2),
+                ('partner_ids', ([6, False, []])),
+                ):
+            self.assertRaises(ERPError, self.calendar_event.write, cr, self.test_uid2, [event2copy.id], {k: v}, context)
 
     @skip(True)
     def test_shared_events_share_attendees(self):

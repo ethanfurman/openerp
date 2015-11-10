@@ -1400,10 +1400,15 @@ class calendar_event(osv.osv):
     def write(self, cr, uid, ids, vals, context=None, check=True, update_check=True):
         # only event owners can make changes (and admin)
         # so get existing data and compare user_id with uid
+        changeable_slave_fields = set(['alarm_id', 'show_as', 'base_calendar_alarm_id'])
+        protected_keys = set(vals.keys()) - changeable_slave_fields
         if uid != SUPERUSER_ID:
-            for record in self.read(cr, SUPERUSER_ID, ids, fields=['id', 'user_id']):
+            for record in self.read(cr, SUPERUSER_ID, ids, fields=['id', 'user_id', 'master_event_id']):
                 if uid != record['user_id'][0]:
-                    raise ERPError('Error', 'You can only change your own events.')
+                    raise ERPError('Permission Denied', 'You can only change your own events.')
+                # check if event is a slave and protected fields are being updated
+                elif record['master_event_id'] and protected_keys:
+                    raise ERPError('Permission Denied', 'Only the alarm and show-as fields can be modified on invited events')
         def _only_changes_to_apply_on_real_ids(field_names):
             ''' return True if changes are only to be made on the real ids'''
             for field in field_names:
@@ -1619,9 +1624,11 @@ class calendar_event(osv.osv):
         res_partner = self.pool.get('res.partner')
         res_users = self.pool.get('res.users')
         resp_partner_id = res_users.browse(cr, SUPERUSER_ID, vals['user_id']).partner_id.id
-        partner_ids = vals['partner_ids']
+        partner_ids = vals.get('partner_ids', [[6, False, []]])
+        partner_ids = [[partner_ids[0][0], partner_ids[0][1], partner_ids[0][2][:]]]
         if resp_partner_id not in partner_ids[0][2]:
             partner_ids[0][2].append(resp_partner_id)
+        vals['partner_ids'] = partner_ids
 
         if vals.get('vtimezone', '') and vals.get('vtimezone', '').startswith('/freeassociation.sourceforge.net/tzfile/'):
             vals['vtimezone'] = vals['vtimezone'][40:]
