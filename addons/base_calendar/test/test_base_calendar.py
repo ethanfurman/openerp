@@ -6,6 +6,7 @@ from __future__ import print_function
 from scription import *
 import openerp
 import openerp.osv
+from openerp.osv.orm import browse_null as BrowseNull
 from openerp.osv.osv import except_osv as ERPError
 from openerp.tools import config
 from openerp.tests import common
@@ -166,10 +167,16 @@ class TestBaseCalendar(common.TransactionCase):
         slave_event_attendees = set([att.id for att in event2copy.attendee_ids])
         self.assertEqual(master_event_attendees, slave_event_attendees)
 
-
-    @skip(True)
     def test_slave_events_have_same_data(self):
-        pass
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        event2copy = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)[0]
+        for field in self.calendar_event._columns.keys():
+            if field in ('user_id', 'alarm_id', 'base_calendar_alarm_id', 'master_event_id', 'id'):
+                continue
+            if isinstance(event2[field], BrowseNull) and isinstance(event2copy[field], BrowseNull):
+                continue
+            self.assertEqual(event2[field], event2copy[field], 'field %r is not the same' % field)
 
     @skip(True)
     def test_slave_events_do_not_share_alarms(self):
