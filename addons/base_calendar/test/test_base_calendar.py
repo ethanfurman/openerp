@@ -37,11 +37,11 @@ def test_base_calendar():
 
 class TestBaseCalendar(common.TransactionCase):
     # - only event owner should be able to make changes
-    # - shared events should also share attendees
-    # - shared events should share everything
+    # - slave events should also share attendees
+    # - slave events should share everything
     # - deleting an owned event should delete all matching
-    #   shared events
-    # - deleting shared event should mark that attendee as
+    #   slave events
+    # - deleting slave event should mark that attendee as
     #   declining
     # - don't send external email to attendees that are OE
     #   users 
@@ -130,7 +130,7 @@ class TestBaseCalendar(common.TransactionCase):
                 ):
             self.assertRaises(ERPError, self.calendar_event.write, cr, self.test_uid2, [event2.id], {k: v}, context)
 
-    def test_unallowed_changes_on_shared_event(self):
+    def test_unallowed_changes_on_slave_event(self):
         "changing name, description, location, tags, attendees, etc, not allowed on event slaves"
         cr, uid, context = self.cr, self.uid, self.context
         event2 = self.test_single_invite_create()
@@ -158,16 +158,21 @@ class TestBaseCalendar(common.TransactionCase):
                 ):
             self.calendar_event.write(cr, self.test_uid2, [event2copy.id], {k: v}, context)
 
+    def test_master_and_slave_events_share_attendees(self):
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        event2copy = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)[0]
+        master_event_attendees = set([att.id for att in event2.attendee_ids])
+        slave_event_attendees = set([att.id for att in event2copy.attendee_ids])
+        self.assertEqual(master_event_attendees, slave_event_attendees)
+
+
     @skip(True)
-    def test_shared_events_share_attendees(self):
+    def test_slave_events_have_same_data(self):
         pass
 
     @skip(True)
-    def test_shared_events_have_same_data(self):
-        pass
-
-    @skip(True)
-    def test_shared_events_do_not_share_alarms(self):
+    def test_slave_events_do_not_share_alarms(self):
         pass
 
     @skip(True)
@@ -175,7 +180,7 @@ class TestBaseCalendar(common.TransactionCase):
         pass
 
     @skip(True)
-    def test_delete_shared_event_declines_invite(self):
+    def test_delete_slave_event_declines_invite(self):
         pass
 
 
