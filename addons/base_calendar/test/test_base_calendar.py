@@ -69,6 +69,9 @@ class TestBaseCalendar(common.TransactionCase):
         vals.update(login='calendar_user2', name='Calendar User II')
         test_uid2 = res_users.create(cr, uid, vals)
         test_pid2 = res_users.browse(cr, uid, test_uid2, context).partner_id.id
+        vals.update(login='calendar_user3', name='Calendar User III')
+        test_uid3 = res_users.create(cr, uid, vals)
+        test_pid3 = res_users.browse(cr, uid, test_uid3, context).partner_id.id
         # inject locals into self
         for k, v in locals().items():
             setattr(self, k, v)
@@ -128,6 +131,8 @@ class TestBaseCalendar(common.TransactionCase):
                 ('duration', 2.5),
                 ('user_id', self.test_uid2),
                 ('partner_ids', ([6, False, []])),
+                ('alarm_id', self.alarm15_id),
+                ('show_as', 'free'),
                 ):
             self.assertRaises(ERPError, self.calendar_event.write, cr, self.test_uid2, [event2.id], {k: v}, context)
 
@@ -177,6 +182,16 @@ class TestBaseCalendar(common.TransactionCase):
             if isinstance(event2[field], BrowseNull) and isinstance(event2copy[field], BrowseNull):
                 continue
             self.assertEqual(event2[field], event2copy[field], 'field %r is not the same' % field)
+
+    def test_slave_events_have_same_updated_data(self):
+        "make sure changes to master event are reflected in slaves"
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        event2.write({'name':'New and Improved!'})
+        event2.refresh()
+        self.assertEqual(event2.name, 'New and Improved!')
+        event2copy = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)[0]
+        self.assertEqual(event2.name, event2copy.name)
 
     @skip(True)
     def test_slave_events_do_not_share_alarms(self):

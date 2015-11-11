@@ -1465,8 +1465,23 @@ class calendar_event(osv.osv):
             vals['vtimezone'] = vals['vtimezone'][40:]
 
         res = super(calendar_event, self).write(cr, SUPERUSER_ID, ids, vals, context=context)
+        # get list of slave events and push the changes to them
+        slave_vals = vals.copy()
+        slave_vals.pop('user_id', None)
+        slave_vals.pop('alarm_id', None)
+        slave_vals.pop('base_calendar_alarm_id', None)
+        # XXX -- possible add 'master_event_id' to above list
+        slave_ids = []
+        for record in self.read(cr, SUPERUSER_ID, ids, fields=['id', 'master_event_id']):
+            master_event_id = record['master_event_id']
+            if not master_event_id:
+                slave_ids.extend(self.search(
+                            cr, SUPERUSER_ID, [('master_event_id','=',record['id'])]
+                            ))
+        if slave_ids:
+            res = min(res, super(calendar_event, self).write(cr, SUPERUSER_ID, slave_ids, slave_vals))
         if vals.get('partner_ids', False):
-            self.create_attendees(cr, uid, ids, context)
+            attendee_ids = self.create_attendees(cr, uid, [new_id], context)[new_id]
 
         if (('alarm_id' in vals or 'base_calendar_alarm_id' in vals)
                 or ('date' in vals or 'duration' in vals or 'date_deadline' in vals)):
@@ -1549,9 +1564,6 @@ class calendar_event(osv.osv):
         return result
 
     def copy(self, cr, uid, id, default=None, context=None):
-        if context is None:
-            context = {}
-
         res = super(calendar_event, self).copy(cr, uid, base_calendar_id2real_id(id), default, context)
         alarm_obj = self.pool.get('res.alarm')
         alarm_obj.do_alarm_create(cr, uid, [res], self._name, 'date', context=context)
@@ -1635,29 +1647,27 @@ class calendar_event(osv.osv):
 
         # create master copy
         new_id = super(calendar_event, self).create(cr, uid, vals, context)
+        # create attendees on primary appointment
+        attendee_ids = self.create_attendees(cr, uid, [new_id], context)[new_id]
         # if other attendees, create copies
-        other_ids = []
-        remaining_ids = partner_ids[0][2][:]
-        remaining_ids.remove(resp_partner_id)
-        for partner in res_partner.browse(cr, SUPERUSER_ID, remaining_ids):
-            # if partner is not a local user, ignore
-            if not partner.user_ids:
-                continue
-            vals['user_id'] = partner.user_ids[0].id
-            other_ids.append(super(calendar_event, self).create(cr, SUPERUSER_ID, vals, context))
+        # but only if we are not already in a copy loop
+        if not context.get('loop', False):
+            context['loop'] = True
+            other_ids = []
+            remaining_ids = partner_ids[0][2][:]
+            remaining_ids.remove(resp_partner_id)
+            for partner in res_partner.browse(cr, SUPERUSER_ID, remaining_ids):
+                # if partner is not a local user, ignore
+                if not partner.user_ids:
+                    continue
+                default = {
+                    'user_id':  partner.user_ids[0].id,
+                    'master_event_id': new_id,
+                    }
+                other_ids.append(self.copy(cr, SUPERUSER_ID, new_id, default, context))
         # add alarm to primary appointment only
         alarm_obj = self.pool.get('res.alarm')
         alarm_obj.do_alarm_create(cr, uid, [new_id], self._name, 'date', context=context)
-        # create attendees on primary appointment
-        attendee_ids = self.create_attendees(cr, uid, [new_id], context)[new_id]
-        if other_ids:
-            # link attendees to other appointments
-            res = super(calendar_event, self).write(
-                    cr, SUPERUSER_ID, other_ids,
-                    {'attendee_ids':[[6, 0, attendee_ids]], 'master_event_id':new_id},
-                    )
-            if not res:
-                raise ERPError('Error', 'Unable to link attendees to all events')
         return new_id
 
     def do_tentative(self, cr, uid, ids, context=None, *args):
