@@ -54,11 +54,14 @@ class TestBaseCalendar(common.TransactionCase):
         res_partner = registry('res.partner')
         res_users = registry('res.users')
         res_groups = registry('res.groups')
+        res_alarm = registry('res.alarm')
         ir_model_data = registry('ir.model.data')
         mail_message = registry('mail.message')
         calendar_event = registry('calendar.event')
         calendar_attendee = registry('calendar.attendee')
         lunch_time = DateTime.combine(Date.today(), Time(21)).strftime("%Y-%m-%d %H:%M:%S") # noonish PST
+        alarm5_id = res_alarm.browse(cr, uid, [('name','=','5 minutes before')], context)[0].id
+        alarm15_id = res_alarm.browse(cr, uid, [('name','=','15 minutes before')], context)[0].id
         vals = res_users._add_missing_default_values(cr ,uid, {'login':'calendar_user1', 'name':'Calendar User I'})
         test_uid1 = res_users.create(cr, uid, vals)
         test_pid1 = res_users.browse(cr, uid, test_uid1, context).partner_id.id
@@ -143,6 +146,17 @@ class TestBaseCalendar(common.TransactionCase):
                 ('partner_ids', ([6, False, []])),
                 ):
             self.assertRaises(ERPError, self.calendar_event.write, cr, self.test_uid2, [event2copy.id], {k: v}, context)
+
+    def test_allowed_changes_on_slave_event(self):
+        "changing alarm and show-as is allowed on event slaves"
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        event2copy = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)[0]
+        for k, v in (
+                ('alarm_id', self.alarm5_id),
+                ('show_as', 'free'),
+                ):
+            self.calendar_event.write(cr, self.test_uid2, [event2copy.id], {k: v}, context)
 
     @skip(True)
     def test_shared_events_share_attendees(self):
