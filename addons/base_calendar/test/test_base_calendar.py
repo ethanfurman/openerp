@@ -84,6 +84,15 @@ class TestBaseCalendar(common.TransactionCase):
         values = model._add_missing_default_values(cr, uid, values)
         return model.create(cr, uid, values, context)
 
+    def _compare_events(self, event, *copies):
+        for copy in copies:
+            for field in self.calendar_event._columns.keys():
+                if field in ('user_id', 'alarm_id', 'base_calendar_alarm_id', 'master_event_id', 'id'):
+                    continue
+                if isinstance(event[field], BrowseNull) and isinstance(copy[field], BrowseNull):
+                    continue
+                self.assertEqual(event[field], copy[field], 'field %r is not the same' % field)
+
     def test_simple_create(self, partner_ids=None):
         """creating user should end up in partner_ids (Attendees)"""
         cr, uid, context = self.cr, self.uid, self.context
@@ -176,12 +185,7 @@ class TestBaseCalendar(common.TransactionCase):
         cr, uid, context = self.cr, self.uid, self.context
         event2 = self.test_single_invite_create()
         event2copy = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)[0]
-        for field in self.calendar_event._columns.keys():
-            if field in ('user_id', 'alarm_id', 'base_calendar_alarm_id', 'master_event_id', 'id'):
-                continue
-            if isinstance(event2[field], BrowseNull) and isinstance(event2copy[field], BrowseNull):
-                continue
-            self.assertEqual(event2[field], event2copy[field], 'field %r is not the same' % field)
+        self._compare_events(event2, event2copy)
 
     def test_slave_events_have_same_updated_data(self):
         "make sure changes to master event are reflected in slaves"
@@ -191,7 +195,7 @@ class TestBaseCalendar(common.TransactionCase):
         event2.refresh()
         self.assertEqual(event2.name, 'New and Improved!')
         event2copy = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)[0]
-        self.assertEqual(event2.name, event2copy.name)
+        self._compare_events(event2, event2copy)
 
     def test_adding_new_partners_creates_new_slaves(self):
         cr, uid, context = self.cr, self.uid, self.context
@@ -200,6 +204,14 @@ class TestBaseCalendar(common.TransactionCase):
         event2.write({'partner_ids':[(4, self.test_pid3)]})
         event2copies2 = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)
         self.assertEqual(len(event2copies1) + 1, len(event2copies2))
+
+    def test_slave_events_share_new_attendees(self):
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        event2.write({'partner_ids':[(4, self.test_pid3)]})
+        event2.refresh()
+        event2copies = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)
+        self._compare_events(event2, *event2copies)
 
     @skip(True)
     def test_slave_events_do_not_share_alarms(self):
