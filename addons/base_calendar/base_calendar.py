@@ -1136,7 +1136,7 @@ class calendar_event(osv.osv):
             for partner in event.partner_ids:
                 if partner.id in attendees:
                     continue
-                att_id = self.pool.get('calendar.attendee').create(cr, uid, {
+                att_id = calendar_attendee.create(cr, uid, {
                     'partner_id': partner.id,
                     'user_id': partner.user_ids and partner.user_ids[0].id or False,
                     'ref': self._name + ',' + str(event.id),
@@ -1398,6 +1398,9 @@ class calendar_event(osv.osv):
                 return True
 
     def write(self, cr, uid, ids, vals, context=None, check=True, update_check=True):
+        context = context or {}
+        if isinstance(ids, (str, int, long)):
+            ids = [ids]
         # only event owners can make changes (and admin)
         # so get existing data and compare user_id with uid
         changeable_slave_fields = set(['alarm_id', 'show_as', 'base_calendar_alarm_id'])
@@ -1416,9 +1419,6 @@ class calendar_event(osv.osv):
                     return False
             return True
 
-        context = context or {}
-        if isinstance(ids, (str, int, long)):
-            ids = [ids]
         res = False
 
         # Special write of complex IDS
@@ -1471,17 +1471,35 @@ class calendar_event(osv.osv):
         slave_vals.pop('alarm_id', None)
         slave_vals.pop('base_calendar_alarm_id', None)
         # XXX -- possible add 'master_event_id' to above list
-        slave_ids = []
+        master_slave_ids = {}
         for record in self.read(cr, SUPERUSER_ID, ids, fields=['id', 'master_event_id']):
             master_event_id = record['master_event_id']
             if not master_event_id:
-                slave_ids.extend(self.search(
+                master_slave_ids[record['id']] = slave_ids = self.search(
                             cr, SUPERUSER_ID, [('master_event_id','=',record['id'])]
-                            ))
-        if slave_ids:
-            res = min(res, super(calendar_event, self).write(cr, SUPERUSER_ID, slave_ids, slave_vals))
-        if vals.get('partner_ids', False):
-            attendee_ids = self.create_attendees(cr, uid, [new_id], context)[new_id]
+                            )
+                if not super(calendar_event, self).write(cr, SUPERUSER_ID, slave_ids, slave_vals, context):
+                    raise ERPError('Error', 'Unable to update slave events')
+        if vals.get('partner_ids'):
+            # more invites, create slave events for them
+            for event in self.browse(cr, SUPERUSER_ID, master_slave_ids.keys(), context):
+                attendee_ids = self.create_attendees(cr, uid, [event.id], context)[event.id]
+                # link attendees to old slaves
+                if not super(calendar_event, self).write(cr, SUPERUSER_ID, master_slave_ids[event.id], context):
+                    raise ERPError('Error', 'Unable to update slave events')
+                # and create new slaves
+                user_ids = [
+                        att['user_id'][0]
+                        for att in
+                           self.pool.get('calendar.attendee').read(
+                               cr, SUPERUSER_ID, attendee_ids, fields=['user_id'], context=context)
+                           ]
+                for user_id in user_ids:
+                    default = {
+                        'user_id':  user_id,
+                        'master_event_id': event.id,
+                        }
+                    self.copy(cr, SUPERUSER_ID, event.id, default, context)
 
         if (('alarm_id' in vals or 'base_calendar_alarm_id' in vals)
                 or ('date' in vals or 'duration' in vals or 'date_deadline' in vals)):
@@ -1648,7 +1666,7 @@ class calendar_event(osv.osv):
         # create master copy
         new_id = super(calendar_event, self).create(cr, uid, vals, context)
         # create attendees on primary appointment
-        attendee_ids = self.create_attendees(cr, uid, [new_id], context)[new_id]
+        self.create_attendees(cr, uid, [new_id], context)[new_id]
         # if other attendees, create copies
         # but only if we are not already in a copy loop
         if not context.get('loop', False):

@@ -193,6 +193,14 @@ class TestBaseCalendar(common.TransactionCase):
         event2copy = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)[0]
         self.assertEqual(event2.name, event2copy.name)
 
+    def test_adding_new_partners_creates_new_slaves(self):
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        event2copies1 = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)
+        event2.write({'partner_ids':[(4, self.test_pid3)]})
+        event2copies2 = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)
+        self.assertEqual(len(event2copies1) + 1, len(event2copies2))
+
     @skip(True)
     def test_slave_events_do_not_share_alarms(self):
         pass
