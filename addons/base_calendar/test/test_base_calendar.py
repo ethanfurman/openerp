@@ -217,9 +217,22 @@ class TestBaseCalendar(common.TransactionCase):
     def test_slave_events_do_not_share_alarms(self):
         pass
 
-    @skip(True)
-    def test_delete_master_event_deletes_all_events(self):
-        pass
+    def test_delete_master_event_deletes_all_events_and_attendees(self):
+        cr, uid, context = self.cr, self.uid, self.context
+        event2 = self.test_single_invite_create()
+        event2_id = event2.id
+        attendee_ids = [att.id for att in event2.attendee_ids]
+        self.assertEqual(len(attendee_ids), 2)
+        self.calendar_event.unlink(cr, self.test_uid1, [event2.id], context)
+        event2copy_ids = self.calendar_event.search(
+                cr,
+                uid,
+                ['|',('master_event_id','=',event2_id),('id','=',event2_id)],
+                context,
+                )
+        self.assertEqual(len(event2copy_ids), 0)
+        current_attendee_ids = self.calendar_attendee.search(cr, uid, [('id','in',attendee_ids)], context=context)
+        self.assertEqual(len(current_attendee_ids), 0)
 
     def test_delete_slave_event_declines_invite(self):
         cr, uid, context = self.cr, self.uid, self.context
