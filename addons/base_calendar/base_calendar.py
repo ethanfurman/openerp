@@ -336,63 +336,67 @@ class calendar_attendee(osv.osv):
         return res
 
     _columns = {
-        'cutype': fields.selection([('individual', 'Individual'),
-                    ('group', 'Group'), ('resource', 'Resource'),
-                    ('room', 'Room'), ('unknown', 'Unknown') ],
-                    'Invite Type', help="Specify the type of Invitation"),
-        'member': fields.char('Member', size=124,
-                    help="Indicate the groups that the attendee belongs to"),
-        'role': fields.selection([('req-participant', 'Participation required'),
-                    ('chair', 'Chair Person'),
-                    ('opt-participant', 'Optional Participation'),
-                    ('non-participant', 'For information Purpose')], 'Role',
-                    help='Participation role for the calendar user'),
-        'state': fields.selection([('needs-action', 'Needs Action'),
-                        ('tentative', 'Uncertain'),
-                        ('declined', 'Declined'),
-                        ('accepted', 'Accepted'),
-                        ('delegated', 'Delegated')], 'Status', readonly=True,
-                        help="Status of the attendee's participation"),
-        'rsvp':  fields.boolean('Required Reply?',
-                    help="Indicats whether the favor of a reply is requested"),
+        'cutype': fields.selection([
+                ('individual', 'Individual'),
+                ('group', 'Group'), ('resource', 'Resource'),
+                ('room', 'Room'), ('unknown', 'Unknown')],
+                'Invite Type', help="Specify the type of Invitation"),
+        'member': fields.char(
+                'Member', size=124, help="Indicate the groups that the attendee belongs to"),
+        'role': fields.selection([
+                ('req-participant', 'Participation required'),
+                ('chair', 'Chair Person'),
+                ('opt-participant', 'Optional Participation'),
+                ('non-participant', 'For information Purpose')],
+                'Role', help='Participation role for the calendar user'),
+        'state': fields.selection([
+                ('needs-action', 'Needs Action'),
+                ('tentative', 'Uncertain'),
+                ('declined', 'Declined'),
+                ('accepted', 'Accepted'),
+                ('delegated', 'Delegated')],
+                'Status', readonly=True, help="Status of the attendee's participation"),
+        'rsvp':  fields.boolean(
+                'Required Reply?', help="Indicats whether the favor of a reply is requested"),
         'delegated_to': fields.function(
-                _compute_data,
-                string='Delegated To', type="char", size=124, store=True,
-                multi='delegated_to',
-                help="The users that the original request was delegated to",
-                ),
+                _compute_data, string='Delegated To', type="char", size=124, store=True,
+                multi='delegated_to', help="The users that the original request was delegated to"),
         'delegated_from': fields.function(
-            _compute_data,
-            string='Delegated From',
-            type="char", store=True, size=124, multi='delegated_from'),
-        'parent_ids': fields.many2many('calendar.attendee', 'calendar_attendee_parent_rel',
-                                    'attendee_id', 'parent_id', 'Delegrated From'),
-        'child_ids': fields.many2many('calendar.attendee', 'calendar_attendee_child_rel',
-                                      'attendee_id', 'child_id', 'Delegrated To'),
-        'sent_by': fields.function(_compute_data, string='Sent By',
-                        type="char", multi='sent_by', store=True, size=124,
-                        help="Specify the user that is acting on behalf of the calendar user"),
-        'sent_by_uid': fields.function(_compute_data, string='Sent By User',
-                            type="many2one", relation="res.users", multi='sent_by_uid'),
-        'cn': fields.function(_compute_data, string='Common name',
-                            type="char", size=124, multi='cn', store=True),
-        'dir': fields.char('URI Reference', size=124,
-        help="Reference to the URI that points to the directory information corresponding to the attendee."),
-        'language': fields.function(_compute_data, string='Language',
-                    type="selection", selection=_lang_get, multi='language',
-                    store=True,
-                    help="To specify the language for text values in a property or property parameter."),
+                _compute_data, string='Delegated From', type="char", store=True, size=124, multi='delegated_from'),
+        'parent_ids': fields.many2many(
+                'calendar.attendee', 'calendar_attendee_parent_rel',
+                'attendee_id', 'parent_id', 'Delegrated From'),
+        'child_ids': fields.many2many(
+                'calendar.attendee', 'calendar_attendee_child_rel',
+                'attendee_id', 'child_id', 'Delegrated To'),
+        'sent_by': fields.function(
+                _compute_data, string='Sent By', type="char", multi='sent_by', store=True,
+                size=124, help="Specify the user that is acting on behalf of the calendar user"),
+        'sent_by_uid': fields.function(
+                _compute_data, string='Sent By User',
+                type="many2one", relation="res.users", multi='sent_by_uid'),
+        'cn': fields.function(
+                _compute_data, string='Common name',
+                type="char", size=124, multi='cn', store=True),
+        'dir': fields.char(
+                'URI Reference', size=124,
+                help="Reference to the URI that points to the directory information corresponding to the attendee."),
+        'language': fields.function(
+                _compute_data, string='Language', type="selection", selection=_lang_get, multi='language',
+                store=True, help="To specify the language for text values in a property or property parameter."),
         'user_id': fields.many2one('res.users', 'User'),
         'partner_id': fields.many2one('res.partner', 'Contact'),
         'email': fields.char('Email', size=124, help="Email of Invited Person"),
-        'event_date': fields.function(_compute_data, string='Event Date',
-                            type="datetime", multi='event_date'),
+        'event_date': fields.function(
+                _compute_data, string='Event Date',
+                 type="datetime", multi='event_date'),
         'event_end_date': fields.function(_compute_data,
-                            string='Event End Date', type="datetime",
-                            multi='event_end_date'),
+                string='Event End Date', type="datetime",
+                multi='event_end_date'),
         'ref': fields.reference('Event Ref', selection=_links_get, size=128),
         'availability': fields.selection([('free', 'Free'), ('busy', 'Busy')], 'Free/Busy', readonly="True"),
     }
+
     _defaults = {
         'state': 'needs-action',
         'role': 'req-participant',
@@ -1049,32 +1053,41 @@ class calendar_event(osv.osv):
         'create_date': fields.datetime('Created', readonly=True),
         'duration': fields.float('Duration', states={'done': [('readonly', True)]}),
         'description': fields.text('Description', states={'done': [('readonly', True)]}),
-        'class': fields.selection([('public', 'Public'), ('private', 'Private'),
-             ('confidential', 'Public for Employees')], 'Privacy', states={'done': [('readonly', True)]}),
+        'class': fields.selection([
+                ('public', 'Public'),
+                ('private', 'Private'),
+                ('confidential', 'Public for Employees')],
+                'Privacy', states={'done': [('readonly', True)]}),
         'location': fields.char('Location', size=264, help="Location of Event", states={'done': [('readonly', True)]}),
-        'show_as': fields.selection([('free', 'Free'), ('busy', 'Busy')],
-                                                'Show Time as', states={'done': [('readonly', True)]}),
+        'show_as': fields.selection([
+                ('free', 'Free'),
+                ('busy', 'Busy')],
+                'Show Time as', states={'done': [('readonly', True)]}),
         'base_calendar_url': fields.char('Caldav URL', size=264),
         'state': fields.selection([
-            ('tentative', 'Uncertain'),
-            ('cancelled', 'Cancelled'),
-            ('confirmed', 'Confirmed'),
-            ], 'Status', readonly=True),
+                ('tentative', 'Uncertain'),
+                ('cancelled', 'Cancelled'),
+                ('confirmed', 'Confirmed'),
+                ],
+                'Status', readonly=True),
         'exdate': fields.text('Exception Date/Times',
-            help="This property defines the list of date/time exceptions for a recurring calendar component."),
+                help="This property defines the list of date/time exceptions for a recurring calendar component."),
         'exrule': fields.char('Exception Rule', size=352,
-            help="Defines a rule or repeating pattern of time to exclude from the recurring rule."),
-        'rrule': fields.function(_get_rulestring, type='char', size=124,
-                    fnct_inv=_rrule_write, store=True, string='Recurrent Rule'),
+                help="Defines a rule or repeating pattern of time to exclude from the recurring rule."),
+        'rrule': fields.function(
+                _get_rulestring, type='char', size=124, fnct_inv=_rrule_write,
+                store=True, string='Recurrent Rule'),
         'rrule_type': fields.selection([
-            ('daily', 'Day(s)'),
-            ('weekly', 'Week(s)'),
-            ('monthly', 'Month(s)'),
-            ('yearly', 'Year(s)')
-            ], 'Recurrency', states={'done': [('readonly', True)]},
-            help="Let the event automatically repeat at that interval"),
-        'alarm_id': fields.many2one('res.alarm', 'Reminder', states={'done': [('readonly', True)]},
-                        help="Set an alarm at this time, before the event occurs" ),
+                ('daily', 'Day(s)'),
+                ('weekly', 'Week(s)'),
+                ('monthly', 'Month(s)'),
+                ('yearly', 'Year(s)')
+                ],
+                'Recurrency', states={'done': [('readonly', True)]},
+                help="Let the event automatically repeat at that interval"),
+        'alarm_id': fields.many2one(
+                'res.alarm', 'Reminder', states={'done': [('readonly', True)]},
+                 help="Set an alarm at this time, before the event occurs" ),
         'base_calendar_alarm_id': fields.many2one('calendar.alarm', 'Alarm'),
         'recurrent_id': fields.integer('Recurrent ID'),
         'recurrent_id_date': fields.datetime('Recurrent ID date'),
@@ -1082,7 +1095,10 @@ class calendar_event(osv.osv):
         'user_id': fields.many2one('res.users', 'Responsible', states={'done': [('readonly', True)]}),
         'organizer': fields.char("Organizer", size=256, states={'done': [('readonly', True)]}), # Map with organizer attribute of VEvent.
         'organizer_id': fields.many2one('res.users', 'Organizer', states={'done': [('readonly', True)]}),
-        'end_type' : fields.selection([('count', 'Number of repetitions'), ('end_date','End date')], 'Recurrence Termination'),
+        'end_type' : fields.selection([
+                ('count', 'Number of repetitions'),
+                ('end_date','End date')],
+                'Recurrence Termination'),
         'interval': fields.integer('Repeat Every', help="Repeat every (Days/Week/Month/Year)"),
         'count': fields.integer('Repeat', help="Repeat x times"),
         'mo': fields.boolean('Mon'),
@@ -1092,31 +1108,38 @@ class calendar_event(osv.osv):
         'fr': fields.boolean('Fri'),
         'sa': fields.boolean('Sat'),
         'su': fields.boolean('Sun'),
-        'select1': fields.selection([('date', 'Date of month'),
-                                    ('day', 'Day of month')], 'Option'),
+        'select1': fields.selection([
+                ('date', 'Date of month'),
+                ('day', 'Day of month')],
+                'Option'),
         'day': fields.integer('Date of month'),
         'week_list': fields.selection([
-            ('MO', 'Monday'),
-            ('TU', 'Tuesday'),
-            ('WE', 'Wednesday'),
-            ('TH', 'Thursday'),
-            ('FR', 'Friday'),
-            ('SA', 'Saturday'),
-            ('SU', 'Sunday')], 'Weekday'),
+                ('MO', 'Monday'),
+                ('TU', 'Tuesday'),
+                ('WE', 'Wednesday'),
+                ('TH', 'Thursday'),
+                ('FR', 'Friday'),
+                ('SA', 'Saturday'),
+                ('SU', 'Sunday')],
+                'Weekday'),
         'byday': fields.selection([
-            ('1', 'First'),
-            ('2', 'Second'),
-            ('3', 'Third'),
-            ('4', 'Fourth'),
-            ('5', 'Fifth'),
-            ('-1', 'Last')], 'By day'),
+                ('1', 'First'),
+                ('2', 'Second'),
+                ('3', 'Third'),
+                ('4', 'Fourth'),
+                ('5', 'Fifth'),
+                ('-1', 'Last')],
+                'By day'),
         'month_list': fields.selection(months.items(), 'Month'),
         'end_date': fields.date('Repeat Until'),
-        'attendee_ids': fields.many2many('calendar.attendee', 'event_attendee_rel',
-                                 'event_id', 'attendee_id', 'Attendees'),
+        'attendee_ids': fields.many2many(
+                'calendar.attendee', 'event_attendee_rel',
+                'event_id', 'attendee_id', 'Attendees'),
         'allday': fields.boolean('All Day', states={'done': [('readonly', True)]}),
-        'active': fields.boolean('Active',
-            help="If the active field is set to true, it will allow you to hide the event alarm information without removing it."),
+        'active': fields.boolean(
+                'Active',
+                help="If the active field is set to true, it will allow you to hide the event alarm "
+                      "information without removing it."),
         'recurrency': fields.boolean('Recurrent', help="Recurrent Meeting"),
         'partner_ids': fields.many2many('res.partner', string='Attendees', states={'done': [('readonly', True)]}),
         'master_event_id': fields.integer('Master Event'),
@@ -1583,8 +1606,6 @@ class calendar_event(osv.osv):
 
     def copy(self, cr, uid, id, default=None, context=None):
         res = super(calendar_event, self).copy(cr, uid, base_calendar_id2real_id(id), default, context)
-        alarm_obj = self.pool.get('res.alarm')
-        alarm_obj.do_alarm_create(cr, uid, [res], self._name, 'date', context=context)
         return res
 
     def unlink(self, cr, uid, ids, context=None):
@@ -1614,7 +1635,7 @@ class calendar_event(osv.osv):
             for attendee in event.attendee_ids:
                 if event.master_event_id:
                     # not the master event
-                    # decline the user's invite (not anyone else's) but do not delete
+                    # decline the user's invite (not anyone else's) but do not delete attendee
                     if attendee.user_id.id == uid:
                         attendee.write({'state':'declined'})
                 else:
@@ -1687,6 +1708,8 @@ class calendar_event(osv.osv):
         alarm_obj = self.pool.get('res.alarm')
         alarm_obj.do_alarm_create(cr, uid, [new_id], self._name, 'date', context=context)
         return new_id
+
+    # TODO: add routine to remove events from declined participants
 
     def do_tentative(self, cr, uid, ids, context=None, *args):
         """ Makes event invitation as Tentative

@@ -50,18 +50,23 @@ class crm_meeting(base_state, osv.Model):
         'write_date': fields.datetime('Write Date', readonly=True),
         'date_open': fields.datetime('Confirmed', readonly=True),
         'date_closed': fields.datetime('Closed', readonly=True),
-        'partner_ids': fields.many2many('res.partner', 'crm_meeting_partner_rel', 'meeting_id', 'partner_id',
-            string='Attendees', states={'done': [('readonly', True)]}),
-        'state': fields.selection(
-                    [('draft', 'Unconfirmed'), ('open', 'Confirmed')],
-                    string='Status', size=16, readonly=True, track_visibility='onchange'),
+        'partner_ids': fields.many2many(
+                'res.partner', 'crm_meeting_partner_rel', 'meeting_id', 'partner_id',
+                string='Attendees', states={'done': [('readonly', True)]}),
+        'state': fields.selection([
+                ('draft', 'Unconfirmed'),
+                ('open', 'Confirmed')],
+                string='Status', size=16, readonly=True, track_visibility='onchange'),
         # Meeting fields
         'name': fields.char('Meeting Subject', size=128, required=True, states={'done': [('readonly', True)]}),
-        'categ_ids': fields.many2many('crm.meeting.type', 'meeting_category_rel',
-            'event_id', 'type_id', 'Tags'),
-        'attendee_ids': fields.many2many('calendar.attendee', 'meeting_attendee_rel',\
-                            'event_id', 'attendee_id', 'Attendees', states={'done': [('readonly', True)]}),
+        'categ_ids': fields.many2many(
+                'crm.meeting.type', 'meeting_category_rel', 'event_id', 'type_id',
+                'Tags'),
+        'attendee_ids': fields.many2many(
+                'calendar.attendee', 'meeting_attendee_rel', 'event_id', 'attendee_id',
+                'Attendees', states={'done': [('readonly', True)]}),
     }
+
     _defaults = {
         'state': 'open',
     }
