@@ -93,7 +93,7 @@ class TestBaseCalendar(common.TransactionCase):
                     continue
                 self.assertEqual(event[field], copy[field], 'field %r is not the same' % field)
 
-    def test_simple_create(self, partner_ids=None):
+    def test_simple_create(self, partner_ids=None, alarm_id=None):
         """creating user should end up in partner_ids (Attendees)"""
         cr, uid, context = self.cr, self.uid, self.context
         vals = dict(
@@ -102,6 +102,8 @@ class TestBaseCalendar(common.TransactionCase):
                 date=self.lunch_time,
                 )
         vals['partner_ids'] = [(6, False, partner_ids or [])]
+        if alarm_id is not None:
+            vals['alarm_id'] = alarm_id
         vals.update(self.calendar_event.onchange_dates(cr, uid, None, vals['date'], context=context)['value'])
         event_id = self._create(self.calendar_event, cr, self.test_uid1, vals, context=context)
         event = self.calendar_event.browse(cr, uid, event_id, context)
@@ -111,9 +113,9 @@ class TestBaseCalendar(common.TransactionCase):
         self.assertIn(self.test_pid1, [p.id for p in event.partner_ids])
         return event
 
-    def test_single_invite_create(self):
+    def test_single_invite_create(self, alarm_id=None):
         cr, uid, context = self.cr, self.uid, self.context
-        event = self.test_simple_create(partner_ids=[self.test_pid2])
+        event = self.test_simple_create(partner_ids=[self.test_pid2], alarm_id=alarm_id)
         partner_ids = [p.id for p in event.partner_ids]
         self.assertIn(self.test_pid1, partner_ids)
         self.assertIn(self.test_pid2, partner_ids)
@@ -213,9 +215,25 @@ class TestBaseCalendar(common.TransactionCase):
         event2copies = self.calendar_event.browse(cr, uid, [('master_event_id','=',event2.id)], context)
         self._compare_events(event2, *event2copies)
 
-    @skip(True)
     def test_slave_events_do_not_share_alarms(self):
-        pass
+        cr, uid, context = self.cr, self.uid, self.context
+        event3 = self.test_simple_create(
+                partner_ids=[self.test_pid2, self.test_pid3],
+                alarm_id=self.alarm5_id,
+                )
+        self.assertEqual(event3.alarm_id.id, self.alarm5_id)
+        slave1, slave2 = self.calendar_event.browse(cr, uid, [('master_event_id','=',event3.id)], context)
+        self.assertEqual(slave1.alarm_id.id, self.alarm5_id)
+        self.assertEqual(slave2.alarm_id.id, self.alarm5_id)
+        slave1.write({'alarm_id':False})
+        slave2.write({'alarm_id':self.alarm15_id})
+        event3.refresh()
+        slave1.refresh()
+        slave2.refresh()
+        self.assertEqual(event3.alarm_id.id, self.alarm5_id)
+        self.assertFalse(slave1.alarm_id)
+        self.assertEqual(slave2.alarm_id.id, self.alarm15_id)
+
 
     def test_delete_master_event_deletes_all_events_and_attendees(self):
         cr, uid, context = self.cr, self.uid, self.context
