@@ -80,8 +80,10 @@ class crm_meeting(base_state, osv.Model):
         return res
 
     def copy(self, cr, uid, id, default=None, context=None):
+        context = context or {}
         default = default or {}
-        default['attendee_ids'] = False
+        if not context.get('strict_copy'):
+            default['attendee_ids'] = False
         return super(crm_meeting, self).copy(cr, uid, id, default, context)
 
     def onchange_partner_ids(self, cr, uid, ids, value, context=None):

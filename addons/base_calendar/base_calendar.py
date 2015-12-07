@@ -1132,9 +1132,7 @@ class calendar_event(osv.osv):
                 'By day'),
         'month_list': fields.selection(months.items(), 'Month'),
         'end_date': fields.date('Repeat Until'),
-        'attendee_ids': fields.many2many(
-                'calendar.attendee', 'event_attendee_rel',
-                'event_id', 'attendee_id', 'Attendees'),
+        'attendee_ids': fields.many2many('calendar.attendee', string='Attendees'),
         'allday': fields.boolean('All Day', states={'done': [('readonly', True)]}),
         'active': fields.boolean(
                 'Active',
@@ -1142,6 +1140,9 @@ class calendar_event(osv.osv):
                       "information without removing it."),
         'recurrency': fields.boolean('Recurrent', help="Recurrent Meeting"),
         'partner_ids': fields.many2many('res.partner', string='Attendees', states={'done': [('readonly', True)]}),
+        'is_group_invite': fields.boolean('Group Invite', states={'done': [('readonly', True)]}),
+        'is_individual_invite': fields.boolean('Individual Invite', states={'done': [('readonly', True)]}),
+        'mail_group_ids': fields.many2many('mail.group', string='Group Attendees', states={'done': [('readonly', True)]}),
         'master_event_id': fields.integer('Master Event'),
     }
 
@@ -1197,8 +1198,15 @@ class calendar_event(osv.osv):
             'interval': 1,
             'active': 1,
             'user_id': lambda self, cr, uid, ctx: uid,
+            'is_individual_invite': False,
+            'is_group_invite': False,
             'organizer': default_organizer,
     }
+
+    def init(self, cr):
+        # ensure all records have master_event_id set
+        print 'setting master_event_id in %s' % self._name
+        cr.execute('UPDATE %s SET master_event_id = 0 WHERE master_event_id IS null;' % self._name.replace('.','_'))
 
     def _check_closing_date(self, cr, uid, ids, context=None):
         for event in self.browse(cr, uid, ids, context=context):
@@ -1385,6 +1393,7 @@ class calendar_event(osv.osv):
             context = {}
         new_args = []
 
+        override_mei = True
         for arg in args:
             new_arg = arg
             if arg[0] in ('date', unicode('date'), 'date_deadline', unicode('date_deadline')):
@@ -1393,7 +1402,11 @@ class calendar_event(osv.osv):
             elif arg[0] == "id":
                 new_id = get_real_ids(arg[2])
                 new_arg = (arg[0], arg[1], new_id)
+            elif arg[0] == 'master_event_id':
+                override_mei = False
             new_args.append(new_arg)
+        if override_mei:
+            new_args.append(('master_event_id','!=',-1))
 
         #offset, limit and count must be treated separately as we may need to deal with virtual ids
         res = super(calendar_event, self).search(cr, uid, new_args, offset=0, limit=0, order=order, context=context, count=False)
@@ -1429,9 +1442,12 @@ class calendar_event(osv.osv):
         changeable_slave_fields = set(['alarm_id', 'show_as', 'base_calendar_alarm_id'])
         protected_keys = set(vals.keys()) - changeable_slave_fields
         if uid != SUPERUSER_ID:
-            for record in self.read(cr, SUPERUSER_ID, ids, fields=['id', 'user_id', 'master_event_id']):
+            for i, record in enumerate(self.read(cr, SUPERUSER_ID, ids, fields=['id', 'user_id', 'master_event_id', 'organizer'])):
                 if uid != record['user_id'][0]:
-                    raise ERPError('Permission Denied', 'You can only change your own events.')
+                    if self.default_organizer(cr, uid) == record['organizer']:
+                        ids[i] = record['master_event_id']
+                    else:
+                        raise ERPError('Permission Denied', 'You can only change your own events.')
                 # check if event is a slave and protected fields are being updated
                 elif record['master_event_id'] and protected_keys:
                     raise ERPError('Permission Denied', 'Only the alarm and show-as fields can be modified on invited events')
@@ -1501,9 +1517,11 @@ class calendar_event(osv.osv):
                 master_slave_ids[record['id']] = slave_ids = self.search(
                             cr, SUPERUSER_ID, [('master_event_id','=',record['id'])]
                             )
-                if not super(calendar_event, self).write(cr, SUPERUSER_ID, slave_ids, slave_vals, context):
+                if slave_ids and not super(calendar_event, self).write(cr, SUPERUSER_ID, slave_ids, slave_vals, context):
                     raise ERPError('Error', 'Unable to update slave events')
         if vals.get('partner_ids'):
+            copy_ctx = context.copy()
+            copy_ctx['strict_copy'] = True
             # more invites, create slave events for them
             for event in self.browse(cr, SUPERUSER_ID, master_slave_ids.keys(), context):
                 attendee_ids = self.create_attendees(cr, uid, [event.id], context)[event.id]
@@ -1522,7 +1540,7 @@ class calendar_event(osv.osv):
                         'user_id':  user_id,
                         'master_event_id': event.id,
                         }
-                    self.copy(cr, SUPERUSER_ID, event.id, default, context)
+                    self.copy(cr, SUPERUSER_ID, event.id, default, copy_ctx)
 
         if (('alarm_id' in vals or 'base_calendar_alarm_id' in vals)
                 or ('date' in vals or 'duration' in vals or 'date_deadline' in vals)):
@@ -1674,27 +1692,37 @@ class calendar_event(osv.osv):
             context = {}
         res_partner = self.pool.get('res.partner')
         res_users = self.pool.get('res.users')
+        mail_group = self.pool.get('mail.group')
+        # check for only group event
+        mail_group_ids = vals.get('mail_group_ids', [[6, False, []]])
+        mail_groups = mail_group_ids[0][2][:]
         resp_partner_id = res_users.browse(cr, SUPERUSER_ID, vals['user_id']).partner_id.id
         partner_ids = vals.get('partner_ids', [[6, False, []]])
         partner_ids = [[partner_ids[0][0], partner_ids[0][1], partner_ids[0][2][:]]]
-        if resp_partner_id not in partner_ids[0][2]:
+        if resp_partner_id not in partner_ids[0][2] and vals.get('is_individual_invite'):
             partner_ids[0][2].append(resp_partner_id)
         vals['partner_ids'] = partner_ids
 
         if vals.get('vtimezone', '') and vals.get('vtimezone', '').startswith('/freeassociation.sourceforge.net/tzfile/'):
             vals['vtimezone'] = vals['vtimezone'][40:]
 
+        # set master_event_id to -1 if this is not an individual invite event
+        if not (vals.get('is_individual_invite') or vals.get('master_event_id')):
+            vals['master_event_id'] = -1
         # create master copy
         new_id = super(calendar_event, self).create(cr, uid, vals, context)
         # create attendees on primary appointment
         self.create_attendees(cr, uid, [new_id], context)[new_id]
         # if other attendees, create copies
         # but only if we are not already in a copy loop
-        if not context.get('loop', False):
+        if not context.get('loop'):
             context['loop'] = True
+            copy_ctx = context.copy()
+            copy_ctx['strict_copy'] = True
             other_ids = []
             remaining_ids = partner_ids[0][2][:]
-            remaining_ids.remove(resp_partner_id)
+            if vals.get('is_individual_invite'):
+                remaining_ids.remove(resp_partner_id)
             for partner in res_partner.browse(cr, SUPERUSER_ID, remaining_ids):
                 # if partner is not a local user, ignore
                 if not partner.user_ids:
@@ -1703,7 +1731,14 @@ class calendar_event(osv.osv):
                     'user_id':  partner.user_ids[0].id,
                     'master_event_id': new_id,
                     }
-                other_ids.append(self.copy(cr, SUPERUSER_ID, new_id, default, context))
+                other_ids.append(self.copy(cr, SUPERUSER_ID, new_id, default, copy_ctx))
+            for mail_group in mail_group.browse(cr, SUPERUSER_ID, mail_groups, context):
+                default = {
+                    'user_id': mail_group.user_proxy_id.id,
+                    'master_event_id': new_id,
+                    }
+                other_ids.append(self.copy(cr, SUPERUSER_ID, new_id, default, copy_ctx))
+
         # add alarm to primary appointment only
         alarm_obj = self.pool.get('res.alarm')
         alarm_obj.do_alarm_create(cr, uid, [new_id], self._name, 'date', context=context)
@@ -1791,7 +1826,6 @@ class calendar_todo(osv.osv):
     }
 
     __attribute__ = {}
-
 
 calendar_todo()
 
