@@ -23,7 +23,9 @@ from datetime import datetime, timedelta, date
 from dateutil import parser
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
+from openerp import SUPERUSER_ID
 from openerp.osv import fields, osv
+from openerp.osv.osv import except_osv as ERPError
 from openerp.service import web_services
 from openerp.tools.translate import _
 import pytz
@@ -334,63 +336,67 @@ class calendar_attendee(osv.osv):
         return res
 
     _columns = {
-        'cutype': fields.selection([('individual', 'Individual'),
-                    ('group', 'Group'), ('resource', 'Resource'),
-                    ('room', 'Room'), ('unknown', 'Unknown') ],
-                    'Invite Type', help="Specify the type of Invitation"),
-        'member': fields.char('Member', size=124,
-                    help="Indicate the groups that the attendee belongs to"),
-        'role': fields.selection([('req-participant', 'Participation required'),
-                    ('chair', 'Chair Person'),
-                    ('opt-participant', 'Optional Participation'),
-                    ('non-participant', 'For information Purpose')], 'Role',
-                    help='Participation role for the calendar user'),
-        'state': fields.selection([('needs-action', 'Needs Action'),
-                        ('tentative', 'Uncertain'),
-                        ('declined', 'Declined'),
-                        ('accepted', 'Accepted'),
-                        ('delegated', 'Delegated')], 'Status', readonly=True,
-                        help="Status of the attendee's participation"),
-        'rsvp':  fields.boolean('Required Reply?',
-                    help="Indicats whether the favor of a reply is requested"),
+        'cutype': fields.selection([
+                ('individual', 'Individual'),
+                ('group', 'Group'), ('resource', 'Resource'),
+                ('room', 'Room'), ('unknown', 'Unknown')],
+                'Invite Type', help="Specify the type of Invitation"),
+        'member': fields.char(
+                'Member', size=124, help="Indicate the groups that the attendee belongs to"),
+        'role': fields.selection([
+                ('req-participant', 'Participation required'),
+                ('chair', 'Chair Person'),
+                ('opt-participant', 'Optional Participation'),
+                ('non-participant', 'For information Purpose')],
+                'Role', help='Participation role for the calendar user'),
+        'state': fields.selection([
+                ('needs-action', 'Needs Action'),
+                ('tentative', 'Uncertain'),
+                ('declined', 'Declined'),
+                ('accepted', 'Accepted'),
+                ('delegated', 'Delegated')],
+                'Status', readonly=True, help="Status of the attendee's participation"),
+        'rsvp':  fields.boolean(
+                'Required Reply?', help="Indicats whether the favor of a reply is requested"),
         'delegated_to': fields.function(
-                _compute_data,
-                string='Delegated To', type="char", size=124, store=True,
-                multi='delegated_to',
-                help="The users that the original request was delegated to",
-                ),
+                _compute_data, string='Delegated To', type="char", size=124, store=True,
+                multi='delegated_to', help="The users that the original request was delegated to"),
         'delegated_from': fields.function(
-            _compute_data,
-            string='Delegated From',
-            type="char", store=True, size=124, multi='delegated_from'),
-        'parent_ids': fields.many2many('calendar.attendee', 'calendar_attendee_parent_rel',
-                                    'attendee_id', 'parent_id', 'Delegrated From'),
-        'child_ids': fields.many2many('calendar.attendee', 'calendar_attendee_child_rel',
-                                      'attendee_id', 'child_id', 'Delegrated To'),
-        'sent_by': fields.function(_compute_data, string='Sent By',
-                        type="char", multi='sent_by', store=True, size=124,
-                        help="Specify the user that is acting on behalf of the calendar user"),
-        'sent_by_uid': fields.function(_compute_data, string='Sent By User',
-                            type="many2one", relation="res.users", multi='sent_by_uid'),
-        'cn': fields.function(_compute_data, string='Common name',
-                            type="char", size=124, multi='cn', store=True),
-        'dir': fields.char('URI Reference', size=124,
-        help="Reference to the URI that points to the directory information corresponding to the attendee."),
-        'language': fields.function(_compute_data, string='Language',
-                    type="selection", selection=_lang_get, multi='language',
-                    store=True,
-                    help="To specify the language for text values in a property or property parameter."),
+                _compute_data, string='Delegated From', type="char", store=True, size=124, multi='delegated_from'),
+        'parent_ids': fields.many2many(
+                'calendar.attendee', 'calendar_attendee_parent_rel',
+                'attendee_id', 'parent_id', 'Delegrated From'),
+        'child_ids': fields.many2many(
+                'calendar.attendee', 'calendar_attendee_child_rel',
+                'attendee_id', 'child_id', 'Delegrated To'),
+        'sent_by': fields.function(
+                _compute_data, string='Sent By', type="char", multi='sent_by', store=True,
+                size=124, help="Specify the user that is acting on behalf of the calendar user"),
+        'sent_by_uid': fields.function(
+                _compute_data, string='Sent By User',
+                type="many2one", relation="res.users", multi='sent_by_uid'),
+        'cn': fields.function(
+                _compute_data, string='Common name',
+                type="char", size=124, multi='cn', store=True),
+        'dir': fields.char(
+                'URI Reference', size=124,
+                help="Reference to the URI that points to the directory information corresponding to the attendee."),
+        'language': fields.function(
+                _compute_data, string='Language', type="selection", selection=_lang_get, multi='language',
+                store=True, help="To specify the language for text values in a property or property parameter."),
         'user_id': fields.many2one('res.users', 'User'),
         'partner_id': fields.many2one('res.partner', 'Contact'),
         'email': fields.char('Email', size=124, help="Email of Invited Person"),
-        'event_date': fields.function(_compute_data, string='Event Date',
-                            type="datetime", multi='event_date'),
+        'event_date': fields.function(
+                _compute_data, string='Event Date',
+                 type="datetime", multi='event_date'),
         'event_end_date': fields.function(_compute_data,
-                            string='Event End Date', type="datetime",
-                            multi='event_end_date'),
+                string='Event End Date', type="datetime",
+                multi='event_end_date'),
         'ref': fields.reference('Event Ref', selection=_links_get, size=128),
         'availability': fields.selection([('free', 'Free'), ('busy', 'Busy')], 'Free/Busy', readonly="True"),
     }
+
     _defaults = {
         'state': 'needs-action',
         'role': 'req-participant',
@@ -566,6 +572,15 @@ class calendar_attendee(osv.osv):
         user = usr_obj.browse(cr, uid, user_id, *args)
         return {'value': {'email': user.email, 'availability':user.availability}}
 
+    def _check_permission(self, cr, uid, ids, context=None):
+        for attendee in self.browse(cr, uid, ids, context=context):
+            if not (
+                uid == SUPERUSER_ID or
+                not attendee.user_id or
+                attendee.user_id and attendee.user_id.id == uid
+                ):
+                    raise ERPError('Error', 'You can only change your own status.')
+
     def do_tentative(self, cr, uid, ids, context=None, *args):
         """
         Makes event invitation as Tentative.
@@ -576,30 +591,20 @@ class calendar_attendee(osv.osv):
         @param *args: get Tupple value
         @param context: a standard dictionary for contextual values
         """
+        self._check_permission(cr, uid, ids, context)
         return self.write(cr, uid, ids, {'state': 'tentative'}, context)
 
     def do_accept(self, cr, uid, ids, context=None, *args):
         """
-        Update state of invitation as Accepted and if the invited user is other
-        then event user it will make a copy of this event for invited user.
+        Update state of invitation as Accepted.
         @param cr: the current row, from the database cursor
         @param uid: the current user's ID for security checks
         @param ids: list of calendar attendee's IDs
         @param context: a standard dictionary for contextual values
         @return: True
         """
-        if context is None:
-            context = {}
-
-        for vals in self.browse(cr, uid, ids, context=context):
-            if vals.ref and vals.ref.user_id:
-                mod_obj = self.pool.get(vals.ref._name)
-                res=mod_obj.read(cr,uid,[vals.ref.id],['duration','class'],context)
-                defaults = {'user_id': vals.user_id.id, 'organizer_id': vals.ref.user_id.id,'duration':res[0]['duration'],'class':res[0]['class']}
-                mod_obj.copy(cr, uid, vals.ref.id, default=defaults, context=context)
-            self.write(cr, uid, vals.id, {'state': 'accepted'}, context)
-
-        return True
+        self._check_permission(cr, uid, ids, context)
+        return self.write(cr, uid, ids, {'state': 'accepted'}, context)
 
     def do_decline(self, cr, uid, ids, context=None, *args):
         """
@@ -611,8 +616,7 @@ class calendar_attendee(osv.osv):
         @param *args: get Tupple value
         @param context: a standard dictionary for contextual values
         """
-        if context is None:
-            context = {}
+        self._check_permission(cr, uid, ids, context)
         return self.write(cr, uid, ids, {'state': 'declined'}, context)
 
     def create(self, cr, uid, vals, context=None):
@@ -633,6 +637,10 @@ class calendar_attendee(osv.osv):
             vals['cn'] = vals.get("cn")
         res = super(calendar_attendee, self).create(cr, uid, vals, context=context)
         return res
+
+    def unlink(self, cr, uid, ids, context=None):
+        self._check_permission(cr, uid, ids, context)
+        return super(calendar_attendee, self).unlink(cr, uid, ids, context)
 
 calendar_attendee()
 
@@ -1045,32 +1053,41 @@ class calendar_event(osv.osv):
         'create_date': fields.datetime('Created', readonly=True),
         'duration': fields.float('Duration', states={'done': [('readonly', True)]}),
         'description': fields.text('Description', states={'done': [('readonly', True)]}),
-        'class': fields.selection([('public', 'Public'), ('private', 'Private'),
-             ('confidential', 'Public for Employees')], 'Privacy', states={'done': [('readonly', True)]}),
+        'class': fields.selection([
+                ('public', 'Public'),
+                ('private', 'Private'),
+                ('confidential', 'Public for Employees')],
+                'Privacy', states={'done': [('readonly', True)]}),
         'location': fields.char('Location', size=264, help="Location of Event", states={'done': [('readonly', True)]}),
-        'show_as': fields.selection([('free', 'Free'), ('busy', 'Busy')],
-                                                'Show Time as', states={'done': [('readonly', True)]}),
+        'show_as': fields.selection([
+                ('free', 'Free'),
+                ('busy', 'Busy')],
+                'Show Time as', states={'done': [('readonly', True)]}),
         'base_calendar_url': fields.char('Caldav URL', size=264),
         'state': fields.selection([
-            ('tentative', 'Uncertain'),
-            ('cancelled', 'Cancelled'),
-            ('confirmed', 'Confirmed'),
-            ], 'Status', readonly=True),
+                ('tentative', 'Uncertain'),
+                ('cancelled', 'Cancelled'),
+                ('confirmed', 'Confirmed'),
+                ],
+                'Status', readonly=True),
         'exdate': fields.text('Exception Date/Times',
-            help="This property defines the list of date/time exceptions for a recurring calendar component."),
+                help="This property defines the list of date/time exceptions for a recurring calendar component."),
         'exrule': fields.char('Exception Rule', size=352,
-            help="Defines a rule or repeating pattern of time to exclude from the recurring rule."),
-        'rrule': fields.function(_get_rulestring, type='char', size=124,
-                    fnct_inv=_rrule_write, store=True, string='Recurrent Rule'),
+                help="Defines a rule or repeating pattern of time to exclude from the recurring rule."),
+        'rrule': fields.function(
+                _get_rulestring, type='char', size=124, fnct_inv=_rrule_write,
+                store=True, string='Recurrent Rule'),
         'rrule_type': fields.selection([
-            ('daily', 'Day(s)'),
-            ('weekly', 'Week(s)'),
-            ('monthly', 'Month(s)'),
-            ('yearly', 'Year(s)')
-            ], 'Recurrency', states={'done': [('readonly', True)]},
-            help="Let the event automatically repeat at that interval"),
-        'alarm_id': fields.many2one('res.alarm', 'Reminder', states={'done': [('readonly', True)]},
-                        help="Set an alarm at this time, before the event occurs" ),
+                ('daily', 'Day(s)'),
+                ('weekly', 'Week(s)'),
+                ('monthly', 'Month(s)'),
+                ('yearly', 'Year(s)')
+                ],
+                'Recurrency', states={'done': [('readonly', True)]},
+                help="Let the event automatically repeat at that interval"),
+        'alarm_id': fields.many2one(
+                'res.alarm', 'Reminder', states={'done': [('readonly', True)]},
+                 help="Set an alarm at this time, before the event occurs" ),
         'base_calendar_alarm_id': fields.many2one('calendar.alarm', 'Alarm'),
         'recurrent_id': fields.integer('Recurrent ID'),
         'recurrent_id_date': fields.datetime('Recurrent ID date'),
@@ -1078,7 +1095,10 @@ class calendar_event(osv.osv):
         'user_id': fields.many2one('res.users', 'Responsible', states={'done': [('readonly', True)]}),
         'organizer': fields.char("Organizer", size=256, states={'done': [('readonly', True)]}), # Map with organizer attribute of VEvent.
         'organizer_id': fields.many2one('res.users', 'Organizer', states={'done': [('readonly', True)]}),
-        'end_type' : fields.selection([('count', 'Number of repetitions'), ('end_date','End date')], 'Recurrence Termination'),
+        'end_type' : fields.selection([
+                ('count', 'Number of repetitions'),
+                ('end_date','End date')],
+                'Recurrence Termination'),
         'interval': fields.integer('Repeat Every', help="Repeat every (Days/Week/Month/Year)"),
         'count': fields.integer('Repeat', help="Repeat x times"),
         'mo': fields.boolean('Mon'),
@@ -1088,39 +1108,49 @@ class calendar_event(osv.osv):
         'fr': fields.boolean('Fri'),
         'sa': fields.boolean('Sat'),
         'su': fields.boolean('Sun'),
-        'select1': fields.selection([('date', 'Date of month'),
-                                    ('day', 'Day of month')], 'Option'),
+        'select1': fields.selection([
+                ('date', 'Date of month'),
+                ('day', 'Day of month')],
+                'Option'),
         'day': fields.integer('Date of month'),
         'week_list': fields.selection([
-            ('MO', 'Monday'),
-            ('TU', 'Tuesday'),
-            ('WE', 'Wednesday'),
-            ('TH', 'Thursday'),
-            ('FR', 'Friday'),
-            ('SA', 'Saturday'),
-            ('SU', 'Sunday')], 'Weekday'),
+                ('MO', 'Monday'),
+                ('TU', 'Tuesday'),
+                ('WE', 'Wednesday'),
+                ('TH', 'Thursday'),
+                ('FR', 'Friday'),
+                ('SA', 'Saturday'),
+                ('SU', 'Sunday')],
+                'Weekday'),
         'byday': fields.selection([
-            ('1', 'First'),
-            ('2', 'Second'),
-            ('3', 'Third'),
-            ('4', 'Fourth'),
-            ('5', 'Fifth'),
-            ('-1', 'Last')], 'By day'),
+                ('1', 'First'),
+                ('2', 'Second'),
+                ('3', 'Third'),
+                ('4', 'Fourth'),
+                ('5', 'Fifth'),
+                ('-1', 'Last')],
+                'By day'),
         'month_list': fields.selection(months.items(), 'Month'),
         'end_date': fields.date('Repeat Until'),
-        'attendee_ids': fields.many2many('calendar.attendee', 'event_attendee_rel',
-                                 'event_id', 'attendee_id', 'Attendees'),
+        'attendee_ids': fields.many2many('calendar.attendee', string='Attendees'),
         'allday': fields.boolean('All Day', states={'done': [('readonly', True)]}),
-        'active': fields.boolean('Active',
-            help="If the active field is set to true, it will allow you to hide the event alarm information without removing it."),
+        'active': fields.boolean(
+                'Active',
+                help="If the active field is set to true, it will allow you to hide the event alarm "
+                      "information without removing it."),
         'recurrency': fields.boolean('Recurrent', help="Recurrent Meeting"),
         'partner_ids': fields.many2many('res.partner', string='Attendees', states={'done': [('readonly', True)]}),
+        'is_group_invite': fields.boolean('Group Invite', states={'done': [('readonly', True)]}),
+        'is_individual_invite': fields.boolean('Individual Invite', states={'done': [('readonly', True)]}),
+        'mail_group_ids': fields.many2many('mail.group', string='Group Attendees', states={'done': [('readonly', True)]}),
+        'master_event_id': fields.integer('Master Event'),
     }
 
     def create_attendees(self, cr, uid, ids, context):
-        att_obj = self.pool.get('calendar.attendee')
-        user_obj = self.pool.get('res.users')
-        current_user = user_obj.browse(cr, uid, uid, context=context)
+        calendar_attendee = self.pool.get('calendar.attendee')
+        res_users = self.pool.get('res.users')
+        current_user = res_users.browse(cr, uid, uid, context=context)
+        new_attendee_ids = {}
         for event in self.browse(cr, uid, ids, context):
             attendees = {}
             for att in event.attendee_ids:
@@ -1130,23 +1160,24 @@ class calendar_event(osv.osv):
             for partner in event.partner_ids:
                 if partner.id in attendees:
                     continue
-                att_id = self.pool.get('calendar.attendee').create(cr, uid, {
+                att_id = calendar_attendee.create(cr, uid, {
                     'partner_id': partner.id,
                     'user_id': partner.user_ids and partner.user_ids[0].id or False,
-                    'ref': self._name+','+str(event.id),
-                    'email': partner.email
+                    'ref': self._name + ',' + str(event.id),
+                    'email': partner.email,
                 }, context=context)
                 if partner.email:
                     mail_to = mail_to + " " + partner.email
-                self.write(cr, uid, [event.id], {
+                self.write(cr, SUPERUSER_ID, [event.id], {
                     'attendee_ids': [(4, att_id)]
                 }, context=context)
                 new_attendees.append(att_id)
+            new_attendee_ids[event.id] = new_attendees
 
             if mail_to and current_user.email:
-                att_obj._send_mail(cr, uid, new_attendees, mail_to,
+                calendar_attendee._send_mail(cr, uid, new_attendees, mail_to,
                     email_from = current_user.email, context=context)
-        return True
+        return new_attendee_ids
 
     def default_organizer(self, cr, uid, context=None):
         user_pool = self.pool.get('res.users')
@@ -1167,8 +1198,15 @@ class calendar_event(osv.osv):
             'interval': 1,
             'active': 1,
             'user_id': lambda self, cr, uid, ctx: uid,
+            'is_individual_invite': False,
+            'is_group_invite': False,
             'organizer': default_organizer,
     }
+
+    def init(self, cr):
+        # ensure all records have master_event_id set
+        print 'setting master_event_id in %s' % self._name
+        cr.execute('UPDATE %s SET master_event_id = 0 WHERE master_event_id IS null;' % self._name.replace('.','_'))
 
     def _check_closing_date(self, cr, uid, ids, context=None):
         for event in self.browse(cr, uid, ids, context=context):
@@ -1355,6 +1393,7 @@ class calendar_event(osv.osv):
             context = {}
         new_args = []
 
+        override_mei = True
         for arg in args:
             new_arg = arg
             if arg[0] in ('date', unicode('date'), 'date_deadline', unicode('date_deadline')):
@@ -1363,7 +1402,11 @@ class calendar_event(osv.osv):
             elif arg[0] == "id":
                 new_id = get_real_ids(arg[2])
                 new_arg = (arg[0], arg[1], new_id)
+            elif arg[0] == 'master_event_id':
+                override_mei = False
             new_args.append(new_arg)
+        if override_mei:
+            new_args.append(('master_event_id','!=',-1))
 
         #offset, limit and count must be treated separately as we may need to deal with virtual ids
         res = super(calendar_event, self).search(cr, uid, new_args, offset=0, limit=0, order=order, context=context, count=False)
@@ -1391,6 +1434,23 @@ class calendar_event(osv.osv):
                 return True
 
     def write(self, cr, uid, ids, vals, context=None, check=True, update_check=True):
+        context = context or {}
+        if isinstance(ids, (str, int, long)):
+            ids = [ids]
+        # only event owners can make changes (and admin)
+        # so get existing data and compare user_id with uid
+        changeable_slave_fields = set(['alarm_id', 'show_as', 'base_calendar_alarm_id'])
+        protected_keys = set(vals.keys()) - changeable_slave_fields
+        if uid != SUPERUSER_ID:
+            for i, record in enumerate(self.read(cr, SUPERUSER_ID, ids, fields=['id', 'user_id', 'master_event_id', 'organizer'])):
+                if uid != record['user_id'][0]:
+                    if self.default_organizer(cr, uid) == record['organizer']:
+                        ids[i] = record['master_event_id']
+                    else:
+                        raise ERPError('Permission Denied', 'You can only change your own events.')
+                # check if event is a slave and protected fields are being updated
+                elif record['master_event_id'] and protected_keys:
+                    raise ERPError('Permission Denied', 'Only the alarm and show-as fields can be modified on invited events')
         def _only_changes_to_apply_on_real_ids(field_names):
             ''' return True if changes are only to be made on the real ids'''
             for field in field_names:
@@ -1398,9 +1458,6 @@ class calendar_event(osv.osv):
                     return False
             return True
 
-        context = context or {}
-        if isinstance(ids, (str, int, long)):
-            ids = [ids]
         res = False
 
         # Special write of complex IDS
@@ -1446,9 +1503,44 @@ class calendar_event(osv.osv):
         if vals.get('vtimezone', '') and vals.get('vtimezone', '').startswith('/freeassociation.sourceforge.net/tzfile/'):
             vals['vtimezone'] = vals['vtimezone'][40:]
 
-        res = super(calendar_event, self).write(cr, uid, ids, vals, context=context)
-        if vals.get('partner_ids', False):
-            self.create_attendees(cr, uid, ids, context)
+        res = super(calendar_event, self).write(cr, SUPERUSER_ID, ids, vals, context=context)
+        # get list of slave events and push the changes to them
+        slave_vals = vals.copy()
+        slave_vals.pop('user_id', None)
+        slave_vals.pop('alarm_id', None)
+        slave_vals.pop('base_calendar_alarm_id', None)
+        # XXX -- possible add 'master_event_id' to above list
+        master_slave_ids = {}
+        for record in self.read(cr, SUPERUSER_ID, ids, fields=['id', 'master_event_id']):
+            master_event_id = record['master_event_id']
+            if not master_event_id:
+                master_slave_ids[record['id']] = slave_ids = self.search(
+                            cr, SUPERUSER_ID, [('master_event_id','=',record['id'])]
+                            )
+                if slave_ids and not super(calendar_event, self).write(cr, SUPERUSER_ID, slave_ids, slave_vals, context):
+                    raise ERPError('Error', 'Unable to update slave events')
+        if vals.get('partner_ids'):
+            copy_ctx = context.copy()
+            copy_ctx['strict_copy'] = True
+            # more invites, create slave events for them
+            for event in self.browse(cr, SUPERUSER_ID, master_slave_ids.keys(), context):
+                attendee_ids = self.create_attendees(cr, uid, [event.id], context)[event.id]
+                # link attendees to old slaves
+                if not super(calendar_event, self).write(cr, SUPERUSER_ID, master_slave_ids[event.id], context):
+                    raise ERPError('Error', 'Unable to update slave events')
+                # and create new slaves
+                user_ids = [
+                        att['user_id'][0]
+                        for att in
+                           self.pool.get('calendar.attendee').read(
+                               cr, SUPERUSER_ID, attendee_ids, fields=['user_id'], context=context)
+                           ]
+                for user_id in user_ids:
+                    default = {
+                        'user_id':  user_id,
+                        'master_event_id': event.id,
+                        }
+                    self.copy(cr, SUPERUSER_ID, event.id, default, copy_ctx)
 
         if (('alarm_id' in vals or 'base_calendar_alarm_id' in vals)
                 or ('date' in vals or 'duration' in vals or 'date_deadline' in vals)):
@@ -1531,22 +1623,21 @@ class calendar_event(osv.osv):
         return result
 
     def copy(self, cr, uid, id, default=None, context=None):
-        if context is None:
-            context = {}
-
         res = super(calendar_event, self).copy(cr, uid, base_calendar_id2real_id(id), default, context)
-        alarm_obj = self.pool.get('res.alarm')
-        alarm_obj.do_alarm_create(cr, uid, [res], self._name, 'date', context=context)
         return res
 
     def unlink(self, cr, uid, ids, context=None):
         if not isinstance(ids, list):
             ids = [ids]
+        records = self.read(cr, SUPERUSER_ID, ids, fields=['id', 'user_id'])
+        if uid != SUPERUSER_ID:
+            for record in records:
+                if uid != record['user_id'][0]:
+                    raise ERPError('Error', 'You can only delete your own events.')
         res = False
         attendee_obj=self.pool.get('calendar.attendee')
-        for i, event_id in enumerate(ids[:]):
+        for event_id in ids[:]:
             if len(str(event_id).split('-')) == 1:
-                ids[i] = int(event_id)
                 continue
 
             real_event_id = base_calendar_id2real_id(event_id)
@@ -1557,27 +1648,103 @@ class calendar_event(osv.osv):
             exdate = (data['exdate'] and (data['exdate'] + ',')  or '') + date_new
             self.write(cr, uid, [real_event_id], {'exdate': exdate})
             ids.remove(event_id)
-        for event in self.browse(cr, uid, ids, context=context):
-            if event.attendee_ids:
-                attendee_obj.unlink(cr, uid, [x.id for x in event.attendee_ids], context=context)
+        copies_to_remove = set()
+        for event in self.browse(cr, SUPERUSER_ID, ids, context=context):
+            for attendee in event.attendee_ids:
+                if event.master_event_id:
+                    # not the master event
+                    # decline the user's invite (not anyone else's) but do not delete attendee
+                    if attendee.user_id.id == uid:
+                        attendee.write({'state':'declined'})
+                else:
+                    # this is the master event, delete all attendees, delete all copies of this event
+                    attendee_obj.unlink(cr, SUPERUSER_ID, [x.id for x in event.attendee_ids], context=context)
+                    copies_to_remove |= set(self.search(cr, SUPERUSER_ID, [('master_event_id','=',event.id)], context))
 
+        ids = list(set(ids) | copies_to_remove)
         res = super(calendar_event, self).unlink(cr, uid, ids, context=context)
         self.pool.get('res.alarm').do_alarm_unlink(cr, uid, ids, self._name)
         self.unlink_events(cr, uid, ids, context=context)
         return res
 
+    # primary use-case: setting up appointments for oneself
+    # - user_id (Responsible) is uid and should be added to partner_ids (Attendees)
+    # - partner_ids are only openerp users
+    # 
+    # secondary use-case: allow setting up a meeting that is owned by a group
+    # - user_id (Responsible) should be mail group pointer (possible a fake user with an
+    #   internal flag or something) 
+    # - partner_ids could include non-user partners
+    #
+    # tertiary use-case: setting up appointments for somebody else
+    # - user_id (Responsible) is not uid but should be added to partner_ids (Attendees)
+    # - partner_ids are only openerp users
+    #
+    # if an attendee declines:
+    # - their version of the appointment is removed
+    # - a notification is sent to other attendees
+    # if the declining attendee is the meeting owner
+    # - the meeting is cancelled and deleted from all attendees
+    # - a notification is sent to all attendees
+
     def create(self, cr, uid, vals, context=None):
         if context is None:
             context = {}
+        res_partner = self.pool.get('res.partner')
+        res_users = self.pool.get('res.users')
+        mail_group = self.pool.get('mail.group')
+        # check for only group event
+        mail_group_ids = vals.get('mail_group_ids', [[6, False, []]])
+        mail_groups = mail_group_ids[0][2][:]
+        resp_partner_id = res_users.browse(cr, SUPERUSER_ID, vals['user_id']).partner_id.id
+        partner_ids = vals.get('partner_ids', [[6, False, []]])
+        partner_ids = [[partner_ids[0][0], partner_ids[0][1], partner_ids[0][2][:]]]
+        if resp_partner_id not in partner_ids[0][2] and vals.get('is_individual_invite'):
+            partner_ids[0][2].append(resp_partner_id)
+        vals['partner_ids'] = partner_ids
 
         if vals.get('vtimezone', '') and vals.get('vtimezone', '').startswith('/freeassociation.sourceforge.net/tzfile/'):
             vals['vtimezone'] = vals['vtimezone'][40:]
 
-        res = super(calendar_event, self).create(cr, uid, vals, context)
+        # set master_event_id to -1 if this is not an individual invite event
+        if not (vals.get('is_individual_invite') or vals.get('master_event_id')):
+            vals['master_event_id'] = -1
+        # create master copy
+        new_id = super(calendar_event, self).create(cr, uid, vals, context)
+        # create attendees on primary appointment
+        self.create_attendees(cr, uid, [new_id], context)[new_id]
+        # if other attendees, create copies
+        # but only if we are not already in a copy loop
+        if not context.get('loop'):
+            context['loop'] = True
+            copy_ctx = context.copy()
+            copy_ctx['strict_copy'] = True
+            other_ids = []
+            remaining_ids = partner_ids[0][2][:]
+            if vals.get('is_individual_invite'):
+                remaining_ids.remove(resp_partner_id)
+            for partner in res_partner.browse(cr, SUPERUSER_ID, remaining_ids):
+                # if partner is not a local user, ignore
+                if not partner.user_ids:
+                    continue
+                default = {
+                    'user_id':  partner.user_ids[0].id,
+                    'master_event_id': new_id,
+                    }
+                other_ids.append(self.copy(cr, SUPERUSER_ID, new_id, default, copy_ctx))
+            for mail_group in mail_group.browse(cr, SUPERUSER_ID, mail_groups, context):
+                default = {
+                    'user_id': mail_group.user_proxy_id.id,
+                    'master_event_id': new_id,
+                    }
+                other_ids.append(self.copy(cr, SUPERUSER_ID, new_id, default, copy_ctx))
+
+        # add alarm to primary appointment only
         alarm_obj = self.pool.get('res.alarm')
-        alarm_obj.do_alarm_create(cr, uid, [res], self._name, 'date', context=context)
-        self.create_attendees(cr, uid, [res], context)
-        return res
+        alarm_obj.do_alarm_create(cr, uid, [new_id], self._name, 'date', context=context)
+        return new_id
+
+    # TODO: add routine to remove events from declined participants
 
     def do_tentative(self, cr, uid, ids, context=None, *args):
         """ Makes event invitation as Tentative
@@ -1659,7 +1826,6 @@ class calendar_todo(osv.osv):
     }
 
     __attribute__ = {}
-
 
 calendar_todo()
 
@@ -1757,4 +1923,4 @@ class virtual_report_spool(web_services.report_spool):
 
 virtual_report_spool()
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
+# vim:expandtab:tabstop=4:softtabstop=4:shiftwidth=4:

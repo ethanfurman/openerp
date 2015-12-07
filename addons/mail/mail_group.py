@@ -49,13 +49,13 @@ class mail_group(osv.Model):
         'description': fields.text('Description'),
         'menu_id': fields.many2one('ir.ui.menu', string='Related Menu', required=True, ondelete="cascade"),
         'public': fields.selection([('public', 'Public'), ('private', 'Private'), ('groups', 'Selected Group Only')], 'Privacy', required=True,
-            help='This group is visible by non members. \
-            Invisible groups can add members through the invite button.'),
+            help=('This group is visible by non members.  '
+                  'Invisible groups can add members through the invite button.')),
         'group_public_id': fields.many2one('res.groups', string='Authorized Group'),
         'group_ids': fields.many2many('res.groups', rel='mail_group_res_group_rel',
             id1='mail_group_id', id2='groups_id', string='Auto Subscription',
-            help="Members of those groups will automatically added as followers. "\
-                 "Note that they will be able to manage their subscription manually "\
+            help="Members of those groups will automatically added as followers. "
+                 "Note that they will be able to manage their subscription manually "
                  "if necessary."),
         # image: all image fields are base64 encoded and PIL-supported
         'image': fields.binary("Photo",
@@ -65,20 +65,21 @@ class mail_group(osv.Model):
             store={
                 'mail.group': (lambda self, cr, uid, ids, c={}: ids, ['image'], 10),
             },
-            help="Medium-sized photo of the group. It is automatically "\
-                 "resized as a 128x128px image, with aspect ratio preserved. "\
+            help="Medium-sized photo of the group. It is automatically "
+                 "resized as a 128x128px image, with aspect ratio preserved. "
                  "Use this field in form views or some kanban views."),
         'image_small': fields.function(_get_image, fnct_inv=_set_image,
             string="Small-sized photo", type="binary", multi="_get_image",
             store={
                 'mail.group': (lambda self, cr, uid, ids, c={}: ids, ['image'], 10),
             },
-            help="Small-sized photo of the group. It is automatically "\
-                 "resized as a 64x64px image, with aspect ratio preserved. "\
+            help="Small-sized photo of the group. It is automatically "
+                 "resized as a 64x64px image, with aspect ratio preserved. "
                  "Use this field anywhere a small image is required."),
         'alias_id': fields.many2one('mail.alias', 'Alias', ondelete="cascade", required=True,
             help="The email address associated with this group. New emails received will automatically "
                  "create new topics."),
+        'user_proxy_id': fields.many2one('res.users', 'User Proxy', ondelete='cascade'),
     }
 
     def _get_default_employee_group(self, cr, uid, context=None):
@@ -95,6 +96,13 @@ class mail_group(osv.Model):
         'image': _get_default_image,
         'alias_domain': False,  # always hide alias during creation
     }
+
+    def init(self ,cr):
+        # ensure all mail groups have a proxy user id
+        missing_ids = self.search(cr, SUPERUSER_ID, [('user_proxy_id','=',False)])
+        for d in self.read(cr, SUPERUSER_ID, missing_ids, fields=['id','name']):
+            print 'creating proxy for', d['name']
+            self.write(cr, SUPERUSER_ID, [d['id']], {'user_proxy_id': self._create_user_proxy(cr, d['name'])})
 
     def _generate_header_description(self, cr, uid, group, context=None):
         header = ''
@@ -113,6 +121,16 @@ class mail_group(osv.Model):
                 partner_ids += [user.partner_id.id for user in group.users]
             self.message_subscribe(cr, uid, ids, partner_ids, context=context)
 
+    def _create_user_proxy(self, cr, name):
+        res_users = self.pool.get('res.users')
+        return res_users.create(cr, SUPERUSER_ID,
+                {
+                    'name': name,
+                    'login': loginify(name),
+                    'is_mail_group_proxy': True,
+                    },
+                )
+
     def create(self, cr, uid, vals, context=None):
         mail_alias = self.pool.get('mail.alias')
         if not vals.get('alias_id'):
@@ -123,6 +141,9 @@ class mail_group(osv.Model):
                           {'alias_name': "group+" + vals['name']},
                           model_name=self._name, context=context)
             vals['alias_id'] = alias_id
+
+        # create user proxy
+        vals['user_proxy_id'] = self._create_user_proxy(cr, vals['name'])
 
         # get parent menu
         menu_parent = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'mail', 'mail_group_root')
@@ -208,3 +229,13 @@ class mail_group(osv.Model):
         """ Wrapper because message_unsubscribe_users take a user_ids=None
             that receive the context without the wrapper. """
         return self.message_unsubscribe_users(cr, uid, ids, context=context)
+
+def loginify(name):
+    'convert group name into a login name'
+    new_name = []
+    for ch in name:
+        if ch.isalnum():
+            new_name.append(ch)
+        elif ch == ' ':
+            new_name.append('_')
+    return ''.join(new_name)

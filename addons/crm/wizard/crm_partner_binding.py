@@ -57,8 +57,8 @@ class crm_partner_binding(osv.osv_memory):
         # The active model has to be a lead or a phonecall
         if (context.get('active_model') == 'crm.lead') and context.get('active_id'):
             active_model = self.pool.get('crm.lead').browse(cr, uid, context.get('active_id'), context=context)
-        elif (context.get('active_model') == 'crm.meeting') and context.get('active_id'):
-            active_model = self.pool.get('crm.meeting').browse(cr, uid, context.get('active_id'), context=context)
+        elif (context.get('active_model') == 'crm.phonecall') and context.get('active_id'):
+            active_model = self.pool.get('crm.phonecall').browse(cr, uid, context.get('active_id'), context=context)
 
         # Find the best matching partner for the active model
         if (active_model):

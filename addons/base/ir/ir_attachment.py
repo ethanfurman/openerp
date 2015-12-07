@@ -24,6 +24,7 @@ import itertools
 import logging
 import os
 import re
+import sys
 
 from openerp import tools
 from openerp.osv import fields,osv
@@ -85,7 +86,8 @@ class ir_attachment(osv.osv):
             else:
                 r = open(full_path,'rb').read().encode('base64')
         except IOError:
-            _logger.error("_read_file reading %s",full_path)
+            type, exc, traceback = sys.exc_info()
+            _logger.error("%s:%s during _read_file reading %s", type, exc, full_path)
         return r
 
     def _file_write(self, cr, uid, location, value):
@@ -137,14 +139,14 @@ class ir_attachment(osv.osv):
             context = {}
         location = self.pool.get('ir.config_parameter').get_param(cr, uid, 'ir_attachment.location')
         file_size = len(value.decode('base64'))
-        if location:
-            attach = self.browse(cr, uid, id, context=context)
-            if attach.store_fname:
-                self._file_delete(cr, uid, location, attach.store_fname)
+        attach = self.browse(cr, uid, id, context=context)
+        if attach.store_fname:
+            self._file_delete(cr, uid, location, attach.store_fname)
+        if location and not context.get('migrate_to_db'):
             fname = self._file_write(cr, uid, location, value)
             super(ir_attachment, self).write(cr, uid, [id], {'store_fname': fname, 'file_size': file_size}, context=context)
         else:
-            super(ir_attachment, self).write(cr, uid, [id], {'db_datas': value, 'file_size': file_size}, context=context)
+            super(ir_attachment, self).write(cr, uid, [id], {'db_datas': value, 'file_size': file_size, 'store_fname':False}, context=context)
         return True
 
     _name = 'ir.attachment'

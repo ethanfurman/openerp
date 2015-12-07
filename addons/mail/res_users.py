@@ -37,6 +37,8 @@ class res_users(osv.Model):
         'alias_id': fields.many2one('mail.alias', 'Alias', ondelete="cascade", required=True,
             help="Email address internally associated with this user. Incoming "\
                  "emails will appear in the user's notifications."),
+        # TODO: look at combining proxy email and group mail alias (20151202-eaf)
+        'is_mail_group_proxy': fields.boolean('Mail Group proxy?'),
     }
 
     _defaults = {
@@ -96,6 +98,18 @@ class res_users(osv.Model):
         if vals.get('login'):
             vals['alias_name'] = vals['login']
         return super(res_users, self).write(cr, uid, ids, vals, context=context)
+
+    def search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False):
+        "only return 'is_mail_group_proxy' users if specifically asked for"
+        adjusted_args = args[:]
+        for arg in args:
+            if arg[0] == 'is_mail_group_proxy':
+                break
+        else:
+            # import traceback
+            # traceback.print_stack()
+            adjusted_args.append(('is_mail_group_proxy','=',False))
+        return super(res_users, self).search(cr, user, adjusted_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
     def unlink(self, cr, uid, ids, context=None):
         # Cascade-delete mail aliases as well, as they should not exist without the user.
