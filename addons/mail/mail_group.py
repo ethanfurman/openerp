@@ -98,11 +98,14 @@ class mail_group(osv.Model):
     }
 
     def init(self ,cr):
-        # ensure all mail groups have a proxy user id
-        missing_ids = self.search(cr, SUPERUSER_ID, [('user_proxy_id','=',False)])
-        for d in self.read(cr, SUPERUSER_ID, missing_ids, fields=['id','name']):
-            print 'creating proxy for', d['name']
-            self.write(cr, SUPERUSER_ID, [d['id']], {'user_proxy_id': self._create_user_proxy(cr, d['name'])})
+        # ensure all mail groups have a proxy user id, but after new column has been registered
+        try:
+            missing_ids = self.search(cr, SUPERUSER_ID, [('user_proxy_id','=',False)])
+            for d in self.read(cr, SUPERUSER_ID, missing_ids, fields=['id','name']):
+                print 'creating proxy for', d['name']
+                self.write(cr, SUPERUSER_ID, [d['id']], {'user_proxy_id': self._create_user_proxy(cr, d['name'])})
+        except:
+            pass
 
     def _generate_header_description(self, cr, uid, group, context=None):
         header = ''
