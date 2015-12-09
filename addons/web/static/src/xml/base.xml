@@ -1232,6 +1232,8 @@
                     class="field_binary"
                 />
             </td>
+        </tr>
+        <tr>
             <td class="oe_form_binary" nowrap="true">
                 <table cellspacing="0" cellpadding="0" border="0">
                 <tr>
@@ -1287,8 +1289,10 @@
                     class="field_binary"
                 />
             </td>
+        </tr>
+        <tr>
             <td class="oe_form_binary" nowrap="true">
-                <table cellspacing="0" cellpadding="0" border="0">
+                <table cellspacing="0" cellpadding="0" border="0" style="width: 255px">
                 <tr>
                     <td>
                         <t t-call="HiddenInputFile">
