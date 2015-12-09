@@ -106,8 +106,6 @@ class res_users(osv.Model):
             if arg[0] == 'is_mail_group_proxy':
                 break
         else:
-            # import traceback
-            # traceback.print_stack()
             adjusted_args.append(('is_mail_group_proxy','=',False))
         return super(res_users, self).search(cr, user, adjusted_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
