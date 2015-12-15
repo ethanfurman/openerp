@@ -282,10 +282,10 @@
                 <field name="search_view_id" ref="view_calendar_event_filter"/>
             </record>
 
-        <!-- Event menu -->
+        <!-- Event menu
         <menuitem id="menu_events"
                 name="Events" parent="base.menu_calendar_configuration"
                 sequence="15" action="action_view_event"/>
-
+        -->
      </data>
  </openerp>
