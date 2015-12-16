@@ -2,7 +2,8 @@ Tracked fields
 ---------------
 Tracked fields is generic logging system for the changes applied to some fields in open chatter.
  - In the definition of a fields. you have to simply add tracked=True.
- - When changing one of the fields having tracked=True on saved automatically write a log in openchatter for the changes in fields.
+ - When changing one of the fields having tracked=True on saved automatically write a log in
+   openchatter for the changes in fields.
 
 How it works:
 +++++++++++++
