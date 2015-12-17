@@ -3725,10 +3725,11 @@ class BaseModel(object):
         if not self._name.endswith('.alias'):
             # fields_to_read can, under some circumstances, contain boolean and not string
             # values
-            missing_fields = not_found(
-                    [f for f in fields_to_read if f and not f.startswith(('__', 'alias_'))],
-                    self._columns.keys() + self._inherit_fields.keys() + ['id'],
-                    )
+            fields_to_check = [f for f in fields_to_read if f and not f.startswith(('__', 'alias_'))]
+            existing_fields = self._columns.keys() + self._inherit_fields.keys() + ['id']
+            if self._log_access:
+                existing_fields += LOG_ACCESS_COLUMNS.keys()
+            missing_fields = not_found(fields_to_check, existing_fields)
             if missing_fields:
                 raise except_orm('Error','field(s) not found in %s: %r' % (self._name, missing_fields))
 
