@@ -160,6 +160,7 @@ class ir_attachment(osv.osv):
         'create_date': fields.datetime('Date Created', readonly=True),
         'create_uid':  fields.many2one('res.users', 'Owner', readonly=True),
         'write_uid':  fields.many2one('res.users', 'Modified by', readonly=True),
+        'write_date': fields.datetime('Date Modified', readonly=True),
         'company_id': fields.many2one('res.company', 'Company', change_default=True),
         'type': fields.selection( [ ('url','URL'), ('binary','Binary'), ],
                 'Type', help="Binary File or URL", required=True, change_default=True),
@@ -183,6 +184,10 @@ class ir_attachment(osv.osv):
         if not cr.fetchone():
             cr.execute('CREATE INDEX ir_attachment_res_idx ON ir_attachment (res_model, res_id)')
             cr.commit()
+
+    def init(self, cr):
+        # ensure all records have a write_date
+        cr.execute('UPDATE %s SET write_date = create_date WHERE write_date IS null;' % self._name.replace('.','_'))
 
     def check(self, cr, uid, ids, mode, context=None, values=None):
         """Restricts the access to an ir.attachment, according to referred model
