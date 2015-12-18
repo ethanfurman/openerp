@@ -411,8 +411,8 @@
 
 <t t-name="Menu.needaction_counter">
     <div class="oe_tag oe_tag_dark oe_menu_counter">
-        <t t-if="widget.needaction_counter &gt; 99"> 99+ </t>
-        <t t-if="widget.needaction_counter &lt;= 99"> <t t-esc="widget.needaction_counter"/> </t>
+        <t t-if="widget.needaction_counter &gt; 0"> ! </t>
+        <t t-if="widget.needaction_counter &lt;= 0"> <t t-esc="widget.needaction_counter"/> </t>
     </div>
 </t>
 
