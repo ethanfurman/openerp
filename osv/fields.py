@@ -442,6 +442,7 @@ class selection(_column):
     _type = 'selection'
 
     def __init__(self, selection, string='unknown', **args):
+        # selection -> [('internal_name', ('User Presentable Name')]
         _column.__init__(self, string=string, **args)
         self.selection = selection
 
