@@ -71,17 +71,21 @@ class res_users(osv.Model):
             raise osv.except_osv(_('Invalid Action!'), _('You may not create a user. To create new users, you should use the "Settings > Users" menu.'))
 
         mail_alias = self.pool.get('mail.alias')
-        alias_id = mail_alias.create_unique_alias(cr, uid, {'alias_name': data['login']}, model_name=self._name, context=context)
-        data['alias_id'] = alias_id
+        need_alias_and_welcome = False
+        if not data.get('alias_id'):
+            need_alias_and_welcome = True
+            alias_id = mail_alias.create_unique_alias(cr, uid, {'alias_name': data['login']}, model_name=self._name, context=context)
+            data['alias_id'] = alias_id
         data.pop('alias_name', None)  # prevent errors during copy()
 
         # create user
         user_id = super(res_users, self).create(cr, uid, data, context=context)
         user = self.browse(cr, uid, user_id, context=context)
-        # alias
-        mail_alias.write(cr, SUPERUSER_ID, [alias_id], {"alias_force_thread_id": user_id}, context)
-        # create a welcome message
-        self._create_welcome_message(cr, uid, user, context=context)
+        if need_alias_and_welcome:
+            # alias
+            mail_alias.write(cr, SUPERUSER_ID, [alias_id], {"alias_force_thread_id": user_id}, context)
+            # create a welcome message
+            self._create_welcome_message(cr, uid, user, context=context)
         return user_id
 
     def _create_welcome_message(self, cr, uid, user, context=None):
@@ -98,16 +102,6 @@ class res_users(osv.Model):
         if vals.get('login'):
             vals['alias_name'] = vals['login']
         return super(res_users, self).write(cr, uid, ids, vals, context=context)
-
-    def search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False):
-        "only return 'is_mail_group_proxy' users if specifically asked for"
-        adjusted_args = args[:]
-        for arg in args:
-            if arg[0] == 'is_mail_group_proxy':
-                break
-        else:
-            adjusted_args.append(('is_mail_group_proxy','=',False))
-        return super(res_users, self).search(cr, user, adjusted_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
     def unlink(self, cr, uid, ids, context=None):
         # Cascade-delete mail aliases as well, as they should not exist without the user.

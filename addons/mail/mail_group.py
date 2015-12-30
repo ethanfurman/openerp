@@ -47,7 +47,7 @@ class mail_group(osv.Model):
     _columns = {
         'name': fields.char('Name', size=64, required=True, translate=True),
         'description': fields.text('Description'),
-        'menu_id': fields.many2one('ir.ui.menu', string='Related Menu', required=True, ondelete="cascade"),
+        'menu_id': fields.many2one('ir.ui.menu', string='Related Menu', required=True, ondelete="restrict"),
         'public': fields.selection([('public', 'Public'), ('private', 'Private'), ('groups', 'Selected Group Only')], 'Privacy', required=True,
             help=('This group is visible by non members.  '
                   'Invisible groups can add members through the invite button.')),
@@ -76,10 +76,10 @@ class mail_group(osv.Model):
             help="Small-sized photo of the group. It is automatically "
                  "resized as a 64x64px image, with aspect ratio preserved. "
                  "Use this field anywhere a small image is required."),
-        'alias_id': fields.many2one('mail.alias', 'Alias', ondelete="cascade", required=True,
+        'alias_id': fields.many2one('mail.alias', 'Alias', ondelete="restrict", required=True,
             help="The email address associated with this group. New emails received will automatically "
                  "create new topics."),
-        'user_proxy_id': fields.many2one('res.users', 'User Proxy', ondelete='cascade'),
+        'user_proxy_id': fields.many2one('res.users', 'User Proxy', ondelete='restrict'),
     }
 
     def _get_default_employee_group(self, cr, uid, context=None):
@@ -124,13 +124,15 @@ class mail_group(osv.Model):
                 partner_ids += [user.partner_id.id for user in group.users]
             self.message_subscribe(cr, uid, ids, partner_ids, context=context)
 
-    def _create_user_proxy(self, cr, name):
+    def _create_user_proxy(self, cr, name, alias_id):
         res_users = self.pool.get('res.users')
         return res_users.create(cr, SUPERUSER_ID,
                 {
-                    'name': name,
+                    'name': 'Group ' + name,
                     'login': loginify(name),
                     'is_mail_group_proxy': True,
+                    'alias_id': alias_id,
+                    'notification_email_send': 'none',
                     },
                 )
 
@@ -146,7 +148,7 @@ class mail_group(osv.Model):
             vals['alias_id'] = alias_id
 
         # create user proxy
-        vals['user_proxy_id'] = self._create_user_proxy(cr, vals['name'])
+        vals['user_proxy_id'] = self._create_user_proxy(cr, vals['name'], vals['alias_id'])
 
         # get parent menu
         menu_parent = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'mail', 'mail_group_root')
@@ -192,13 +194,13 @@ class mail_group(osv.Model):
 
     def unlink(self, cr, uid, ids, context=None):
         groups = self.browse(cr, uid, ids, context=context)
-        # Cascade-delete mail aliases as well, as they should not exist without the mail group.
-        mail_alias = self.pool.get('mail.alias')
-        alias_ids = [group.alias_id.id for group in groups if group.alias_id]
+        # Cascade-delete user proxies as well, as they should not exist without the mail group.
+        res_users = self.pool.get('res.users')
+        user_proxy_ids = [group.user_proxy_id.id for group in groups if group.user_proxy_id]
         # Delete mail_group
         res = super(mail_group, self).unlink(cr, uid, ids, context=context)
-        # Delete alias
-        mail_alias.unlink(cr, SUPERUSER_ID, alias_ids, context=context)
+        # Delete proxy
+        res_users.unlink(cr, SUPERUSER_ID, user_proxy_ids, context=context)
         # Cascade-delete menu entries as well
         self.pool.get('ir.ui.menu').unlink(cr, SUPERUSER_ID, [group.menu_id.id for group in groups if group.menu_id], context=context)
         return res
