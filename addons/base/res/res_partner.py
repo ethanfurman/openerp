@@ -420,8 +420,6 @@ class res_partner(osv.osv, format_address):
                 name =  "%s (%s)" % (name, record.parent_id.name)
             if context.get('show_address'):
                 name = name + "\n" + self._display_address(cr, uid, record, without_company=True, context=context)
-                name = name.replace('\n\n','\n')
-                name = name.replace('\n\n','\n')
             if context.get('show_email') and record.email:
                 name = "%s <%s>" % (name, record.email)
             res.append((record.id, name))
@@ -583,6 +581,8 @@ class res_partner(osv.osv, format_address):
             args['company_name'] = ''
         elif address.parent_id:
             address_format = '%(company_name)s\n' + address_format
-        return address_format % args
+        address = address_format % args
+        address = '\n'.join([line for line in address.split('\n') if line])
+        return address
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
