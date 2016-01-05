@@ -77,13 +77,15 @@ class res_partner(osv.Model):
     def name_get(self, cr, uid, ids, context=None):
         if context is None:
             context = {}
-        if not context.get('show_driver') and self.user_has_groups(cr, uid, 'fleet.group_fleet_manager', context=context):
+        if not context.get('show_driver') or not self.user_has_groups(cr, uid, 'fleet.group_fleet_manager', context=context):
+            func = super(res_partner, self).name_get
             return super(res_partner, self).name_get(cr, uid, ids, context=context)
         res = []
         for record in self.browse(cr, uid, ids, context=context):
             name = record.name
+            is_employee = record.employee
             employee = record.employee_id
-            if employee:
+            if is_employee and employee:
                 name = '%s (%s)\nLicense: %s %s %s\nLicense Exp: %s\nMedical Exp: %s' % (
                         name,
                         employee.driver_employee_num or '',
