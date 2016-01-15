@@ -2914,8 +2914,13 @@
 .openerp .oe_list_content td:first-child:after, .openerp .oe_list_content th:first-child:after {
   border-width: 0;
 }
-.openerp .oe_list_content td.oe_number, .openerp .oe_list_content th.oe_list_header_date, .openerp .oe_list_content th.oe_list_header_datetime, .openerp .oe_list_content th.oe_list_header_float, .openerp .oe_list_content th.oe_list_header_float_time, .openerp .oe_list_content th.oe_list_header_integer, .openerp .oe_list_content th.oe_list_header_monetary, .openerp .oe_list_content td.oe_list_field_date, .openerp .oe_list_content td.oe_list_field_datetime, .openerp .oe_list_content td.oe_list_field_float_time, {
+.openerp .oe_list_content th.oe_list_header_date, .openerp .oe_list_content th.oe_list_header_datetime, .openerp .oe_list_content th.oe_list_header_float, .openerp .oe_list_content th.oe_list_header_float_time, .openerp .oe_list_content th.oe_list_header_integer, .openerp .oe_list_content th.oe_list_header_monetary, .openerp .oe_list_content td.oe_number {
   text-align: right !important;
+  min-width: 6em;
+  max-width: 100px;
+}
+.openerp .oe_list_content td.oe_list_field_date, .openerp .oe_list_content td.oe_list_field_datetime {
+  text-align: center !important;
   min-width: 6em;
   max-width: 100px;
 }
@@ -3414,6 +3419,12 @@ div.ui-widget-overlay {
   }
   .openerp .openerp div.oe_mail_wall {
     overflow: hidden !important;
+  }
+  .openerp .oe_main_window {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100% !important;
   }
 }
 .blockUI.blockOverlay {
