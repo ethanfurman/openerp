@@ -28,6 +28,7 @@
                             <field name="description"/>
                             <field name="parent_id"/>
                             <field name="relation_field"/>
+                            <field name="sequence"/>
                         </group>
                     </sheet>
                 </form>

@@ -122,7 +122,7 @@ class mail_thread(osv.AbstractModel):
         # find current model subtypes, add them to a dictionary
         subtype_obj = self.pool.get('mail.message.subtype')
         subtype_ids = subtype_obj.search(cr, uid, ['|', ('res_model', '=', self._name), ('res_model', '=', False)], context=context)
-        subtype_dict = dict((subtype.name, dict(default=subtype.default, followed=False, id=subtype.id)) for subtype in subtype_obj.browse(cr, uid, subtype_ids, context=context))
+        subtype_dict = dict((subtype.name, dict(default=subtype.default, followed=False, id=subtype.id, seq=subtype.sequence)) for subtype in subtype_obj.browse(cr, uid, subtype_ids, context=context))
         for id in ids:
             res[id]['message_subtype_data'] = subtype_dict.copy()
 
@@ -371,6 +371,7 @@ class mail_thread(osv.AbstractModel):
             partner_ids = notify_ids + [partner.id for partner in self.browse(cr, uid, record['id']).message_follower_ids]
 
             # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
+
             for col_name, col_info in tracked_fields.items():
                 tracking = getattr(self._all_columns[col_name].column, 'track_visibility', None)
                 if record[col_name] == initial[col_name] and tracking == 'always':
