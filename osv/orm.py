@@ -82,9 +82,26 @@ from openerp.tools import SKIPPED_ELEMENT_TYPES
 regex_order = re.compile('^(([a-z0-9_]+|"[a-z0-9_]+")( *desc| *asc)?( *, *|))+$', re.I)
 regex_object_name = re.compile(r'^[a-z0-9_.]+$')
 
+ONE_DAY = datetime.timedelta(days=1)
+TWO_DAYS = datetime.timedelta(days=2)
+THREE_DAYS = datetime.timedelta(days=3)
+FOUR_DAYS = datetime.timedelta(days=4)
+FIVE_DAYS = datetime.timedelta(days=5)
+SIX_DAYS = datetime.timedelta(days=6)
+ONE_WEEK = datetime.timedelta(days=7)
+TWO_WEEKS = datetime.timedelta(days=14)
+THREE_WEEKS = datetime.timedelta(days=21)
+FOUR_WEEKS = datetime.timedelta(days=28)
+ONE_MONTH = datetime.timedelta(days=30)
+FORTNIGHT = datetime.timedelta(days=15)
+
 def transfer_field_to_modifiers(field, modifiers):
     default_values = {}
     state_exceptions = {}
+    if field['string'] == 'Add ice':
+        print('found ice')
+        for key, value in field.items():
+            print(key, value)
     for attr in ('invisible', 'readonly', 'required'):
         state_exceptions[attr] = []
         default_values[attr] = bool(field.get(attr))
@@ -114,7 +131,7 @@ def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False
         else:
             modifiers['invisible'] = [('state', 'not in', node.get('states').split(','))]
 
-    for a, b in (('invisible', 'visible'), ('readonly', 'readwrite'), ('required', 'optional')):
+    for a, b in (('invisible', 'visible'), ('readonly', 'writeonly'), ('required', 'optional')):
         neg, pos = node.get(a), node.get(b)
         if neg and pos:
             raise ValueError('cannot specify both %r and %r' % (neg, pos))
@@ -130,14 +147,14 @@ def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False
                 # Invisible in a tree view has a specific meaning, make it a
                 # new key in the modifiers attribute.
                 modifiers['tree_invisible'] = v
-            elif v or ((a or b) not in modifiers or not isinstance(modifiers[a or b], list)):
+            elif v or (a not in modifiers or not isinstance(modifiers[a], list)):
                 # Don't set the attribute to False if a dynamic value was
                 # provided (i.e. a domain from attrs or states).
                 modifiers[a] = v
 
 
 def simplify_modifiers(modifiers):
-    for a in ('invisible', 'readonly', 'required', 'visible', 'readwrite', 'optional'):
+    for a in ('invisible', 'readonly', 'required', 'visible', 'writeonly', 'optional'):
         if a in modifiers and not modifiers[a]:
             del modifiers[a]
 
@@ -712,6 +729,9 @@ class BaseModel(object):
 
     # Transience
     _transient = False # True in a TransientModel
+
+    # _inherit is for subclassing, mostly used with AbstractModels
+    # _inherits is to have a field point to another table
 
     # structure:
     #  { 'parent_model': 'm2o_field', ... }
@@ -1845,6 +1865,7 @@ class BaseModel(object):
 
                 field = model_fields.get(node.get('name'))
                 if field:
+                    field['name'] = node.get('name')
                     transfer_field_to_modifiers(field, modifiers)
 
 
@@ -1863,14 +1884,16 @@ class BaseModel(object):
             # node must be removed, no need to proceed further with its children
             return fields
 
-        # The view architeture overrides the python model.
-        # support commands for 'invisible', 'readonly', and 'required'
+        # The view architeture can further restrict the python model.
+        # support commands for 'invisible', 'visible', 'readonly', 'writeonly', 'required',
+        # and 'optional'
         def _check_context():
             "check context for a setting, return False if not found"
             reverse = False
             name = sys._getframe(1).f_globals['checking']
+            # name = checking
             for neg, pos in (
-                    ('readonly', 'readwrite'),
+                    ('readonly', 'writeonly'),
                     ('invisible', 'visible'),
                     ('required', 'optional'),
                     ):

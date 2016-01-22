@@ -573,7 +573,7 @@
             <rng:optional><rng:attribute name="required"/></rng:optional>
             <rng:optional><rng:attribute name="optional"/></rng:optional>
             <rng:optional><rng:attribute name="readonly"/></rng:optional>
-            <rng:optional><rng:attribute name="readwrite"/></rng:optional>
+            <rng:optional><rng:attribute name="writeonly"/></rng:optional>
             <rng:optional><rng:attribute name="view_mode"/></rng:optional>
             <rng:optional><rng:attribute name="widget"/></rng:optional>
             <rng:optional><rng:attribute name="context"/></rng:optional>
@@ -695,7 +695,7 @@
             <rng:optional><rng:attribute name="colspan"/></rng:optional>
             <rng:optional><rng:attribute name="target"/></rng:optional>
             <rng:optional><rng:attribute name="readonly"/></rng:optional>
-            <rng:optional><rng:attribute name="readwrite"/></rng:optional>
+            <rng:optional><rng:attribute name="writeonly"/></rng:optional>
             <rng:optional><rng:attribute name="context"/></rng:optional>
             <rng:optional><rng:attribute name="confirm"/></rng:optional>
             <rng:optional><rng:attribute name="help"/></rng:optional>
