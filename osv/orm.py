@@ -82,26 +82,10 @@ from openerp.tools import SKIPPED_ELEMENT_TYPES
 regex_order = re.compile('^(([a-z0-9_]+|"[a-z0-9_]+")( *desc| *asc)?( *, *|))+$', re.I)
 regex_object_name = re.compile(r'^[a-z0-9_.]+$')
 
-ONE_DAY = datetime.timedelta(days=1)
-TWO_DAYS = datetime.timedelta(days=2)
-THREE_DAYS = datetime.timedelta(days=3)
-FOUR_DAYS = datetime.timedelta(days=4)
-FIVE_DAYS = datetime.timedelta(days=5)
-SIX_DAYS = datetime.timedelta(days=6)
-ONE_WEEK = datetime.timedelta(days=7)
-TWO_WEEKS = datetime.timedelta(days=14)
-THREE_WEEKS = datetime.timedelta(days=21)
-FOUR_WEEKS = datetime.timedelta(days=28)
-ONE_MONTH = datetime.timedelta(days=30)
-FORTNIGHT = datetime.timedelta(days=15)
-
 def transfer_field_to_modifiers(field, modifiers):
     default_values = {}
     state_exceptions = {}
-    if field['string'] == 'Add ice':
-        print('found ice')
-        for key, value in field.items():
-            print(key, value)
+
     for attr in ('invisible', 'readonly', 'required'):
         state_exceptions[attr] = []
         default_values[attr] = bool(field.get(attr))
