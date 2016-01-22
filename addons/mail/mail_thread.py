@@ -334,7 +334,7 @@ class mail_thread(osv.AbstractModel):
                     ):
                 lst.append(name)
         if not lst:
-            return lst
+            return {}
         return self.fields_get(cr, uid, lst, context=context)
 
     def message_track(self, cr, uid, ids, tracked_fields, initial_values, context=None, body='', notify_ids=[]):
@@ -343,7 +343,7 @@ class mail_thread(osv.AbstractModel):
             if not value and col_info['type'] == 'boolean':
                 return 'False'
             if not value:
-                return '&lt;empty&gt;'
+                return ''
             if col_info['type'] == 'many2one':
                 return value[1]
             if col_info['type'] == 'selection':
@@ -368,9 +368,14 @@ class mail_thread(osv.AbstractModel):
             initial = initial_values[record['id']]
             changes = []
             tracked_values = {}
-            partner_ids = notify_ids + [partner.id for partner in self.browse(cr, uid, record['id']).message_follower_ids]
+            partner_ids = notify_ids
 
             # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
+            #
+            # meanings of 'track_visibility':
+            # - 'always' --> show current and (if possible) old value
+            # - 'on_change' --> show old and new value (only if value changed)
+            # - 'change_only' --> show new value (only if value changed)
 
             for col_name, col_info in tracked_fields.items():
                 tracking = getattr(self._all_columns[col_name].column, 'track_visibility', None)
@@ -393,7 +398,9 @@ class mail_thread(osv.AbstractModel):
 
             # find subtypes and post messages or log if no subtype found
             if not self._track:
+                # TODO: investigate if this branch, and/or the below 'if not posted' branch are still necessary
                 subtypes = ['mail.mt_comment']
+                partner_ids += [partner.id for partner in self.browse(cr, uid, record['id']).message_follower_ids]
             else:
                 subtypes = []
                 for field, track_info in self._track.items():
@@ -410,16 +417,15 @@ class mail_thread(osv.AbstractModel):
                 except ValueError, e:
                     _logger.warning('subtype %s not found, giving error "%s"' % (subtype, e))
                     continue
-                if subtype == 'mail.mt_comment':
-                    description = ''
-                else:
-                    description = subtype_rec.description if subtype_rec.description else subtype_rec.name
+                description = subtype_rec.description if subtype_rec.description else subtype_rec.name
                 message = body + '\n' + format_message(description, tracked_values)
                 self.message_post(cr, uid, record['id'], body=message, subtype=subtype, context=context, partner_ids=partner_ids)
                 posted = True
             if not posted:
+                if not body:
+                    body = 'Updated:'
                 message = body + '\n' + format_message('', tracked_values)
-                self.message_post(cr, uid, record['id'], body=message, context=context, partner_ids=partner_ids)
+                self.message_post(cr, uid, record['id'], body=message, context=context)
         return True
 
     #------------------------------------------------------
