@@ -530,19 +530,19 @@ class many2one(_column):
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
         return value[1] if isinstance(value, tuple) else tools.ustr(value)
 
-
 class one2many(_column):
     _classic_read = False
     _classic_write = False
     _prefetch = False
     _type = 'one2many'
 
-    def __init__(self, obj, fields_id, string='unknown', limit=None, auto_join=False, **args):
+    def __init__(self, obj, fields_id, string='unknown', limit=None, auto_join=False, order=None, **args):
         _column.__init__(self, string=string, **args)
         self._obj = obj
         self._fields_id = fields_id
         self._limit = limit
         self._auto_join = auto_join
+        self._order = order
         #one2many can't be used as condition for defaults
         assert(self.change_default != True)
 
@@ -560,8 +560,9 @@ class one2many(_column):
             res[id] = []
 
         domain = self._domain(obj) if callable(self._domain) else self._domain
-        ids2 = obj.pool.get(self._obj).search(cr, user, domain + [(self._fields_id, 'in', ids)], limit=self._limit, context=context)
-        for r in obj.pool.get(self._obj)._read_flat(cr, user, ids2, [self._fields_id], context=context, load='_classic_write'):
+        order = context.get('order', self._order)
+        ids2 = obj.pool.get(self._obj).search(cr, user, domain + [(self._fields_id, 'in', ids)], limit=self._limit, order=order, context=context)
+        for r in obj.pool.get(self._obj)._read_flat(cr, user, ids2, [self._fields_id], order=order, context=context, load='_classic_write'):
             if r[self._fields_id] in res:
                 res[r[self._fields_id]].append(r['id'])
         return res
@@ -1546,6 +1547,8 @@ def field_to_dict(model, cr, user, field, context=None):
         res['fnct_search'] = field._fnct_search and field._fnct_search.func_name or False
         res['fnct_inv'] = field._fnct_inv and field._fnct_inv.func_name or False
         res['fnct_inv_arg'] = field._fnct_inv_arg or False
+    if isinstance(field, one2many):
+        res['o2m_order'] = field._order
     if isinstance(field, many2many):
         (table, col1, col2) = field._sql_names(model)
         res['m2m_join_columns'] = [col1, col2]

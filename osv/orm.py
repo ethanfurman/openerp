@@ -3722,7 +3722,7 @@ class BaseModel(object):
             return result and result[0] or False
         return result
 
-    def _read_flat(self, cr, user, ids, fields_to_read, context=None, load='_classic_read'):
+    def _read_flat(self, cr, user, ids, fields_to_read, context=None, load='_classic_read', order=None):
         if not context:
             context = {}
         if not ids:
@@ -3766,7 +3766,7 @@ class BaseModel(object):
                 return f_qual
 
             fields_pre2 = map(convert_field, fields_pre)
-            order_by = self._parent_order or self._order
+            order_by = order or self._parent_order or self._order
             select_fields = ','.join(fields_pre2 + ['%s.id' % self._table])
             query = 'SELECT %s FROM %s WHERE %s.id IN %%s' % (select_fields, ','.join(tables), self._table)
             if rule_clause:
@@ -3892,6 +3892,8 @@ class BaseModel(object):
                         else:
                             vals[field] = False
         return res
+
+
 
     # TODO check READ access
     def perm_read(self, cr, user, ids, context=None, details=True):
