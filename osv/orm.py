@@ -2439,6 +2439,7 @@ class BaseModel(object):
             if (
                     '.' in field or
                     field == 'id' or
+                    field not in self._columns or
                     self._columns[field]._type not in ('date', 'datetime') or
                     period not in ['TODAY', 'THIS_WEEK', 'LAST_WEEK', 'THIS_MONTH', 'LAST_MONTH']
                     ):
