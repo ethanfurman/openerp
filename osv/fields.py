@@ -1548,7 +1548,7 @@ def field_to_dict(model, cr, user, field, context=None):
         res['fnct_inv'] = field._fnct_inv and field._fnct_inv.func_name or False
         res['fnct_inv_arg'] = field._fnct_inv_arg or False
     if isinstance(field, one2many):
-        res['o2m_order'] = field._order
+        res['o2m_order'] = field._order or False
     if isinstance(field, many2many):
         (table, col1, col2) = field._sql_names(model)
         res['m2m_join_columns'] = [col1, col2]
