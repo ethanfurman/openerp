@@ -56,6 +56,7 @@ import sys
 import time
 import traceback
 import types
+from dbf import Date, DateTime, IsoDay, IsoMonth, RelativeDay, RelativeMonth
 from functools import partial
 
 import psycopg2
@@ -2425,7 +2426,66 @@ class BaseModel(object):
             (name is 'ABC' AND (language is NOT english) AND (country is Belgium OR Germany))
 
         """
-        return self._search(cr, user, args, offset=offset, limit=limit, order=order, context=context, count=count)
+        for key, value in (context or {}).items():
+            if key.endswith('_domain') and key[:-7] == self._name:
+                args += value
+        new_args = []
+        today = Date.today()
+        for arg in args:
+            if isinstance(arg, basestring):
+                new_args.append(arg)
+                continue
+            field, op, period = arg
+            if (
+                    '.' in field or
+                    field == 'id' or
+                    self._columns[field]._type not in ('date', 'datetime') or
+                    period not in ['TODAY', 'THIS_WEEK', 'LAST_WEEK', 'THIS_MONTH', 'LAST_MONTH']
+                    ):
+                new_args.append(arg)
+                continue
+            this_day = IsoDay(today.isoweekday())
+            if this_day is IsoDay.MONDAY:
+                week_start = today
+            else:
+                week_start = today.replace(day=RelativeDay.LAST_MONDAY)
+            if period == 'TODAY':
+                start = today
+                stop = start
+            elif period == 'THIS_WEEK':
+                start = week_start
+                stop = start.replace(delta_day=6)
+            elif period == 'LAST_WEEK':
+                start = week_start.replace(delta_day=-7)
+                stop = start.replace(delta_day=6)
+            elif period == 'THIS_MONTH':
+                start = today.replace(day=1)
+                stop = start.replace(delta_month=1, delta_day=-1)
+            elif period == 'LAST_MONTH':
+                start = today.replace(day=1, delta_month=-1)
+                stop = start.replace(delta_month=1, delta_day=-1)
+            else:
+                raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
+            old_op = op
+            if arg[1] in ('=', 'in'):
+                op = '&'
+                first = '>='
+                last = '<='
+            elif arg[1] in ('!=', 'not in'):
+                op = '|'
+                first = '<'
+                last = '>'
+            if op != old_op:
+                new_args.append(op)
+                new_args.append([field, first, start.strftime('%Y-%m-%d')])
+                new_args.append([field, last, stop.strftime('%Y-%m-%d')])
+            elif '<' in op:
+                new_args.append([field, op, start.strftime('%Y-%m-%d')])
+            elif '>' in op:
+                new_args.append([field, op, stop.strftime('%Y-%m-%d')])
+            else:
+                raise ValueError('unable to process domain: %r' % arg)
+        return self._search(cr, user, new_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
     def name_get(self, cr, user, ids, context=None):
         """Returns the preferred display value (text representation) for the records with the
