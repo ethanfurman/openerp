@@ -2060,6 +2060,7 @@ instance.web.list.columns = new instance.web.Registry({
     'field': 'instance.web.list.Column',
     'field.boolean': 'instance.web.list.Boolean',
     'field.binary': 'instance.web.list.Binary',
+    'field.html': 'instance.web.list.HTML',
     'field.progressbar': 'instance.web.list.ProgressBar',
     'field.handle': 'instance.web.list.Handle',
     'button': 'instance.web.list.Button',
@@ -2226,6 +2227,16 @@ instance.web.list.Binary = instance.web.list.Column.extend({
             href: download_url,
             size: instance.web.binary_to_binsize(value),
         });
+    }
+});
+instance.web.list.HTML = instance.web.list.Column.extend({
+    /**
+     * Returns actual content of HTML field
+     *
+     * @private
+     */
+    _format: function (row_data, options) {
+        return row_data[this.id].value;
     }
 });
 instance.web.list.ProgressBar = instance.web.list.Column.extend({
