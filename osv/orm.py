@@ -2432,7 +2432,7 @@ class BaseModel(object):
         new_args = []
         today = Date.today()
         for arg in args:
-            if isinstance(arg, basestring):
+            if isinstance(arg, basestring) or not isinstance(arg[0], basestring):
                 new_args.append(arg)
                 continue
             field, op, period = arg
