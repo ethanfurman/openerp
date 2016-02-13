@@ -1488,7 +1488,17 @@ instance.web.ListView.Groups = instance.web.Class.extend( /** @lends instance.we
         var sequence_field = _(this.columns).find(function (c) {
             return c.widget === 'handle';
         });
-        var seqname = sequence_field ? sequence_field.name : 'sequence';
+        if (typeof(sequence_field) === "undefined") {
+            sequence_field = _(this.columns).find(function (c) {
+                return c.name === 'sequence';
+            });
+        }
+        if (sequence_field.options) {
+            if (JSON.parse(sequence_field.options.replace(/'/g, '"')).resequence === false) {
+                return;
+            }
+        }
+        var seqname = sequence_field.name;
 
         // ondrop, move relevant record & fix sequences
         list.$current.sortable({
