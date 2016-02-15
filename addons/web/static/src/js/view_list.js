@@ -1506,7 +1506,7 @@ instance.web.ListView.Groups = instance.web.Class.extend( /** @lends instance.we
             items: '> tr[data-id]',
             helper: 'clone'
         });
-        if (sequence_field) {
+        if (seqname !== 'sequence') {
             list.$current.sortable('option', 'handle', '.oe_list_field_handle');
         }
         list.$current.sortable('option', {
