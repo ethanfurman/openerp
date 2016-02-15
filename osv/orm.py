@@ -1985,8 +1985,9 @@ class BaseModel(object):
         node = self._disable_workflow_buttons(cr, user, node)
         if node.tag in ('kanban', 'tree', 'form', 'gantt'):
             for action, operation in (('create', 'create'), ('delete', 'unlink'), ('edit', 'write')):
-                if not node.get(action) and not self.check_access_rights(cr, user, operation, raise_exception=False):
+                if not action and not self.check_access_rights(cr, user, operation, raise_exception=False):
                     node.set(action, 'false')
+
         arch = etree.tostring(node, encoding="utf-8").replace('\t', '')
         for k in fields.keys():
             if k not in fields_def:
@@ -2430,7 +2431,15 @@ class BaseModel(object):
             if key.endswith('_domain') and key[:-7] == self._name:
                 args += value
         new_args = []
-        today = Date.today()
+        today = Date.strptime(
+                fields.date.context_today(self, cr, user, context=context),
+                '%Y-%m-%d',
+                )
+        this_day = IsoDay(today.isoweekday())
+        if this_day is IsoDay.MONDAY:
+            week_start = today
+        else:
+            week_start = today.replace(day=RelativeDay.LAST_MONDAY)
         for arg in args:
             if isinstance(arg, basestring) or not isinstance(arg[0], basestring):
                 new_args.append(arg)
@@ -2445,11 +2454,6 @@ class BaseModel(object):
                     ):
                 new_args.append(arg)
                 continue
-            this_day = IsoDay(today.isoweekday())
-            if this_day is IsoDay.MONDAY:
-                week_start = today
-            else:
-                week_start = today.replace(day=RelativeDay.LAST_MONDAY)
             if period == 'TODAY':
                 start = today
                 stop = start
