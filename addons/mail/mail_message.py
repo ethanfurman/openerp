@@ -196,6 +196,8 @@ class mail_message(osv.Model):
     def vote_toggle(self, cr, uid, ids, context=None):
         ''' Toggles vote. Performed using read to avoid access rights issues.
             Done as SUPERUSER_ID because uid may vote for a message he cannot modify. '''
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         for message in self.read(cr, uid, ids, ['vote_user_ids'], context=context):
             new_has_voted = not (uid in message.get('vote_user_ids'))
             if new_has_voted:
@@ -518,6 +520,8 @@ class mail_message(osv.Model):
             ids = self.search(cr, uid, domain, context=context, limit=limit)
 
         # fetch parent if threaded, sort messages
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         for message in self.browse(cr, uid, ids, context=context):
             message_id = message.id
             if message_id in message_tree:
@@ -764,6 +768,8 @@ class mail_message(osv.Model):
     def unlink(self, cr, uid, ids, context=None):
         # cascade-delete attachments that are directly attached to the message (should only happen
         # for mail.messages that act as parent for a standalone mail.mail record).
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         self.check_access_rule(cr, uid, ids, 'unlink', context=context)
         attachments_to_delete = []
         for message in self.browse(cr, uid, ids, context=context):

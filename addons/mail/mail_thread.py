@@ -297,6 +297,8 @@ class mail_thread(osv.AbstractModel):
     def unlink(self, cr, uid, ids, context=None):
         """ Override unlink to delete messages and followers. This cannot be
             cascaded, because link is done through (res_model, res_id). """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         msg_obj = self.pool.get('mail.message')
         fol_obj = self.pool.get('mail.followers')
         # delete messages and notifications
@@ -363,6 +365,9 @@ class mail_thread(osv.AbstractModel):
 
         if not tracked_fields:
             return True
+
+        if isinstance(ids, (int, long)):
+            ids = [ids]
 
         for record in self.read(cr, uid, ids, tracked_fields.keys(), context=context):
             initial = initial_values[record['id']]
@@ -462,6 +467,8 @@ class mail_thread(osv.AbstractModel):
     #------------------------------------------------------
 
     def message_get_reply_to(self, cr, uid, ids, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         if not self._inherits.get('mail.alias'):
             return [False for id in ids]
         return ["%s@%s" % (record['alias_name'], record['alias_domain'])
@@ -939,6 +946,8 @@ class mail_thread(osv.AbstractModel):
     def message_get_suggested_recipients(self, cr, uid, ids, context=None):
         """ Returns suggested recipients for ids. Those are a list of
             tuple (partner_id, partner_name, reason), to be managed by Chatter. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         result = dict.fromkeys(ids, list())
         if self._all_columns.get('user_id'):
             for obj in self.browse(cr, SUPERUSER_ID, ids, context=context):  # SUPERUSER because of a read on res.users that would crash otherwise
@@ -1189,6 +1198,8 @@ class mail_thread(osv.AbstractModel):
 
     def message_get_subscription_data(self, cr, uid, ids, context=None):
         """ Wrapper to get subtypes data. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         return self._get_subscription_data(cr, uid, ids, None, None, context=context)
 
     def message_subscribe_users(self, cr, uid, ids, user_ids=None, subtype_ids=None, context=None):
@@ -1203,6 +1214,8 @@ class mail_thread(osv.AbstractModel):
 
     def message_subscribe(self, cr, uid, ids, partner_ids, subtype_ids=None, context=None):
         """ Add partners to the records followers. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         user_pid = self.pool.get('res.users').read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
         if set(partner_ids) == set([user_pid]):
             self.check_access_rights(cr, uid, 'read')
@@ -1225,11 +1238,15 @@ class mail_thread(osv.AbstractModel):
             provided, unsubscribe uid instead. """
         if user_ids is None:
             user_ids = [uid]
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_ids = [user.partner_id.id for user in self.pool.get('res.users').browse(cr, uid, user_ids, context=context)]
         return self.message_unsubscribe(cr, uid, ids, partner_ids, context=context)
 
     def message_unsubscribe(self, cr, uid, ids, partner_ids, context=None):
         """ Remove partners from the records followers. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         user_pid = self.pool.get('res.users').read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
         if set(partner_ids) == set([user_pid]):
             self.check_access_rights(cr, uid, 'read')
@@ -1259,6 +1276,8 @@ class mail_thread(osv.AbstractModel):
             1. fetch project subtype related to task (parent_id.res_model = 'project.task')
             2. for each project subtype: subscribe the follower to the task
         """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         subtype_obj = self.pool.get('mail.message.subtype')
         follower_obj = self.pool.get('mail.followers')
 
@@ -1332,6 +1351,8 @@ class mail_thread(osv.AbstractModel):
 
     def message_mark_as_unread(self, cr, uid, ids, context=None):
         """ Set as unread. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_id = self.pool.get('res.users').browse(cr, uid, uid, context=context).partner_id.id
         cr.execute('''
             UPDATE mail_notification SET
@@ -1344,6 +1365,8 @@ class mail_thread(osv.AbstractModel):
 
     def message_mark_as_read(self, cr, uid, ids, context=None):
         """ Set as read. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_id = self.pool.get('res.users').browse(cr, uid, uid, context=context).partner_id.id
         cr.execute('''
             UPDATE mail_notification SET

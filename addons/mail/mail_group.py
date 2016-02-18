@@ -193,6 +193,8 @@ class mail_group(osv.Model):
         return mail_group_id
 
     def unlink(self, cr, uid, ids, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         groups = self.browse(cr, uid, ids, context=context)
         # Cascade-delete user proxies as well, as they should not exist without the mail group.
         res_users = self.pool.get('res.users')
@@ -206,6 +208,8 @@ class mail_group(osv.Model):
         return res
 
     def write(self, cr, uid, ids, vals, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         result = super(mail_group, self).write(cr, uid, ids, vals, context=context)
         if vals.get('group_ids'):
             self._subscribe_users(cr, uid, ids, context=context)

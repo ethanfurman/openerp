@@ -117,6 +117,8 @@ class mail_alias(osv.Model):
            mail catchall domain from config.
            e.g. `jobs@openerp.my.openerp.com` or `sales@openerp.my.openerp.com`
         """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         return [(record['id'], "%s@%s" % (record['alias_name'], record['alias_domain']))
                     for record in self.read(cr, uid, ids, ['alias_name', 'alias_domain'], context=context)]
 
