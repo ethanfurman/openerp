@@ -366,6 +366,13 @@ class ControllerType(type):
     def __init__(cls, name, bases, attrs):
         super(ControllerType, cls).__init__(name, bases, attrs)
         controllers_class.append(("%s.%s" % (cls.__module__, cls.__name__), cls))
+        if controllers_path:
+            _logger.error('Controller %s will not be active.', cls.__name__)
+            file_path = os.path.split(sys.modules[cls.__module__].__file__)[0]
+            static_path = os.path.join(file_path, 'static')
+            if not os.path.exists(static_path):
+                _logger.error('%s is missing', '/'.join(static_path.split(os.path.sep)[-3:]))
+
 
 class Controller(object):
     __metaclass__ = ControllerType
