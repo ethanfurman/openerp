@@ -105,6 +105,8 @@ class res_users(osv.Model):
 
     def unlink(self, cr, uid, ids, context=None):
         # Cascade-delete mail aliases as well, as they should not exist without the user.
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         alias_pool = self.pool.get('mail.alias')
         alias_ids = [user.alias_id.id for user in self.browse(cr, uid, ids, context=context) if user.alias_id]
         res = super(res_users, self).unlink(cr, uid, ids, context=context)
@@ -141,12 +143,16 @@ class res_users(osv.Model):
         return self.pool.get('res.partner').message_post(cr, uid, partner_id, context=context, **kwargs)
 
     def message_update(self, cr, uid, ids, msg_dict, update_vals=None, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         for id in ids:
             partner_id = self.browse(cr, SUPERUSER_ID, id).partner_id.id
             self.pool.get('res.partner').message_update(cr, uid, [partner_id], msg_dict, update_vals=update_vals, context=context)
         return True
 
     def message_subscribe(self, cr, uid, ids, partner_ids, subtype_ids=None, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         for id in ids:
             partner_id = self.browse(cr, SUPERUSER_ID, id).partner_id.id
             self.pool.get('res.partner').message_subscribe(cr, uid, [partner_id], partner_ids, subtype_ids=subtype_ids, context=context)
@@ -156,6 +162,8 @@ class res_users(osv.Model):
         return self.pool.get('res.partner').message_get_partner_info_from_emails(cr, uid, emails, link_mail=link_mail, context=context)
 
     def message_get_suggested_recipients(self, cr, uid, ids, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_ids = []
         for id in ids:
             partner_ids.append(self.browse(cr, SUPERUSER_ID, id).partner_id.id)
@@ -214,6 +222,8 @@ class res_users_mail_group(osv.Model):
 
     # FP Note: to improve, post processing may be better ?
     def write(self, cr, uid, ids, vals, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         write_res = super(res_users_mail_group, self).write(cr, uid, ids, vals, context=context)
         if vals.get('groups_id'):
             # form: {'group_ids': [(3, 10), (3, 3), (4, 10), (4, 3)]} or {'group_ids': [(6, 0, [ids]}
@@ -234,6 +244,8 @@ class res_groups_mail_group(osv.Model):
 
     # FP Note: to improve, post processeing, after the super may be better
     def write(self, cr, uid, ids, vals, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         write_res = super(res_groups_mail_group, self).write(cr, uid, ids, vals, context=context)
         if vals.get('users'):
             # form: {'group_ids': [(3, 10), (3, 3), (4, 10), (4, 3)]} or {'group_ids': [(6, 0, [ids]}
