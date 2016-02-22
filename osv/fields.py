@@ -168,8 +168,9 @@ class boolean(_column):
     _symbol_f = lambda x: x and 'True' or 'False'
     _symbol_set = (_symbol_c, _symbol_f)
 
-    def __init__(self, string='unknown', required=False, **args):
+    def __init__(self, string='unknown', required=False, choice=(u'Yes', u'No'), **args):
         super(boolean, self).__init__(string=string, required=required, **args)
+        self.choice = choice
         if required:
             _logger.debug(
                 "required=True is deprecated: making a boolean field"
@@ -1108,6 +1109,7 @@ class function(_column):
             self._symbol_c = boolean._symbol_c
             self._symbol_f = boolean._symbol_f
             self._symbol_set = boolean._symbol_set
+            self.choice = args.pop('choice', (u'No', u'Yes'))
 
         if type == 'integer':
             self._symbol_c = integer._symbol_c
