@@ -369,6 +369,8 @@ class datetime(_column):
            :return: timestamp converted to timezone-aware datetime in context
                     timezone
         """
+        if isinstance(timestamp, basestring):
+            timestamp = DT.datetime.strptime(timestamp, tools.DEFAULT_SERVER_DATETIME_FORMAT)
         assert isinstance(timestamp, DT.datetime), 'Datetime instance expected'
         if context and context.get('tz'):
             tz_name = context['tz']
