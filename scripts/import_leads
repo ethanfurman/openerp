@@ -1,0 +1,129 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+
+from antipathy import Path
+from collections import defaultdict
+from openerplib import get_connection, get_records, AttrDict
+from pprint import pprint
+from scription import *
+from VSS.address import standardize_address, NameCase, BsnsCase
+from VSS.utils import IndexEnum, fix_phone
+from VSS.xl import open_workbook
+
+@Command(
+        filename=('file to import', ),
+        campaign=('abbr of campaign', ),
+        )
+def import_leads(filename, campaign):
+    oe = get_oe_data()
+    campaign_id = oe.sales_campaign[campaign.upper()]
+    crm_lead = oe.conn.get_model('crm.lead')
+    with open_workbook(filename) as work_book:
+        for sheet in work_book:
+            for i, row in enumerate(sheet.rows(start_row=1), start=1):
+                print('processing row %d' % (i, ), verbose=2)
+                values = {}
+                values['type_id'] = campaign_id
+                values['user_id'] = oe.sales_person[sales_names[row[Leads.WHO].lower()]]
+                values['contact_name'] = NameCase(' '.join([row[Leads.FIRST], row[Leads.LAST]]))
+                values['partner_name'] = BsnsCase(row[Leads.COMPANY])
+                values['name'] = values['partner_name'] + ' / ' + values['contact_name']
+                values['function'] = BsnsCase(row[Leads.FUNCTION])
+                values['email_from'] = row[Leads.EMAIL]
+                values['phone'] = fix_phone(row[Leads.PHONE])
+                values['fax'] = fix_phone(row[Leads.FAX])
+                values['description'] = '\n'.join([row[Leads.PRIMARY], row[Leads.BSNS_CTGRY], row[Leads.NOTES]])
+
+                values['street'], values['street2'], values['city'], state, values['zip'], country = standardize_address(
+                        row[Leads.ADDRESS1], row[Leads.ADDRESS2],
+                        row[Leads.CITY], row[Leads.STATE], str(row[Leads.POSTAL])[:5], row[Leads.COUNTRY],
+                        )
+                values['state_id'], values['country_id'] = get_state_country_ids(oe, state, country)
+                print((values['user_id'], values['contact_name'], values['partner_name'], values['function']))
+                print((values['street'], values['street2'], values['city'], values['state_id'], values['zip'], values['country_id']))
+                print((values['phone'], values['fax'], values['email_from'], values['description']))
+                print('-' * 75)
+                crm_lead.create(values)
+
+
+Leads = IndexEnum(
+        'Leads',
+        'WHO FIRST LAST FUNCTION COMPANY ADDRESS1 ADDRESS2 EMAIL CITY STATE POSTAL COUNTRY PHONE FAX NOTES PRIMARY BSNS_CTGRY TAGS'.split(),
+        start=0,
+        )
+
+config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
+
+def get_oe_data():
+    "load data from OpenERP (partners, countries, ...)"
+    oe = AttrDict()
+    conn = oe.conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
+    oe.own_leads_ids = get_records(conn, 'res.groups', fields=['name', 'users'], domain=[('name','=','User: Own Leads Only')])[0].users
+    oe.sales_person = {}
+    for record in get_records(conn, 'res.users', ids=oe.own_leads_ids, fields=['login']):
+        oe.sales_person[record.login] = record.id
+    oe.res_partner_title = get_records(
+            conn,
+            'res.partner.title',
+            fields=['id', 'shortcut'],
+            )
+    oe.partner_title_by_abbr = {}
+    for t in oe.res_partner_title:
+        oe.partner_title_by_abbr[t.shortcut] = t
+    oe.res_partner_category = get_records(
+            conn,
+            'res.partner.category',
+            fields=['id', 'name'],
+            )
+    oe.partner_category_by_name = {}
+    for c in oe.res_partner_category:
+        oe.partner_category_by_name[c.name] = c
+    oe.res_country = get_records(
+            conn,
+            'res.country',
+            fields=['id', 'name', 'code'],
+            )
+    oe.country = {}
+    for c in oe.res_country:
+        oe.country[c.name] = c
+        oe.country[c.code] = c
+    oe.res_country_state = get_records(
+            conn,
+            'res.country.state',
+            fields=['id', 'country_id', 'name', 'code'],
+            )
+    oe.country_state = defaultdict(dict)
+    for s in oe.res_country_state:
+        oe.country_state[s.country_id[1]][s.name] = s
+        oe.country_state[s.country_id[1]][s.code] = s
+    oe.crm_case_resource_type = get_records(
+            conn,
+            'crm.case.resource.type',
+            fields=['name', 'section_id'],
+            )
+    oe.sales_campaign = {}
+    for c in oe.crm_case_resource_type:
+        abbr = ''.join([w[0].upper() for w in c.name.split() if not w.isdigit()])
+        oe.sales_campaign[abbr] = c.id
+    return oe
+
+def get_state_country_ids(data, state, country):
+    country_id = False
+    state_id = False
+    try:
+        country_rec = data.country[country]
+        country_id = country_rec.id
+        country = country_rec.name
+        state_id = data.country_state[country][state].id
+    except KeyError:
+        print('unable to find %r or %r' % (country, state), verbose=2)
+        pass
+    return state_id, country_id
+
+
+sales_names = {
+    'lorin': 'ltroderman',
+    }
+
+Main()
