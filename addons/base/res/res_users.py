@@ -872,7 +872,7 @@ class users_view(osv.osv):
     def search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False):
         adjusted_args = []
         for arg in args:
-            if not isinstance(arg, basestring) and is_reified_group(arg[0]):
+            if not isinstance(arg, basestring) and isinstance(arg[0], basestring) and is_reified_group(arg[0]):
                 field, op, condition = arg
                 group_ids = get_reified_groups(field)
                 field = 'groups_id'
