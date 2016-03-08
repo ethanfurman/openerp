@@ -241,9 +241,9 @@
                                 <field name="doors" />
                                 <field name="color" />
                                 <field name="dmv_class" />
-                                <filed name="dmv_reg_expiry" />
+                                <field name="dmv_reg_expiry" />
                                 <field name="fast_track_no" />
-                                <field name="arb_no" />
+                                <!-- <field name="arb_no" /> -->
                             </group>
                             <group string="Engine Options">
                                 <field name="transmission" />
