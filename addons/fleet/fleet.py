@@ -335,7 +335,7 @@ class fleet_vehicle(osv.Model):
             model_id = False
         return model_id
 
-    def _get_dmv_expiry_days(self, cr, uid, ids, field_names, unknown_none, context=None):
+    def _get_dmv_expiry(self, cr, uid, ids, field_names, unknown_none, context=None):
         if isinstance(ids, (int, long)):
             ids = [ids]
         res = {}
@@ -351,8 +351,16 @@ class fleet_vehicle(osv.Model):
                             ).date()
                 days_left = (expiry - today).days
             else:
-                days_left = 0
-            res[vehicle.id] = days_left
+                days_left = None
+            if days_left == None:
+                status = 'n/a'
+            elif days_left < 1:
+                status = 'expired'
+            elif days_left < 31:
+                status = 'warning'
+            else:
+                status = 'good'
+            res[vehicle.id] = status
         return res
 
     _name = 'fleet.vehicle'
@@ -397,7 +405,7 @@ class fleet_vehicle(osv.Model):
         'engine_no': fields.char('Engine #', size=10, help='Engine #'),
         'engine_hours': fields.float('Engine Hours', size=10, help='Engine Hours'),
         'dmv_reg_expiry': fields.date('DMV Registration Expires'),
-        'dmv_exp_days': fields.function(_get_dmv_expiry_days, type='integer', string='Days until dmv expiry'),
+        'dmv_reg_warning': fields.function(_get_dmv_expiry, type='char', string='Days until dmv expiry'),
         }
 
     _defaults = {

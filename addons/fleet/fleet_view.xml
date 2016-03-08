@@ -268,7 +268,7 @@
             <field name="name">fleet.vehicle.tree</field>
             <field name="model">fleet.vehicle</field>
             <field name="arch" type="xml">
-                <tree string="Vehicle" version="7.0" colors="red:contract_renewal_overdue or dmv_exp_days&lt;1;orange:contract_renewal_due_soon or dmv_exp_days&lt;30;">
+                <tree string="Vehicle" version="7.0" colors="red:contract_renewal_overdue or dmv_reg_warning=='expired';orange:contract_renewal_due_soon or dmv_reg_warning=='warning';">
                     <field name="license_plate" />
                     <field name="doors" />
                     <field name="model_id" />
@@ -279,7 +279,7 @@
                     <field name="acquisition_date" invisible="1"/>
                     <field name="state_id"/>
                     <field name="dmv_reg_expiry"/>
-                    <field name="dmv_exp_days" invisible='1'/>
+                    <field name="dmv_reg_warning" invisible="1"/>
                     <field name="odometer" />
                     <field name="location" />
                     <!-- <field name="odometer_unit" /> -->
