@@ -81,7 +81,7 @@
               </p>
             </field>
         </record>
- 
+
         <record model='ir.ui.view' id='fleet_vehicle_model_brand_tree'>
             <field name="name">fleet.vehicle.model.brand.tree</field>
             <field name="model">fleet.vehicle.model.brand</field>
@@ -161,7 +161,7 @@
                 <tree string="State" version="7.0" editable="bottom">
                     <field name="sequence" widget="handler" invisible="1"/>
                     <field name="name" />
-                    
+
                 </tree>
             </field>
         </record>
@@ -192,8 +192,8 @@
             <field name="model">fleet.vehicle</field>
             <field name="arch" type="xml">
                 <form string="Vehicle" version="7.0">
-                    <sheet> 
-                        <field name="image_medium" widget='image' class="oe_left oe_avatar"/> 
+                    <sheet>
+                        <field name="image_medium" widget='image' class="oe_left oe_avatar"/>
                         <div class="oe_title">
                             <label for="model_id" class="oe_edit_only"/>
                             <h1>
@@ -209,7 +209,7 @@
                         <div class="oe_right">
                             <h1>
                                 <field name="state_id" widget="selection" nolabel="1"/>
-                            </h1> 
+                            </h1>
                         </div>
                         <div class="oe_right oe_button_box">
                             <button name="return_action_to_open" type="object" context="{'xml_id':'fleet_vehicle_log_contract_act'}" string="Contracts" help="show the contract for this vehicle" />
@@ -217,7 +217,7 @@
                             <button name="return_action_to_open" type="object" context="{'xml_id':'fleet_vehicle_log_services_act'}" string="Services" help="show the services logs for this vehicle" />
                             <button name="return_action_to_open" type="object" context="{'xml_id':'fleet_vehicle_log_fuel_act'}" string="Fuel Logs" help="show the fuel logs for this vehicle" />
                             <button name="return_action_to_open" type="object" context="{'xml_id':'fleet_vehicle_odometer_act'}" string="Odometer Logs" help="show the odometer logs for this vehicle" />
-                        </div> 
+                        </div>
                         <group col="2" string="General Properties">
                             <group >
                                 <field name="driver_id" />
@@ -241,6 +241,7 @@
                                 <field name="doors" />
                                 <field name="color" />
                                 <field name="dmv_class" />
+                                <filed name="dmv_reg_expiry" />
                                 <field name="fast_track_no" />
                                 <field name="arb_no" />
                             </group>
@@ -253,7 +254,7 @@
                                 <!-- <field name="power" /> -->
                                 <field name="engine_no" />
                                 <field name="engine_hours" widget="float_time" />
-                            </group>  
+                            </group>
                         </group>
                     </sheet>
                     <div class="oe_chatter">
@@ -267,7 +268,7 @@
             <field name="name">fleet.vehicle.tree</field>
             <field name="model">fleet.vehicle</field>
             <field name="arch" type="xml">
-                <tree string="Vehicle" version="7.0" colors="orange:contract_renewal_due_soon and not contract_renewal_overdue;red:contract_renewal_overdue">
+                <tree string="Vehicle" version="7.0" colors="red:contract_renewal_overdue or dmv_exp_days&lt;1;orange:contract_renewal_due_soon or dmv_exp_days&lt;30;">
                     <field name="license_plate" />
                     <field name="doors" />
                     <field name="model_id" />
@@ -277,6 +278,8 @@
                     <field name="vin_sn" invisible="1"/>
                     <field name="acquisition_date" invisible="1"/>
                     <field name="state_id"/>
+                    <field name="dmv_reg_expiry"/>
+                    <field name="dmv_exp_days" invisible='1'/>
                     <field name="odometer" />
                     <field name="location" />
                     <!-- <field name="odometer_unit" /> -->
@@ -320,7 +323,7 @@
                     <field name="contract_renewal_overdue" />
                     <field name="contract_renewal_name" />
                     <field name="contract_renewal_total" />
-                    
+
                     <templates>
                         <t t-name="kanban-box">
                             <div class="oe_kanban_vignette oe_semantic_html_override">
@@ -349,7 +352,7 @@
                                             </span>
                                         </a>
                                     </t>
-                                    
+
                                     <ul>
                                         <li>
                                             <t t-if="record.driver_id.raw_value"><field name="driver_id"/></t>
@@ -357,7 +360,7 @@
                                         <li>
                                             <t t-if="record.location.raw_value"><field name="location"/></t>
                                         </li>
-                                        
+
                                     </ul>
 
                                     <field name="tag_ids"/>
@@ -368,7 +371,7 @@
                 </kanban>
             </field>
         </record>
-        
+
 
         <record model='ir.actions.act_window' id='fleet_vehicle_act'>
             <field name="name">Vehicles</field>
@@ -377,7 +380,7 @@
             <field name="view_mode">kanban,tree,form</field>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
-                Click to create a new vehicle. 
+                Click to create a new vehicle.
               </p><p>
                 You will be able to manage your fleet by keeping track of the
                 contracts, services, fixed and recurring costs, odometers and
@@ -472,7 +475,7 @@
         </record>
 
         <act_window
-            
+
             id="act_renew_contract"
             name="Renew Contract"
             res_model="fleet.vehicle.log.contract"
@@ -521,7 +524,7 @@
             <field name="view_mode">tree,form,graph</field>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
-                Click to create a new contract. 
+                Click to create a new contract.
               </p><p>
                 Manage all your contracts (leasing, insurances, etc.) with
                 their related services, costs. OpenERP will automatically warn
@@ -591,7 +594,7 @@
                 <graph string="Odometer Values Per Month">
                     <field name="date" />
                     <field name="value" operator="+"/>
-                    <field name="vehicle_id" group="True"/> 
+                    <field name="vehicle_id" group="True"/>
                 </graph>
             </field>
         </record>
@@ -658,7 +661,7 @@
             <field name="model">fleet.vehicle.log.fuel</field>
             <field name="arch" type="xml">
                 <tree string="Fuel Logs">
-                    <field name="date" /> 
+                    <field name="date" />
                     <field name="vehicle_id" />
                     <field name="odometer" invisible="1"/>
                     <field name="odometer_unit" invisible="1"/>
@@ -680,7 +683,7 @@
            <!--<field name="type">graph</field>-->
            <field name="arch" type="xml">
                 <graph string="Fuel Costs Per Month">
-                    <field name="date" /> 
+                    <field name="date" />
                     <field name="cost_amount" operator="+"/>
                     <field name="vehicle_id" group="True"/>
                 </graph>
@@ -694,7 +697,7 @@
             <field name="view_mode">tree,form,graph</field>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
-                Click to create a new fuel log. 
+                Click to create a new fuel log.
               </p><p>
                 Here you can add refuelling entries for all vehicles.  You can
                 also filter logs of a particular vehicle using the search
@@ -777,7 +780,7 @@
                 <graph string="Services Costs Per Month">
                     <field name="date" />
                     <field name="cost_amount" operator="+"/>
-                    <field name="vehicle_id" group="True"/> 
+                    <field name="vehicle_id" group="True"/>
                 </graph>
             </field>
         </record>
@@ -789,7 +792,7 @@
             <field name="view_mode">tree,form,graph</field>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
-                Click to create a new service entry. 
+                Click to create a new service entry.
               </p><p>
                 OpenERP helps you keeping track of all the services done
                 on your vehicle. Services can be of many type: occasional
@@ -921,7 +924,7 @@
         </record>
 
         <menuitem action="fleet_vehicle_costs_act" parent="fleet_vehicles" id="fleet_vehicle_costs_menu" groups="group_fleet_manager"/>
-<!--    
+<!--
         <record model='ir.ui.view' id='fleet_hr_employee_form'>
             <field name="name">fleet.hr.employee.form</field>
             <field name="model">hr.employee</field>
