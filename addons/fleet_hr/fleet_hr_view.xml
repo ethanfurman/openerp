@@ -61,8 +61,8 @@
             <field name="arch" type="xml">
                 <xpath expr="//tree[@string='Vehicle']" position="attributes">
                     <attribute name="colors">
-                        orange:contract_renewal_due_soon or driver_license_renewal_due_soon or driver_medical_renewal_due_soon;
-                        red:contract_renewal_overdue or driver_license_renewal_overdue or driver_medical_renewal_overdue
+                        orange:contract_renewal_due_soon or driver_license_renewal_due_soon or driver_medical_renewal_due_soon or dmv_reg_warning=='warning';
+                        red:contract_renewal_overdue or driver_license_renewal_overdue or driver_medical_renewal_overdue or dmv_reg_warning=='expired'
                     </attribute>
                 </xpath>
                 <xpath expr="//field[@name='location']" position="after">
