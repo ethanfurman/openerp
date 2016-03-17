@@ -2366,9 +2366,11 @@ instance.web.form.FieldUrl = instance.web.form.FieldChar.extend({
             var s = /(\w+):(.+)|^\.{0,2}\//.exec(tmp);
             if (!s) {
                 tmp = "http://" + this.get('value');
+                var text = this.get('value') ? this.node.attrs.text || tmp : '';
+            } else {
+                var text = tmp;
             }
-            var text = this.get('value') ? this.node.attrs.text || tmp : '';
-            this.$el.find('a').attr('href', tmp).text(text);
+            anchor = this.$el.find('a').attr('href', tmp).html(text);
         }
     },
     on_button_clicked: function() {
