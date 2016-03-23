@@ -342,20 +342,26 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                     }
                 });
             }
-            self.on_form_changed();
-            self.rendering_engine.init_fields();
-            self.is_initialized.resolve();
-            self.do_update_pager(record.id == null);
-            if (self.sidebar) {
-               self.sidebar.do_attachement_update(self.dataset, self.datarecord.id);
+            var def = $.when({}); 
+            if (typeof self.fields_view.arch.attrs.setup !== "undefined") {
+                def = self.do_setup();
             }
-            if (record.id) {
-                self.do_push_state({id:record.id});
-            } else {
-                self.do_push_state({});
-            }
-            self.$el.add(self.$buttons).removeClass('oe_form_dirty');
-            self.autofocus();
+            def.then(function () {
+                self.on_form_changed();
+                self.rendering_engine.init_fields();
+                self.is_initialized.resolve();
+                self.do_update_pager(record.id == null);
+                if (self.sidebar) {
+                   self.sidebar.do_attachement_update(self.dataset, self.datarecord.id);
+                }
+                if (record.id) {
+                    self.do_push_state({id:record.id});
+                } else {
+                    self.do_push_state({});
+                }
+                self.$el.add(self.$buttons).removeClass('oe_form_dirty');
+                self.autofocus();
+            });
         });
     },
     /**
@@ -493,6 +499,18 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
             args: args
         };
     },
+    do_setup: function() {
+        var self = this;
+        var mock_widget = $.extend({}, {
+            node: {attrs: {on_change: this.fields_view.arch.attrs.setup}},
+            build_context: function() {
+                debugger;
+            },
+            field: {change_default: false},
+        });
+        this.on_change_list = [{widget: mock_widget, processed: []}].concat(this.on_change_list);
+        return this._process_operations();
+    },            
     do_onchange: function(widget, processed) {
         var self = this;
         this.on_change_list = [{widget: widget, processed: processed}].concat(this.on_change_list);
