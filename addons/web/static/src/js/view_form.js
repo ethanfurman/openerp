@@ -538,6 +538,19 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                 def = $.when({});
             }
             return def.then(function(response) {
+                var fields = self.fields;
+                _(response.invisible).each(function (invisible, fieldname) {
+                    // this sets the field cell to invisible
+                    // TODO: set entire row to invisible (to also hide label)
+                    var field = fields[fieldname];
+                    if (!field) {
+                        var ic = self.ics[fieldname];
+                        if (!ic) return;
+                        ic._invisible = invisible;
+                        return;        
+                    }
+                    field.node.attrs.invisible = invisible;
+                });
                 if (widget.field['change_default']) {
                     var fieldname = widget.name;
                     var value_;
@@ -1601,8 +1614,15 @@ instance.web.form.FormRenderingEngine = instance.web.form.FormRenderingEngineInt
         var str_modifiers = $node.attr("modifiers") || "{}";
         var modifiers = JSON.parse(str_modifiers);
         var ic = null;
-        if (modifiers.invisible !== undefined)
+        if (modifiers.invisible !== undefined) {
             ic = new instance.web.form.InvisibilityChanger(this.view, this.view, modifiers.invisible, $new_element);
+            if (typeof this.view.ics === "undefined")
+                this.view.ics = {};
+            if ($node.attr("name")) {
+                this.view.ics[$node.attr("name")] = ic;
+                ic.$node == $node;
+            }
+        }            
         $new_element.addClass($node.attr("class") || "");
         $new_element.attr('style', $node.attr('style'));
         return {invisibility_changer: ic,};
@@ -1743,8 +1763,16 @@ instance.web.form.InvisibilityChangerMixin = {
         this._ic_field_manager = field_manager;
         this._ic_invisible_modifier = invisible_domain;
         this._ic_field_manager.on("view_content_has_changed", this, function() {
-            var result = self._ic_invisible_modifier === undefined ? false :
-                self._ic_field_manager.compute_domain(self._ic_invisible_modifier);
+            var result;
+            if (typeof self.node !== "undefined" &&
+                typeof self.node.attrs.invisible !== "undefined") {
+                result = self.node.attrs.invisible === "1" || self.node.attrs.invisible === true;
+            } else if (typeof self._invisible !== "undefined") {
+                result = self._invisible === "1" || self._invisible === true;
+            } else {
+                result = self._ic_invisible_modifier === undefined ? false :
+                    self._ic_field_manager.compute_domain(self._ic_invisible_modifier);
+            };
             self.set({"invisible": result});
         });
         this.set({invisible: this._ic_invisible_modifier === true, force_invisible: false});

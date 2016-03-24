@@ -130,7 +130,7 @@
                         <tr>
                             <td><label for="db_name">Select a database name:</label></td>
                             <td>
-                                <input type="text" name="db_name" class="required" matches="^[a-zA-Z0-9][a-zA-Z0-9_-]+$" autofocus="true" placeholder="e.g. mycompany"/> 
+                                <input type="text" name="db_name" class="required" matches="^[a-zA-Z0-9][a-zA-Z0-9_-]+$" autofocus="true" placeholder="e.g. mycompany"/>
                             </td>
                         </tr>
                         <tr>
@@ -933,7 +933,7 @@
     </div>
 </t>
 <t t-name="FormRenderingSeparator">
-    <div t-attf-class="oe_horizontal_separator oe_clear #{classnames}">
+    <div t-att-f="name" t-attf-class="oe_horizontal_separator oe_clear #{classnames}">
         <t t-esc="string"/>
     </div>
 </t>
@@ -1061,7 +1061,7 @@
             ></textarea><img class="oe_field_translate oe_input_icon"
                             t-if="widget.field.translate and !widget.get('effective_readonly')"
                             t-att-src='_s + "/web/static/src/img/icons/terp-translate.png"' width="16" height="16" border="0"
-            />            
+            />
         </t>
         <t t-if="widget.get('effective_readonly')">
             <span class="oe_form_text_content"></span>
@@ -1203,7 +1203,7 @@
         <div class="oe_form_field_image_controls oe_edit_only">
             <t t-call="HiddenInputFile">
                 <t t-set="fileupload_id" t-value="widget.fileupload_id"/>
-                Edit 
+                Edit
             </t>
             <div class="oe_form_binary_progress" style="display: none">
                 <img t-att-src='_s + "/web/static/src/img/throbber.gif"' width="16" height="16"/>
@@ -1365,7 +1365,7 @@
         <div class="oe_placeholder_files"/>
         <div class="oe_add" t-if="!widget.get('effective_readonly')">
             <!-- uploader of file -->
-            <button class="oe_attach"><span class="oe_e">'</span></button> 
+            <button class="oe_attach"><span class="oe_e">'</span></button>
             <span class='oe_attach_label'><t t-esc="widget.string"/></span>
             <t t-call="HiddenInputFile">
                 <t t-set="fileupload_id" t-value="widget.fileupload_id"/>
@@ -1954,4 +1954,4 @@
         <span t-if="widget.get('effective_readonly')" class="oe_radio_readonly"><t t-esc="widget.get('value')[1]"/></span>
     </span>
 </t>
-</templates> 
+</templates>
