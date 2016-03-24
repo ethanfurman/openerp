@@ -11,7 +11,7 @@ function addOeMainWindow() {
     var currentChild, getAttr, oldClass, newClass;
     var i;
     var found = false;
-    for (i=0; i<document.childNodes.length; i+=1) {
+    for (i=0, len=document.childNodes.length; i<len; i+=1) {
         newChildren.push(document.childNodes[i]);
     }
     newChildren.push(undefined);
