@@ -460,7 +460,7 @@ instance.web.SearchView = instance.web.Widget.extend(/** @lends instance.web.Sea
             html: true,
             autoFocus: true,
             minLength: 1,
-            delay: 0
+            delay: 800
         }).data('autocomplete');
 
         // MonkeyPatch autocomplete instance
