@@ -628,7 +628,6 @@ class one2many(_column):
         domain = self._domain(obj) if callable(self._domain) else self._domain
         return obj.pool.get(self._obj).name_search(cr, uid, value, domain, operator, context=context,limit=limit)
 
-
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
         raise NotImplementedError('One2Many columns should not be used as record name (_rec_name)')
