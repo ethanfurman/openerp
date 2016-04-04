@@ -413,13 +413,14 @@ class res_partner(osv.osv, format_address):
             context = {}
         if isinstance(ids, (int, long)):
             ids = [ids]
+        combine_company = context.get('combine_company', True)
         res = []
         for record in self.browse(cr, uid, ids, context=context):
             name = record.name
-            if record.parent_id:
+            if record.parent_id and combine_company:
                 name =  "%s (%s)" % (name, record.parent_id.name)
             if context.get('show_address'):
-                name = name + "\n" + self._display_address(cr, uid, record, without_company=True, context=context)
+                name = name + "\n" + self._display_address(cr, uid, record, without_company=combine_company, context=context)
             if context.get('show_email') and record.email:
                 name = "%s <%s>" % (name, record.email)
             res.append((record.id, name))
