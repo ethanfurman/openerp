@@ -99,7 +99,7 @@ def db_monodb_redirect(req):
 
     # 1 try the db in the url
     db_url = req.params.get('db')
-    if db_url:
+    if db_url and db_url != 'Sunridge_Farms':
         return (db_url, False)
 
     try:
