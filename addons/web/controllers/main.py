@@ -102,7 +102,7 @@ def db_monodb_redirect(req):
     # 1 try the db in the url
     db_url = req.params.get('db')
     if db_url and db_url == 'Sunridge_Farms':
-        _logger.warning('bad request for Sunridge_Farms from %s', req.httpsession[req.session_id].__client_address__)
+        _logger.error('bad request for Sunridge_Farms from %s', req.httpsession[req.session_id].__client_address__)
     elif db_url:
         return (db_url, False)
 
