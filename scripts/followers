@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+from __future__ import print_function
+
+from collections import defaultdict
+from openerplib import get_connection, get_records
+from scription import *
+
+
+@Command(
+        login=('login to check for followers',),
+        delete=('remove user as follower?', FLAG),
+        )
+def followers(login, delete):
+    followers = conn.get_model('mail.followers')
+    res_users = conn.get_model('res.users')
+    user_ids = res_users.search_read(domain=[('login','=',login)], fields=['id', 'partner_id'])
+    if not user_ids:
+        abort('unable to find %r' % login)
+    elif len(user_ids) > 1:
+        abort('multiple matches for %r: %r' % (login, user_ids))
+    else:
+        partner_id = user_ids[0].partner_id[0]
+    followed = followers.search_read(domain=[('partner_id','=',partner_id)], fields=['id', 'res_model', 'res_id'])
+    followed_ids = []
+    totals = defaultdict(list)
+    for record in followed:
+        totals[record.res_model].append(record.id)
+        followed_ids.append(record.id)
+    print('Model                           ID count', verbose=0)
+    print('------------------------------  --------', verbose=0)
+    for model, ids in sorted(totals.items()):
+        print('%-30s  %8d' % (model, len(ids)), verbose=0)
+    if totals and delete:
+        ans = get_response('\nRemove %s from following? [no/yes/all] ' % login, default='no')
+        if ans == 'all':
+            followers.unlink(followed_ids)
+        elif ans == 'yes':
+            for model, ids in sorted(totals.items()):
+                if get_response('%s (%d)?' % (model, len(ids)), default='no'):
+                    followers.unlink(ids)
+
+
+config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
+conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
+
+
+Main()
