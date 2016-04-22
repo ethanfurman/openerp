@@ -133,7 +133,7 @@ def clean():
             followers.unlink(extra_ids)
             removed += len(extra_ids)
     if removed:
-        print('%d duplicates removed', verbose=0)
+        print('%d duplicates removed' % removed, verbose=0)
     else:
         print('no duplicates found', verbose=0)
 
