@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+"""
+work with mail.mail
+- notifications
+- email
+- comments
+
+and mail.followers
+- followers
+"""
 from __future__ import print_function
 
 from collections import defaultdict
