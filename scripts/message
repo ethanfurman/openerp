@@ -29,7 +29,6 @@ def followers(login, delete, replace):
     mail_group = conn.get_model('mail.group')
     res_partner = conn.get_model('res.partner')
     user_ids = res_users.search_read(domain=[('login','=',login)], fields=['id', 'partner_id'])
-    actions = ''
     if not user_ids:
         abort('unable to find %r' % login)
     elif len(user_ids) > 1:
@@ -38,16 +37,14 @@ def followers(login, delete, replace):
         print('%s ->  user_id: %s  --  partner_id: %s' % (login, user_ids[0].id, user_ids[0].partner_id))
         partner_id = user_ids[0].partner_id[0]
     if delete:
-        actions += 'd'
+        pass
     # if add:
-    #     actions += 'a'
     #     add_ids = res_users.search_read(domain=[('login','in',add)], fields=['id', 'partner_id', 'login'])
     #     if len(add) != len(add_ids):
     #         missing = set(add) - set([m.login for m in add_ids])
     #         abort('could not find:  %s' % ', '.join(missing))
     #     add_ids = [a.partner_id[0] for a in add_ids]
     if replace:
-        actions += 'r'
         replace_ids = res_users.search_read(domain=[('login','=',replace)], fields=['id', 'partner_id'])
         if not replace_ids:
             abort('unable to find %r' % replace)
