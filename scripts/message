@@ -129,6 +129,55 @@ def clean():
         print('no duplicates found', verbose=0)
 
 
+@Command(
+        login=('user-login to check',),
+        delete=('remove notice/email/comment', FLAG),
+        )
+def notices(login, delete):
+    mail_message = conn.get_model('mail.message')
+    partner_id = get_partner_id(login)
+    notices = mail_message.search_read(
+            domain=[('type','=','notification'), '|', ('partner_ids','in',partner_id), ('notified_partner_ids','in',partner_id)],
+            fields=['id', 'partner_ids', 'notified_partner_ids', 'model', 'res_id', 'record_name'],
+            )
+    print('found %d notices' % len(notices))
+    all_noticed_ids = defaultdict(set)
+    total_pds = []
+    total_npds = []
+    partner_ids = defaultdict(list)
+    notified_partner_ids = defaultdict(list)
+    for record in notices:
+        all_noticed_ids[record.model].add(record.id)
+        if partner_id in record.partner_ids:
+            total_pds.append(record.id)
+            partner_ids[record.model].append(record.id)
+        if partner_id in record.notified_partner_ids:
+            total_npds.append(record.id)
+            notified_partner_ids[record.model].append(record.id)
+    print('Model                           ID count', verbose=0)
+    print('------------------------------  --------', verbose=0)
+    for model, ids in sorted(all_noticed_ids.items()):
+        print('%-30s  %8d' % (model, len(ids)), verbose=0)
+    if (total_pds or total_npds) and delete:
+        ans = get_response('\nDelete notifications? [yes/no/all]')
+        if ans != 'no':
+            if ans == 'all':
+                if total_pds:
+                    mail_message.write(total_pds, {'partner_ids': [(3, partner_id)]})
+                if total_npds:
+                    mail_message.write(total_npds, {'notified_partner_ids': [(3, partner_id)]})
+            else:
+                for model, ids in sorted(all_noticed_ids.items()):
+                    pids = partner_ids[model]
+                    npids = notified_partner_ids[model]
+                    print('pids: %d, npds: %d' % (len(pids), len(npids)), verbose=0)
+                    if get_response('%s (%d)?' % (model, len(ids)), default='no'):
+                        if pids:
+                            mail_message.write(pids, {'partner_ids': [(3, partner_id)]})
+                        if npids:
+                            mail_message.write(npids, {'notified_partner_ids': [(3, partner_id)]})
+
+
 config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
 conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
 
