@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 """
-work with mail.mail
-- notifications
-- email
-- comments
-
-and mail.followers
-- followers
+work with mail.message and mail.followers
 """
 from __future__ import print_function
 
@@ -21,21 +15,12 @@ from scription import *
         # add=('add new user as follower to same items', MULTI),
         replace=('remove user as follower and replace with new user', OPTION),
         )
-def followers(login, delete, replace):
+def follower(login, delete, replace):
     if delete and replace:
         abort('DELETE and REPLACE are mutually exclusive')
     followers = conn.get_model('mail.followers')
-    res_users = conn.get_model('res.users')
     mail_group = conn.get_model('mail.group')
-    res_partner = conn.get_model('res.partner')
-    user_ids = res_users.search_read(domain=[('login','=',login)], fields=['id', 'partner_id'])
-    if not user_ids:
-        abort('unable to find %r' % login)
-    elif len(user_ids) > 1:
-        abort('multiple matches for %r: %r' % (login, user_ids))
-    else:
-        print('%s ->  user_id: %s  --  partner_id: %s' % (login, user_ids[0].id, user_ids[0].partner_id))
-        partner_id = user_ids[0].partner_id[0]
+    partner_id = get_partner_id(login)
     if delete:
         pass
     # if add:
@@ -143,8 +128,22 @@ def clean():
     else:
         print('no duplicates found', verbose=0)
 
+
 config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
 conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
 
+def get_partner_id(login):
+    global res_users, res_partner
+    res_users = conn.get_model('res.users')
+    res_partner = conn.get_model('res.partner')
+    user_ids = res_users.search_read(domain=[('login','=',login)], fields=['id', 'partner_id'])
+    if not user_ids:
+        abort('unable to find %r' % login)
+    elif len(user_ids) > 1:
+        abort('multiple matches for %r: %r' % (login, user_ids))
+    else:
+        print('%s ->  user_id: %s  --  partner_id: %s' % (login, user_ids[0].id, user_ids[0].partner_id))
+        partner_id = user_ids[0].partner_id[0]
+    return partner_id
 
 Main()
