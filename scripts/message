@@ -9,13 +9,21 @@ from openerplib import get_connection, get_records
 from scription import *
 
 
+@Script(
+        login=('user-login to check',),
+        clean=('remove duplicates and orphans', FLAG),
+        )
+def setup(login, clean=Unknown):
+    module.partner_id = get_partner_id(login)
+    module.clean = clean
+
+
 @Command(
-        login=('user-login to check for followers',),
         delete=('remove user as follower?', FLAG),
         # add=('add new user as follower to same items', MULTI),
         replace=('remove user as follower and replace with new user', OPTION),
         )
-def follower(login, delete, replace):
+def follower(delete, replace):
     if delete and replace:
         abort('DELETE and REPLACE are mutually exclusive')
     followers = conn.get_model('mail.followers')
@@ -108,34 +116,18 @@ def follower(login, delete, replace):
                                 raise Exception('problem with replace!')
                         elif delete:
                             followers.unlink(ids)
-
-@Command()
-def clean():
-    followers = conn.get_model('mail.followers')
-    records = followers.search_read(domain=[('id','!=',0)])
-    processed = defaultdict(list)
-    for rec in records:
-        processed[(rec.res_model, rec.res_id, rec.partner_id[0])].append(rec)
-    removed = 0
-    for bunch in processed.values():
-        if len(bunch) > 1:
-            bunch.sort(key=lambda b: b.id)
-            extra_ids = [b.id for b in bunch[1:]]
-            followers.unlink(extra_ids)
-            removed += len(extra_ids)
-    if removed:
-        print('%d duplicates removed' % removed, verbose=0)
-    else:
-        print('no duplicates found', verbose=0)
+    if (
+        (totals and (delete or replace) and clean is Unknown)
+        or (clean is Truthy)
+        ):
+            clean(followers)
 
 
 @Command(
-        login=('user-login to check',),
         delete=('remove notice/email/comment', FLAG),
         )
-def notices(login, delete):
+def notice(delete):
     mail_message = conn.get_model('mail.message')
-    partner_id = get_partner_id(login)
     notices = mail_message.search_read(
             domain=[('type','=','notification'), '|', ('partner_ids','in',partner_id), ('notified_partner_ids','in',partner_id)],
             fields=['id', 'partner_ids', 'notified_partner_ids', 'model', 'res_id', 'record_name'],
@@ -173,13 +165,59 @@ def notices(login, delete):
                     print('pids: %d, npds: %d' % (len(pids), len(npids)), verbose=0)
                     if get_response('%s (%d)?' % (model, len(ids)), default='no'):
                         if pids:
+                            print('*'*25, 'pids: %s' % (pids, ), verbose=2)
                             mail_message.write(pids, {'partner_ids': [(3, partner_id)]})
                         if npids:
+                            print('*'*25, 'npids: %s' % (npids, ), verbose=2)
                             mail_message.write(npids, {'notified_partner_ids': [(3, partner_id)]})
+    if (
+        ((total_pds or total_npds) and delete and clean is Unknown)
+        or (clean is Truthy)
+        ):
+            clean(mail_message, domain=[('type','=','notification')])
 
 
 config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
 conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
+
+def clean(model, domain=[]):
+    print('cleaning', model, verbose=1)
+    models = {}
+    domain = domain[:]
+    records = model.search_read(domain=domain+[('id','!=',0)])
+    processed = defaultdict(list)
+    for rec in records:
+        processed[(rec.res_model, rec.res_id, rec.partner_id[0])].append(rec)
+    removed = 0
+    for key, bunch in processed.items():
+        if len(bunch) > 1:
+            bunch.sort(key=lambda b: b.id)
+            ids_to_remove = [b.id for b in bunch[1:]]
+            model.unlink(extra_ids)
+            removed += len(extra_ids)
+            processed[key] = bunch[0:1]
+    if removed:
+        print('%d duplicates removed' % removed, verbose=0)
+    else:
+        print('no duplicates found', verbose=0)
+    removed = 0
+    to_remove = defaultdict(list)
+    for key in processed:
+        res_model, res_id, partner_id = key
+        model = models.get(res_model)
+        if not model:
+            model = models[res_model] = conn.get_model(res_model)
+        records = model.search(domain=[('id','=',res_id)])
+        if not records:
+            to_remove[model].append(res_id)
+        for model, ids in to_remove.items():
+            model.unlink(ids)
+            removed += len(ids)
+    if removed:
+        print('%d orphans removed' % removed, verbose=0)
+    else:
+        print('no orphans found', verbose=0)
+
 
 def get_partner_id(login):
     global res_users, res_partner
