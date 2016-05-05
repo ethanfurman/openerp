@@ -37,8 +37,10 @@ import sys
 import threading
 import time
 import zipfile
+from aenum import Enum
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
+from dbf import Date, DateTime, IsoDay, IsoMonth, RelativeDay, RelativeMonth
 from itertools import islice, izip
 from lxml import etree
 from which import which
@@ -1087,5 +1089,67 @@ class CountingStream(object):
             self.stopped = True
             raise StopIteration()
         return val
+
+# periods for domain searches
+class Period(Enum):
+    '''
+    different lengths of time
+    '''
+    _init_ = 'duration period'
+    Period = vars()
+    for i in range(31):
+        Period['day_%d' % i] = timedelta(days=i), 'day'
+    for i in range(15):
+        Period['week_%d' % i] = timedelta(days=i*7), 'week'
+    for i in range(12):
+        Period['month_%d' % i] = timedelta(days=i*30), 'month'
+    del i, Period
+
+    def future_period(self, day):
+        '''
+        return start and stop dates of matching future period
+        '''
+        today = Date.strptime(day, DEFAULT_SERVER_DATE_FORMAT)
+        this_day = IsoDay(today.isoweekday())
+        if this_day is IsoDay.MONDAY:
+            week_start = today
+        else:
+            week_start = today.replace(day=RelativeDay.LAST_MONDAY)
+        month_start = today.replace(day=1)
+        if self.period == 'day':
+            start, stop = today, today + self.duration
+        elif self.period == 'week':
+            start = week_start
+            stop = start + self.duration
+        elif self.period == 'month':
+            start = month_start
+            stop = month_start + self.duration
+        else:
+            raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
+        return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
+
+    def past_period(self, day):
+        '''
+        return start and stop dates of matching past period
+        '''
+        today = Date.strptime(day, DEFAULT_SERVER_DATE_FORMAT)
+        this_day = IsoDay(today.isoweekday())
+        if this_day is IsoDay.MONDAY:
+            week_start = today
+        else:
+            week_start = today.replace(day=RelativeDay.LAST_MONDAY)
+        month_start = today.replace(day=1)
+        if self.period == 'day':
+            start, stop = today - self.duration, today
+        elif self.period == 'week':
+            start = week_start - self.duration
+            stop = week_start.replace(delta_day=+6)
+        elif self.period == 'month':
+            start = month_start - self.duration
+            stop = month_start.replace(delta_month=+1)
+        else:
+            raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
+        return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
+
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

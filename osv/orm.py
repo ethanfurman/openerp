@@ -83,18 +83,7 @@ from openerp.tools import SKIPPED_ELEMENT_TYPES
 regex_order = re.compile('^(([a-z0-9_]+|"[a-z0-9_]+")( *desc| *asc)?( *, *|))+$', re.I)
 regex_object_name = re.compile(r'^[a-z0-9_.]+$')
 
-ONE_DAY = datetime.timedelta(days=1)
-TWO_DAYS = datetime.timedelta(days=2)
-THREE_DAYS = datetime.timedelta(days=3)
-FOUR_DAYS = datetime.timedelta(days=4)
-FIVE_DAYS = datetime.timedelta(days=5)
-SIX_DAYS = datetime.timedelta(days=6)
-ONE_WEEK = datetime.timedelta(days=7)
-TWO_WEEKS = datetime.timedelta(days=14)
-THREE_WEEKS = datetime.timedelta(days=21)
-FOUR_WEEKS = datetime.timedelta(days=28)
-ONE_MONTH = datetime.timedelta(days=30)
-FORTNIGHT = datetime.timedelta(days=15)
+from openerp.tools.misc import Period
 
 def transfer_field_to_modifiers(field, modifiers):
     default_values = {}
@@ -2453,15 +2442,7 @@ class BaseModel(object):
             if key.endswith('_domain') and key[:-7] == self._name:
                 args += value
         new_args = []
-        today = Date.strptime(
-                fields.date.context_today(self, cr, user, context=context),
-                '%Y-%m-%d',
-                )
-        this_day = IsoDay(today.isoweekday())
-        if this_day is IsoDay.MONDAY:
-            week_start = today
-        else:
-            week_start = today.replace(day=RelativeDay.LAST_MONDAY)
+        today = fields.date.context_today(self, cr, user, context=context)
         for arg in args:
             if isinstance(arg, basestring) or not isinstance(arg[0], basestring):
                 new_args.append(arg)
@@ -2472,27 +2453,12 @@ class BaseModel(object):
                     field == 'id' or
                     field not in self._columns or
                     self._columns[field]._type not in ('date', 'datetime') or
-                    period not in ['TODAY', 'THIS_WEEK', 'LAST_WEEK', 'THIS_MONTH', 'LAST_MONTH']
+                    not hasattr(Period, period)
                     ):
                 new_args.append(arg)
                 continue
-            if period == 'TODAY':
-                start = today
-                stop = start
-            elif period == 'THIS_WEEK':
-                start = week_start
-                stop = start.replace(delta_day=6)
-            elif period == 'LAST_WEEK':
-                start = week_start.replace(delta_day=-7)
-                stop = start.replace(delta_day=6)
-            elif period == 'THIS_MONTH':
-                start = today.replace(day=1)
-                stop = start.replace(delta_month=1, delta_day=-1)
-            elif period == 'LAST_MONTH':
-                start = today.replace(day=1, delta_month=-1)
-                stop = start.replace(delta_month=1, delta_day=-1)
-            else:
-                raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
+            period = Period[period]
+            start, stop = period.past_period(today)
             old_op = op
             if arg[1] in ('=', 'in'):
                 op = '&'
@@ -2504,12 +2470,12 @@ class BaseModel(object):
                 last = '>'
             if op != old_op:
                 new_args.append(op)
-                new_args.append([field, first, start.strftime('%Y-%m-%d')])
-                new_args.append([field, last, stop.strftime('%Y-%m-%d')])
+                new_args.append([field, first, start])
+                new_args.append([field, last, stop])
             elif '<' in op:
-                new_args.append([field, op, start.strftime('%Y-%m-%d')])
+                new_args.append([field, op, start])
             elif '>' in op:
-                new_args.append([field, op, stop.strftime('%Y-%m-%d')])
+                new_args.append([field, op, stop])
             else:
                 raise ValueError('unable to process domain: %r' % arg)
         return self._search(cr, user, new_args, offset=offset, limit=limit, order=order, context=context, count=count)
