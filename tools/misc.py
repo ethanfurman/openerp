@@ -1100,13 +1100,13 @@ class Period(Enum):
     _ignore_ = 'Period i'
     Period = vars()
     for i in range(31):
-        Period['day_%d' % i] = timedelta(days=i), 'day'
+        Period['Day%d' % i] = timedelta(days=i), 'day'
     for i in range(15):
-        Period['week_%d' % i] = timedelta(days=i*7), 'week'
+        Period['Week%d' % i] = timedelta(days=i*7), 'week'
     for i in range(12):
-        Period['month_%d' % i] = timedelta(days=i*30), 'month'
-    OneDay = day_1
-    OneWeek = week_1
+        Period['Month%d' % i] = i, 'month'
+    OneDay = Day1
+    OneWeek = Week1
 
     def future_period(self, day):
         '''
@@ -1126,7 +1126,7 @@ class Period(Enum):
             start = start + self.value
             stop = week_start + OneWeek
         elif self.period == 'month':
-            start = month_start + self.value
+            start = month_start.replace(delta_month=+self.value)
             stop = start.replace(delta_month=+1)
         else:
             raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
@@ -1150,7 +1150,7 @@ class Period(Enum):
             start = week_start - self.value
             stop = start + OneWeek
         elif self.period == 'month':
-            start = month_start - self.value
+            start = month_start.replace(delta_month=-self.value)
             stop = start.replace(delta_month=+1)
         else:
             raise ValueError("forgot to update something! (period is %r)" % (arg[2],))

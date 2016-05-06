@@ -2472,9 +2472,13 @@ class BaseModel(object):
                 new_args.append(op)
                 new_args.append([field, first, start])
                 new_args.append([field, last, stop])
-            elif '<' in op:
+            elif op == '<':
                 new_args.append([field, op, start])
-            elif '>' in op:
+            elif op == '<=':
+                new_args.append([field, op, stop])
+            elif op == '>=':
+                new_args.append([field, op, start])
+            elif op == '>':
                 new_args.append([field, op, stop])
             else:
                 raise ValueError('unable to process domain: %r' % arg)
