@@ -1124,7 +1124,7 @@ class Period(Enum):
             stop = start + self.OneDay
         elif self.period == 'week':
             start = start + self.value
-            stop = week_start + OneWeek
+            stop = week_start + self.OneWeek
         elif self.period == 'month':
             start = month_start.replace(delta_month=+self.value)
             stop = start.replace(delta_month=+1)
@@ -1145,10 +1145,10 @@ class Period(Enum):
         month_start = today.replace(day=1)
         if self.period == 'day':
             start = today - self.value
-            stop = start + OneDay
+            stop = start + self.OneDay
         elif self.period == 'week':
             start = week_start - self.value
-            stop = start + OneWeek
+            stop = start + self.OneWeek
         elif self.period == 'month':
             start = month_start.replace(delta_month=-self.value)
             stop = start.replace(delta_month=+1)
