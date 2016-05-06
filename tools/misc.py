@@ -37,7 +37,7 @@ import sys
 import threading
 import time
 import zipfile
-from aenum import Enum
+from aenum import Enum, NoAlias
 from collections import defaultdict
 from datetime import datetime, timedelta
 from dbf import Date, DateTime, IsoDay, IsoMonth, RelativeDay, RelativeMonth
@@ -1095,7 +1095,9 @@ class Period(Enum):
     '''
     different lengths of time
     '''
-    _init_ = 'duration period'
+    _init_ = 'value period'
+    _settings_ = NoAlias
+    _ignore_ = 'Period i'
     Period = vars()
     for i in range(31):
         Period['day_%d' % i] = timedelta(days=i), 'day'
@@ -1103,7 +1105,8 @@ class Period(Enum):
         Period['week_%d' % i] = timedelta(days=i*7), 'week'
     for i in range(12):
         Period['month_%d' % i] = timedelta(days=i*30), 'month'
-    del i, Period
+    OneDay = day_1
+    OneWeek = week_1
 
     def future_period(self, day):
         '''
@@ -1117,13 +1120,14 @@ class Period(Enum):
             week_start = today.replace(day=RelativeDay.LAST_MONDAY)
         month_start = today.replace(day=1)
         if self.period == 'day':
-            start, stop = today, today + self.duration
+            start = today + self.value
+            stop = start + self.OneDay
         elif self.period == 'week':
-            start = week_start
-            stop = start + self.duration
+            start = start + self.value
+            stop = week_start + OneWeek
         elif self.period == 'month':
-            start = month_start
-            stop = month_start + self.duration
+            start = month_start + self.value
+            stop = start.replace(delta_month=+1)
         else:
             raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
         return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
@@ -1140,13 +1144,14 @@ class Period(Enum):
             week_start = today.replace(day=RelativeDay.LAST_MONDAY)
         month_start = today.replace(day=1)
         if self.period == 'day':
-            start, stop = today - self.duration, today
+            start = today - self.value
+            stop = start + OneDay
         elif self.period == 'week':
-            start = week_start - self.duration
-            stop = week_start.replace(delta_day=+6)
+            start = week_start - self.value
+            stop = start + OneWeek
         elif self.period == 'month':
-            start = month_start - self.duration
-            stop = month_start.replace(delta_month=+1)
+            start = month_start - self.value
+            stop = start.replace(delta_month=+1)
         else:
             raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
         return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
