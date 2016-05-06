@@ -1,0 +1,236 @@
+#!/usr/bin/env python
+"""
+work with mail.message and mail.followers
+"""
+from __future__ import print_function
+
+from collections import defaultdict
+from openerplib import get_connection, get_records
+from scription import *
+
+
+@Script(
+        login=('user-login to check',),
+        clean=('remove duplicates and orphans', FLAG),
+        )
+def setup(login, clean=Unknown):
+    module.partner_id = get_partner_id(login)
+    module.clean = clean
+
+
+@Command(
+        delete=('remove user as follower?', FLAG),
+        # add=('add new user as follower to same items', MULTI),
+        replace=('remove user as follower and replace with new user', OPTION),
+        )
+def follower(delete, replace):
+    if delete and replace:
+        abort('DELETE and REPLACE are mutually exclusive')
+    followers = conn.get_model('mail.followers')
+    mail_group = conn.get_model('mail.group')
+    partner_id = get_partner_id(login)
+    if delete:
+        pass
+    # if add:
+    #     add_ids = res_users.search_read(domain=[('login','in',add)], fields=['id', 'partner_id', 'login'])
+    #     if len(add) != len(add_ids):
+    #         missing = set(add) - set([m.login for m in add_ids])
+    #         abort('could not find:  %s' % ', '.join(missing))
+    #     add_ids = [a.partner_id[0] for a in add_ids]
+    if replace:
+        replace_ids = res_users.search_read(domain=[('login','=',replace)], fields=['id', 'partner_id'])
+        if not replace_ids:
+            abort('unable to find %r' % replace)
+        elif len(replace_ids) > 1:
+            abort('multiple matches for %r: %r' % (login, user_ids))
+        else:
+            print('%s -> user_id: %s  --  partner_id: %s' % (replace, replace_ids[0].id, replace_ids[0].partner_id))
+            replace_id = replace_ids[0].partner_id[0]
+    followed = followers.search_read(domain=[('partner_id','=',partner_id)], fields=['id', 'res_model', 'res_id'])
+    print('found %d follower records' % len(followed))
+    all_followed_ids = []
+    totals = defaultdict(list)
+    for record in followed:
+        totals[record.res_model].append(record.id)
+        all_followed_ids.append(record.id)
+    print('Model                           ID count', verbose=0)
+    print('------------------------------  --------', verbose=0)
+    for model, ids in sorted(totals.items()):
+        print('%-30s  %8d' % (model, len(ids)), verbose=0)
+    if totals and (delete or replace):
+        question = []
+        choices = {}
+        option_count = 0
+        if delete:
+            option_count += 1
+            choice = 'Delete %s' % login
+            question.append('%d) %s' % (option_count, choice))
+            choices[option_count] = choice
+            first_question = choice + '? [yes/no/all]'
+        if replace:
+            option_count += 1
+            choice = 'Replace %s with %s' % (login, replace)
+            question.append('%d) %s' % (option_count, choice))
+            choices[option_count] = choice
+            first_question = choice + '? [yes/no/all]'
+        # if add:
+        #     option_count += 1
+        #     choice = 'Add %s' % ', '.join(add))
+        #     question.append('%d) %s' % (option_count, choice))
+        #     choices[option_count] = choice
+        #     first_question = choice + '? [yes/no/all]'
+        # if delete and add:
+        #     option_count += 1
+        #     choice = 'Delete and Add'
+        #     question.append('%d) %s' % (option_count, choice))
+        #     choices[option_count] = choice
+        #     first_question = choice + '? [yes/no/all]'
+        # if replace and add:
+        #     option_count += 1
+        #     choice = 'Replace and Add'
+        #     question.append('%d) %s' % (option_count, choice))
+        #     choices[option_count] = choice
+        #     first_question = choice + '? [yes/no/all]'
+        question = '; '.join(question) + '?'
+        if option_count == 1:
+            question = question[3:]
+            default = 'no'
+        else:
+            choices[0] = '0) Nevermind'
+            question += '  [' + '/'.join([str(d) for d in sorted(choices)]) + ']'
+            default = '0'
+        ans = get_response('\n'+first_question)
+        if ans != 'no':
+            if ans == 'all':
+                if replace:
+                    if not followers.write(all_followed_ids, {'partner_id': replace_id}):
+                        raise Exception('problem with replace!')
+                elif delete:
+                    followers.unlink(all_followed_ids)
+            else:
+                for model, ids in sorted(totals.items()):
+                    if get_response('%s (%d)?' % (model, len(ids)), default=default):
+                        print('affirmative')
+                        if replace:
+                            if not followers.write(ids, {'partner_id': replace_id}):
+                                raise Exception('problem with replace!')
+                        elif delete:
+                            followers.unlink(ids)
+    if (
+        (totals and (delete or replace) and clean is Unknown)
+        or (clean is Truthy)
+        ):
+            clean(followers)
+
+
+@Command(
+        delete=('remove notice/email/comment', FLAG),
+        )
+def notice(delete):
+    mail_message = conn.get_model('mail.message')
+    notices = mail_message.search_read(
+            domain=[('type','=','notification'), '|', ('partner_ids','in',partner_id), ('notified_partner_ids','in',partner_id)],
+            fields=['id', 'partner_ids', 'notified_partner_ids', 'model', 'res_id', 'record_name'],
+            )
+    print('found %d notices' % len(notices))
+    all_noticed_ids = defaultdict(set)
+    total_pds = []
+    total_npds = []
+    partner_ids = defaultdict(list)
+    notified_partner_ids = defaultdict(list)
+    for record in notices:
+        all_noticed_ids[record.model].add(record.id)
+        if partner_id in record.partner_ids:
+            total_pds.append(record.id)
+            partner_ids[record.model].append(record.id)
+        if partner_id in record.notified_partner_ids:
+            total_npds.append(record.id)
+            notified_partner_ids[record.model].append(record.id)
+    print('Model                           ID count', verbose=0)
+    print('------------------------------  --------', verbose=0)
+    for model, ids in sorted(all_noticed_ids.items()):
+        print('%-30s  %8d' % (model, len(ids)), verbose=0)
+    if (total_pds or total_npds) and delete:
+        ans = get_response('\nDelete notifications? [yes/no/all]')
+        if ans != 'no':
+            if ans == 'all':
+                if total_pds:
+                    mail_message.write(total_pds, {'partner_ids': [(3, partner_id)]})
+                if total_npds:
+                    mail_message.write(total_npds, {'notified_partner_ids': [(3, partner_id)]})
+            else:
+                for model, ids in sorted(all_noticed_ids.items()):
+                    pids = partner_ids[model]
+                    npids = notified_partner_ids[model]
+                    print('pids: %d, npds: %d' % (len(pids), len(npids)), verbose=0)
+                    if get_response('%s (%d)?' % (model, len(ids)), default='no'):
+                        if pids:
+                            print('*'*25, 'pids: %s' % (pids, ), verbose=2)
+                            mail_message.write(pids, {'partner_ids': [(3, partner_id)]})
+                        if npids:
+                            print('*'*25, 'npids: %s' % (npids, ), verbose=2)
+                            mail_message.write(npids, {'notified_partner_ids': [(3, partner_id)]})
+    if (
+        ((total_pds or total_npds) and delete and clean is Unknown)
+        or (clean is Truthy)
+        ):
+            clean(mail_message, domain=[('type','=','notification')])
+
+
+config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
+conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
+
+def clean(model, domain=[]):
+    print('cleaning', model, verbose=1)
+    models = {}
+    domain = domain[:]
+    records = model.search_read(domain=domain+[('id','!=',0)])
+    processed = defaultdict(list)
+    for rec in records:
+        processed[(rec.res_model, rec.res_id, rec.partner_id[0])].append(rec)
+    removed = 0
+    for key, bunch in processed.items():
+        if len(bunch) > 1:
+            bunch.sort(key=lambda b: b.id)
+            ids_to_remove = [b.id for b in bunch[1:]]
+            model.unlink(extra_ids)
+            removed += len(extra_ids)
+            processed[key] = bunch[0:1]
+    if removed:
+        print('%d duplicates removed' % removed, verbose=0)
+    else:
+        print('no duplicates found', verbose=0)
+    removed = 0
+    to_remove = defaultdict(list)
+    for key in processed:
+        res_model, res_id, partner_id = key
+        model = models.get(res_model)
+        if not model:
+            model = models[res_model] = conn.get_model(res_model)
+        records = model.search(domain=[('id','=',res_id)])
+        if not records:
+            to_remove[model].append(res_id)
+        for model, ids in to_remove.items():
+            model.unlink(ids)
+            removed += len(ids)
+    if removed:
+        print('%d orphans removed' % removed, verbose=0)
+    else:
+        print('no orphans found', verbose=0)
+
+
+def get_partner_id(login):
+    global res_users, res_partner
+    res_users = conn.get_model('res.users')
+    res_partner = conn.get_model('res.partner')
+    user_ids = res_users.search_read(domain=[('login','=',login)], fields=['id', 'partner_id'])
+    if not user_ids:
+        abort('unable to find %r' % login)
+    elif len(user_ids) > 1:
+        abort('multiple matches for %r: %r' % (login, user_ids))
+    else:
+        print('%s ->  user_id: %s  --  partner_id: %s' % (login, user_ids[0].id, user_ids[0].partner_id))
+        partner_id = user_ids[0].partner_id[0]
+    return partner_id
+
+Main()
