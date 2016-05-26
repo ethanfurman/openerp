@@ -444,10 +444,15 @@ class binaryname(char):
 class selection(_column):
     _type = 'selection'
 
-    def __init__(self, selection, string='unknown', **args):
+    def __init__(self, selection, string='unknown', sort_order=None, **args):
         # selection -> [('internal_name', ('User Presentable Name')]
         _column.__init__(self, string=string, **args)
         self.selection = selection
+        # _sort_order allows different sorting of this field; default is
+        # alphabetical by internal_name; other options are:
+        # - definition (definition order); and
+        # - user_name (alpha by User Presentable Name)
+        self._sort_order = sort_order
 
 # ---------------------------------------------------------
 # Relationals fields
@@ -1619,5 +1624,5 @@ class column_info(object):
             self.__class__.__name__, self.name, self.column,
             self.parent_model, self.parent_column, self.original_parent)
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
+# vim:expandtab:tabstop=4:softtabstop=4:shiftwidth=4:
 

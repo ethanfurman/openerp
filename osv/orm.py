@@ -743,6 +743,13 @@ class BaseModel(object):
     # if any mirrored fields, metaclass will fill in the mirror sources
     _mirror_source = {}
 
+    # _sort_selection_fields controls which, if any, selection type fields are sorted by position instead of
+    # by the alphabetical order of the internal value
+    # i.e.
+    #   'blah': fields.select(('this', 'This'), ('after', 'Later'))
+    # would sort Later, This by default, but instead will sort This, Later if _sort_selection_fields == ('blah', )
+    _sort_selection_fields = ()
+
     # Mapping field name/column_info object
     # This is similar to _inherit_fields but:
     # 1. includes self fields,
@@ -3691,6 +3698,7 @@ class BaseModel(object):
         fields (as is if the fields is not falsy, or the readable/writable
         fields if fields is falsy).
         """
+
         def p(field_name):
             """Predicate to test if the user has access to the given field name."""
             # Ignore requested field if it doesn't exist. This is ugly but
@@ -4982,7 +4990,20 @@ class BaseModel(object):
                 elif order_field in self._columns:
                     order_column = self._columns[order_field]
                     if order_column._classic_read:
-                        inner_clause = '"%s"."%s"' % (self._table, order_field)
+                        order = None
+                        if order_column._type == 'selection':
+                            if order_column._sort_order == 'definition':
+                                order = [s[0] for s in order_column.selection]
+                            elif order_column._sort_order == 'user_name':
+                                order = [s[0] for s in sorted(order_column.selection, key=lambda e: e[1])]
+                        if order is not None:
+                            selection_order = 'CASE '
+                            for i, state in enumerate(order):
+                                selection_order += '''WHEN "%s"."state" = '%s' THEN %i ''' % (self._table, state, i)
+                            selection_order += 'END '
+                            inner_clause = selection_order
+                        else:
+                            inner_clause = '"%s"."%s"' % (self._table, order_field)
                     elif order_column._type == 'many2one':
                         inner_clause = self._generate_m2o_order_by(order_field, query)
                     else:
