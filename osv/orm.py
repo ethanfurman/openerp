@@ -1666,31 +1666,33 @@ class BaseModel(object):
                 if fld_def._type == 'many2many':
                     obj = self.pool.get(fld_def._obj)
                     field_value2 = []
-                    for i in range(len(field_value or [])):
-                        if not obj.search(cr, uid, [('id', '=',
-                            field_value[i])]):
+                    field_value = field_value and field_value[0][2] or []
+                    for i in field_value:
+                        if not obj.search(cr, uid, [('id', '=', i)]):
                             continue
-                        field_value2.append(field_value[i])
+                        field_value2.append(i)
                     field_value = field_value2
                 if fld_def._type == 'one2many':
-                    obj = self.pool.get(fld_def._obj)
-                    field_value2 = []
-                    for i in range(len(field_value or [])):
-                        field_value2.append({})
-                        for field2 in field_value[i]:
-                            if field2 in obj._columns.keys() and obj._columns[field2]._type == 'many2one':
-                                obj2 = self.pool.get(obj._columns[field2]._obj)
-                                if not obj2.search(cr, uid,
-                                        [('id', '=', field_value[i][field2])]):
-                                    continue
-                            elif field2 in obj._inherit_fields.keys() and obj._inherit_fields[field2][2]._type == 'many2one':
-                                obj2 = self.pool.get(obj._inherit_fields[field2][2]._obj)
-                                if not obj2.search(cr, uid,
-                                        [('id', '=', field_value[i][field2])]):
-                                    continue
-                            # TODO add test for many2many and one2many
-                            field_value2[i][field2] = field_value[i][field2]
-                    field_value = field_value2
+                    pass
+                    # original code
+                    # obj = self.pool.get(fld_def._obj)
+                    # field_value2 = []
+                    # for i in range(len(field_value or [])):
+                    #     field_value2.append({})
+                    #     for field2 in field_value[i]:
+                    #         if field2 in obj._columns.keys() and obj._columns[field2]._type == 'many2one':
+                    #             obj2 = self.pool.get(obj._columns[field2]._obj)
+                    #             if not obj2.search(cr, uid,
+                    #                     [('id', '=', field_value[i][field2])]):
+                    #                 continue
+                    #         elif field2 in obj._inherit_fields.keys() and obj._inherit_fields[field2][2]._type == 'many2one':
+                    #             obj2 = self.pool.get(obj._inherit_fields[field2][2]._obj)
+                    #             if not obj2.search(cr, uid,
+                    #                     [('id', '=', field_value[i][field2])]):
+                    #                 continue
+                    #         # TODO add test for many2many and one2many
+                    #         field_value2[i][field2] = field_value[i][field2]
+                    # field_value = field_value2
                 defaults[field] = field_value
 
         # get the default values from the context
