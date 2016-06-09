@@ -402,23 +402,29 @@ class mail_thread(osv.AbstractModel):
                 continue
 
             # find subtypes and post messages or log if no subtype found
-            if not self._track:
-                # TODO: investigate if this branch, and/or the below 'if not posted' branch are still necessary
-                subtypes = ['mail.mt_comment']
-                partner_ids += [partner.id for partner in self.browse(cr, uid, record['id']).message_follower_ids]
-            else:
-                subtypes = []
+            #
+            # notification type  /   field type                       /   sent to users
+            # Discussion        -->  all non-field-tracked items     -->  who follow Discussions
+            # Field-Tracked     -->  toggled-on field-tracked items  -->  who follow that field change
+            subtypes = []
+            if self._track:
+                # we have tracking -- does this change qualify?
                 for field, track_info in self._track.items():
                     if field not in changes:
                         continue
                     for subtype, method in track_info.items():
                         if method(self, cr, uid, record, context):
                             subtypes.append(subtype)
+            else:
+                # no tracked state so updates go to Discussion
+                subtypes.append('mail.mt_comment')
+                partner_ids += [partner.id for partner in self.browse(cr, uid, record['id']).message_follower_ids]
 
             posted = False
             for subtype in subtypes:
+                st_model, st_xmlid = subtype.split('.')[:2]
                 try:
-                    subtype_rec = self.pool.get('ir.model.data').get_object(cr, uid, subtype.split('.')[0], subtype.split('.')[1], context=context)
+                    subtype_rec = self.pool.get('ir.model.data').get_object(cr, uid, st_model, st_xmlid, context=context)
                 except ValueError, e:
                     _logger.warning('subtype %s not found, giving error "%s"' % (subtype, e))
                     continue
@@ -426,11 +432,7 @@ class mail_thread(osv.AbstractModel):
                 message = body + '\n' + format_message(description, tracked_values)
                 self.message_post(cr, uid, record['id'], body=message, subtype=subtype, context=context, partner_ids=partner_ids)
                 posted = True
-            if not posted:
-                if not body:
-                    body = 'Updated:'
-                message = body + '\n' + format_message('', tracked_values)
-                self.message_post(cr, uid, record['id'], body=message, context=context)
+
         return True
 
     #------------------------------------------------------
@@ -1377,4 +1379,3 @@ class mail_thread(osv.AbstractModel):
         ''', (ids, self._name, partner_id))
         return True
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
