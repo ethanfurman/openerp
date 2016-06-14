@@ -1026,6 +1026,9 @@ class ir_model_data(osv.osv):
         This step is performed as part of the full uninstallation of a module.
         """
 
+        # TODO: add ability to remove records maintained via a function field;
+        #       so not a complete table drop, just selective deletion
+
         module_ids = self.search(cr, uid, [('module', 'in', modules_to_remove)])
 
         if uid != 1 and not self.pool.get('ir.model.access').check_groups(cr, uid, "base.group_system"):
@@ -1120,4 +1123,3 @@ class ir_model_data(osv.osv):
                     _logger.info('Deleting %s@%s', res_id, model)
                     self.pool.get(model).unlink(cr, uid, [res_id])
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
