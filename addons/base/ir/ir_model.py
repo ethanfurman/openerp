@@ -1026,7 +1026,7 @@ class ir_model_data(osv.osv):
         This step is performed as part of the full uninstallation of a module.
         """
 
-        ids = self.search(cr, uid, [('module', 'in', modules_to_remove)])
+        module_ids = self.search(cr, uid, [('module', 'in', modules_to_remove)])
 
         if uid != 1 and not self.pool.get('ir.model.access').check_groups(cr, uid, "base.group_system"):
             raise except_orm(_('Permission Denied'), (_('Administrator access is required to uninstall a module')))
@@ -1034,12 +1034,12 @@ class ir_model_data(osv.osv):
         context = dict(context or {})
         context[MODULE_UNINSTALL_FLAG] = True # enable model/field deletion
 
-        ids_set = set(ids)
+        module_ids_set = set(module_ids)
         wkf_todo = []
         to_unlink = []
-        ids.sort()
-        ids.reverse()
-        for data in self.browse(cr, uid, ids, context):
+        module_ids.sort()
+        module_ids.reverse()
+        for data in self.browse(cr, uid, module_ids, context):
             model = data.model
             res_id = data.res_id
 
@@ -1065,7 +1065,7 @@ class ir_model_data(osv.osv):
         def unlink_if_refcount(to_unlink):
             for model, res_id in to_unlink:
                 external_ids = self.search(cr, uid, [('model', '=', model),('res_id', '=', res_id)])
-                if set(external_ids)-ids_set:
+                if set(external_ids)-module_ids_set:
                     # if other modules have defined this record, we must not delete it
                     continue
                 _logger.info('Deleting %s@%s', res_id, model)
@@ -1095,7 +1095,7 @@ class ir_model_data(osv.osv):
 
         cr.commit()
 
-        self.unlink(cr, uid, ids, context)
+        self.unlink(cr, uid, module_ids, context)
 
     def _process_end(self, cr, uid, modules):
         """ Clear records removed from updated module data.
