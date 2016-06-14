@@ -10,20 +10,20 @@ from scription import *
 
 
 @Script(
-        login=('user-login to check',),
         clean=('remove duplicates and orphans', FLAG),
         )
-def setup(login, clean=Unknown):
+def setup(clean=Unknown):
     module.partner_id = get_partner_id(login)
     module.clean = clean
 
 
 @Command(
+        login=('user-login to check',),
         delete=('remove user as follower?', FLAG),
         # add=('add new user as follower to same items', MULTI),
         replace=('remove user as follower and replace with new user', OPTION),
         )
-def follower(delete, replace):
+def follower(login, delete, replace):
     if delete and replace:
         abort('DELETE and REPLACE are mutually exclusive')
     followers = conn.get_model('mail.followers')
@@ -124,9 +124,10 @@ def follower(delete, replace):
 
 
 @Command(
+        login=('user-login to check',),
         delete=('remove notice/email/comment', FLAG),
         )
-def notice(delete):
+def notice(login, delete):
     mail_message = conn.get_model('mail.message')
     notices = mail_message.search_read(
             domain=[('type','=','notification'), '|', ('partner_ids','in',partner_id), ('notified_partner_ids','in',partner_id)],
