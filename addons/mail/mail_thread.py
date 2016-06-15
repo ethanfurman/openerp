@@ -239,7 +239,8 @@ class mail_thread(osv.AbstractModel):
         """
         if context is None:
             context = {}
-        follower_ids = values.pop('message_follower_user_ids', [])
+        partner_followers = values.pop('message_follower_ids', [])
+        user_followers = values.pop('message_follower_user_ids', [])
         notify_ids = values.pop('message_notify_ids', [])
         thread_id = super(mail_thread, self).create(cr, uid, values, context=context)
         if context.get('mail_track_initial'):
@@ -251,10 +252,12 @@ class mail_thread(osv.AbstractModel):
         # subscribe uid unless asked not to
         # do not subscribe Administrator (ever!)
         if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
-            if uid not in follower_ids:
-                follower_ids.append(uid)
-        if follower_ids:
-            self.message_subscribe_users(cr, uid, [thread_id], follower_ids, context=context)
+            if uid not in user_followers:
+                user_followers.append(uid)
+        if user_followers:
+            self.message_subscribe_users(cr, uid, [thread_id], user_followers, context=context)
+        if partner_followers:
+            self.message_subscribe(cr, uid, [thread_id], partner_followers, context=context)
         self.message_auto_subscribe(cr, uid, [thread_id], values.keys(), context=context)
 
         # automatic logging unless asked not to (mainly for various testing purpose)
@@ -420,7 +423,6 @@ class mail_thread(osv.AbstractModel):
                 subtypes.append('mail.mt_comment')
                 partner_ids += [partner.id for partner in self.browse(cr, uid, record['id']).message_follower_ids]
 
-            posted = False
             for subtype in subtypes:
                 st_model, st_xmlid = subtype.split('.')[:2]
                 try:
@@ -428,10 +430,9 @@ class mail_thread(osv.AbstractModel):
                 except ValueError, e:
                     _logger.warning('subtype %s not found, giving error "%s"' % (subtype, e))
                     continue
-                description = subtype_rec.description if subtype_rec.description else subtype_rec.name
+                description = subtype_rec.description or subtype_rec.name
                 message = body + '\n' + format_message(description, tracked_values)
                 self.message_post(cr, uid, record['id'], body=message, subtype=subtype, context=context, partner_ids=partner_ids)
-                posted = True
 
         return True
 
