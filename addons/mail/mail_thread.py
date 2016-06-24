@@ -381,7 +381,7 @@ class mail_thread(osv.AbstractModel):
             return message
 
         force_body = context.get('message_force', '')
-        if not tracked_fields and not message_force:
+        if not tracked_fields and not force_body:
             return True
 
         if isinstance(ids, (int, long)):
