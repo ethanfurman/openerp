@@ -239,28 +239,23 @@ class mail_thread(osv.AbstractModel):
         """
         if context is None:
             context = {}
-        partner_followers = values.pop('message_follower_ids', [])
-        user_followers = values.pop('message_follower_user_ids', [])
+        followers = values.pop('message_follower_ids', [])
         notify_ids = values.pop('message_notify_ids', [])
         thread_id = super(mail_thread, self).create(cr, uid, values, context=context)
-        tracked_fields = {}
         initial_values = {thread_id: {'id':thread_id}}
         track_only = not context.get('mail_track_initial', False)
         tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context, track_only=track_only)
         for field_name in tracked_fields:
             initial_values[thread_id][field_name] = False
 
+        # do not track intermediate writes
+        context['message_track'] = False
         # subscribe uid unless asked not to
         # do not subscribe Administrator (ever!)
         if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
-            if uid not in user_followers:
-                user_followers.append(uid)
-        # do not track intermediate writes
-        context['message_track'] = False
-        if user_followers:
-            self.message_subscribe_users(cr, uid, [thread_id], user_followers, context=context)
-        if partner_followers:
-            self.message_subscribe(cr, uid, [thread_id], partner_followers, context=context)
+            self.message_subscribe_users(cr, uid, [thread_id], [uid], context=context)
+        if followers:
+            self.message_subscribe(cr, uid, [thread_id], followers, context=context)
         self.message_auto_subscribe(cr, uid, [thread_id], values.keys(), context=context)
         del context['message_track']
 
@@ -277,7 +272,6 @@ class mail_thread(osv.AbstractModel):
     def write(self, cr, uid, ids, values, context=None):
         if isinstance(ids, (int, long)):
             ids = [ids]
-        follower_ids = values.pop('message_follower_user_ids', [])
         notify_ids = values.pop('message_notify_ids', [])
         # Track initial values of tracked fields
         tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context)
@@ -287,8 +281,6 @@ class mail_thread(osv.AbstractModel):
 
         # Perform write, update followers
         result = super(mail_thread, self).write(cr, uid, ids, values, context=context)
-        if follower_ids:
-            self.message_subscribe_users(cr, uid, ids, follower_ids, context=context)
         self.message_auto_subscribe(cr, uid, ids, values.keys(), context=context)
 
         # Perform the tracking
@@ -401,7 +393,6 @@ class mail_thread(osv.AbstractModel):
             # - 'change_only' --> show new value (only if value changed)
 
             for col_name, col_info in tracked_fields.items():
-                tracking_info = {}
                 tracking = getattr(self._all_columns[col_name].column, 'track_visibility', None)
                 if record[col_name] == initial[col_name] and tracking == 'always':
                     tracked_values[col_name] = dict(
@@ -426,7 +417,6 @@ class mail_thread(osv.AbstractModel):
             # Discussion        -->  all non-field-tracked items     -->  who follow Discussions
             # Field-Tracked     -->  toggled-on field-tracked items  -->  who follow that field change
             subtypes = []
-            # if self._track and any(field in self._track for field in tracked_values):
             if self._track:
                 # we have tracking -- does this change qualify?
                 for field, track_info in self._track.items():
