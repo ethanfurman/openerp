@@ -270,6 +270,8 @@ class mail_thread(osv.AbstractModel):
         return thread_id
 
     def write(self, cr, uid, ids, values, context=None):
+        if context is None:
+            context = {}
         if isinstance(ids, (int, long)):
             ids = [ids]
         notify_ids = values.pop('message_notify_ids', [])
@@ -281,6 +283,8 @@ class mail_thread(osv.AbstractModel):
 
         # Perform write, update followers
         result = super(mail_thread, self).write(cr, uid, ids, values, context=context)
+        if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
+            self.message_subscribe_users(cr, uid, ids, [uid], context=context)
         self.message_auto_subscribe(cr, uid, ids, values.keys(), context=context)
 
         # Perform the tracking
@@ -372,6 +376,8 @@ class mail_thread(osv.AbstractModel):
                 message += '%s</div>' % change.get('new_value')
             return message
 
+        if context is None:
+            context = {}
         force_body = context.get('message_force', '')
         if not tracked_fields and not message_force:
             return True
