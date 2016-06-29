@@ -285,6 +285,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                 }
                 var fields = _.keys(self.fields_view.fields);
                 fields.push('display_name');
+                fields.push('__last_update');
                 return self.dataset.read_index(fields, {
                     context: { 'bin_size': true, 'future_display_name' : true }
                 }).then(function(r) {
@@ -886,7 +887,12 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                     save_deferral = $.Deferred().resolve({}).promise();
                 } else {
                     // Write save
-                    save_deferral = self.dataset.write(self.datarecord.id, values, {readonly_fields: readonly_values}).then(function(r) {
+                    var option = {};
+                    var val = {};
+                    var key = _.str.sprintf("%s,%s",self.model,self.datarecord.id);
+                    val[key] = self.datarecord['__last_update'];
+                    option['context'] = {'__last_update': val};
+                    save_deferral = self.dataset.write(self.datarecord.id, values, option).pipe(function(r) {
                         return self.record_saved(r);
                     }, null);
                 }
@@ -980,6 +986,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
             } else {
                 var fields = _.keys(self.fields_view.fields);
                 fields.push('display_name');
+                fields.push('__last_update');
                 return self.dataset.read_index(fields,
                     {
                         context: {
