@@ -103,7 +103,7 @@ class WebRequest(object):
         forwarded = self.httprequest.environ.get('HTTP_X_FORWARDED_FOR', None)
         if forwarded:
             threading.current_thread().clientip = forwarded
-            _logger.info('%s - originating address', forwarded)
+            _logger.info('connection forwarded from %s' % forwarded)
         self.session.__client_address__ = forwarded or self.httprequest.remote_addr
         self.context = self.params.pop('context', {})
         self.context['HTTP_X_FORWARDED_FOR'] = forwarded

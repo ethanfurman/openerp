@@ -305,7 +305,7 @@ def concat_js(file_list):
     if checksum in concat_js_cache:
         content = concat_js_cache[checksum]
     else:
-        # content = rjsmin(content)
+        content = rjsmin(content)
         concat_js_cache[checksum] = content
     return content, checksum
 
