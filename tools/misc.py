@@ -1099,11 +1099,11 @@ class Period(Enum):
     _settings_ = NoAlias
     _ignore_ = 'Period i'
     Period = vars()
-    for i in range(31):
+    for i in range(367):
         Period['Day%d' % i] = timedelta(days=i), 'day'
-    for i in range(15):
+    for i in range(53):
         Period['Week%d' % i] = timedelta(days=i*7), 'week'
-    for i in range(12):
+    for i in range(13):
         Period['Month%d' % i] = i, 'month'
     OneDay = Day1
     OneWeek = Week1
