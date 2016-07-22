@@ -4994,9 +4994,10 @@ class BaseModel(object):
                     if order_column._classic_read:
                         order = None
                         if order_column._type == 'selection':
-                            if order_column._sort_order == 'definition':
+                            sort_order = getattr(order_column, '_sort_order', None)
+                            if sort_order == 'definition':
                                 order = [s[0] for s in order_column.selection]
-                            elif order_column._sort_order == 'user_name':
+                            elif sort_order == 'user_name':
                                 order = [s[0] for s in sorted(order_column.selection, key=lambda e: e[1])]
                         if order is not None:
                             selection_order = 'CASE '
