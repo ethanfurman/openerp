@@ -2951,8 +2951,13 @@ instance.web.form.CompletionFieldMixin = {
         var blacklist = this.get_search_blacklist();
         this.last_query = search_val;
 
+        if (typeof this.options.limit === 'number') {
+            this.limit = this.options.limit;
+        }
+        var opt_create = self.options.create === true;
+        var opt_create_edit = self.options.create_edit === true;
         var create_rights;
-        if (this.options.create == true || this.options.create_edit == true) {
+        if (opt_create || opt_create_edit) {
                 create_rights = new instance.web.Model(this.field.relation).call("check_access_rights", ["create", false]);
             }
 
@@ -2960,11 +2965,10 @@ instance.web.form.CompletionFieldMixin = {
                 search_val, new instance.web.CompoundDomain(self.build_domain(), [["id", "not in", blacklist]]),
                 'ilike', this.limit + 1, self.build_context()));
 
+
         $.when(search_result, create_rights).then(function(_data, _can_create) {
             var data = _data[0];
             var can_create = _can_create ? _can_create[0] : null;
-            var opt_create = !_.isUndefined(self.options.create) ? self.options.create : null;
-            var opt_create_edit = !_.isUndefined(self.options.create_edit) ? self.options.create_edit : null;
             self.last_search = data;
             // possible selections for the m2o
             var values = _.map(data, function(x) {
