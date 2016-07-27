@@ -342,7 +342,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                     }
                 });
             }
-            var def = $.when({}); 
+            var def = $.when({});
             if (typeof self.fields_view.arch.attrs.setup !== "undefined") {
                 def = self.do_setup();
             }
@@ -510,7 +510,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
         });
         this.on_change_list = [{widget: mock_widget, processed: []}].concat(this.on_change_list);
         return this._process_operations();
-    },            
+    },
     do_onchange: function(widget, processed) {
         var self = this;
         this.on_change_list = [{widget: widget, processed: processed}].concat(this.on_change_list);
@@ -547,7 +547,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                         var ic = self.ics[fieldname];
                         if (!ic) return;
                         ic._invisible = invisible;
-                        return;        
+                        return;
                     }
                     field.node.attrs.invisible = invisible;
                 });
@@ -1622,7 +1622,7 @@ instance.web.form.FormRenderingEngine = instance.web.form.FormRenderingEngineInt
                 this.view.ics[$node.attr("name")] = ic;
                 ic.$node == $node;
             }
-        }            
+        }
         $new_element.addClass($node.attr("class") || "");
         $new_element.attr('style', $node.attr('style'));
         return {invisibility_changer: ic,};
@@ -2944,15 +2944,27 @@ instance.web.form.CompletionFieldMixin = {
      * Call this method to search using a string.
      */
     get_search_result: function(search_val) {
+        var def = $.Deferred();
         var self = this;
 
         var dataset = new instance.web.DataSet(this, this.field.relation, self.build_context());
         var blacklist = this.get_search_blacklist();
         this.last_query = search_val;
 
-        return this.orderer.add(dataset.name_search(
+        var create_rights;
+        if (this.options.create == true || this.options.create_edit == true) {
+                create_rights = new instance.web.Model(this.field.relation).call("check_access_rights", ["create", false]);
+            }
+
+        var search_result = this.orderer.add(dataset.name_search(
                 search_val, new instance.web.CompoundDomain(self.build_domain(), [["id", "not in", blacklist]]),
-                'ilike', this.limit + 1, self.build_context())).then(function(data) {
+                'ilike', this.limit + 1, self.build_context()));
+
+        $.when(search_result, create_rights).then(function(_data, _can_create) {
+            var data = _data[0];
+            var can_create = _can_create ? _can_create[0] : null;
+            var opt_create = !_.isUndefined(self.options.create) ? self.options.create : null;
+            var opt_create_edit = !_.isUndefined(self.options.create_edit) ? self.options.create_edit : null;
             self.last_search = data;
             // possible selections for the m2o
             var values = _.map(data, function(x) {
@@ -2964,7 +2976,6 @@ instance.web.form.CompletionFieldMixin = {
                     id: x[0],
                 };
             });
-
             // search more... if more results that max
             if (values.length > self.limit) {
                 values = values.slice(0, self.limit);
@@ -2980,27 +2991,31 @@ instance.web.form.CompletionFieldMixin = {
             }
             // quick create
             var raw_result = _(data.result).map(function(x) {return x[1];});
-            if (search_val.length > 0 && !_.include(raw_result, search_val)) {
+            if (can_create && opt_create) {
+                if (search_val.length > 0 && !_.include(raw_result, search_val)) {
+                    values.push({
+                        label: _.str.sprintf(_t('Create "<strong>%s</strong>"'),
+                            $('<span />').text(search_val).html()),
+                        action: function() {
+                            self._quick_create(search_val);
+                        },
+                        classname: 'oe_m2o_dropdown_option'
+                    });
+                }
+            }
+            // create...
+            if (can_create && opt_create_edit == true) {
                 values.push({
-                    label: _.str.sprintf(_t('Create "<strong>%s</strong>"'),
-                        $('<span />').text(search_val).html()),
+                    label: _t("Create and Edit..."),
                     action: function() {
-                        self._quick_create(search_val);
+                        self._search_create_popup("form", undefined, self._create_context(search_val));
                     },
                     classname: 'oe_m2o_dropdown_option'
                 });
             }
-            // create...
-            values.push({
-                label: _t("Create and Edit..."),
-                action: function() {
-                    self._search_create_popup("form", undefined, self._create_context(search_val));
-                },
-                classname: 'oe_m2o_dropdown_option'
-            });
-
-            return values;
+            def.resolve(values);
         });
+        return def;
     },
     get_search_blacklist: function() {
         return [];
@@ -5148,7 +5163,7 @@ instance.web.form.FieldBinaryFileName = instance.web.form.FieldBinary.extend({
             var self = this;
             this.$el.find('b').click(function(ev) {
                 if (self.get('value')) {
-                    self.on_save_as(ev);                    
+                    self.on_save_as(ev);
                 }
                 return false;
             });
@@ -5484,11 +5499,11 @@ instance.web.form.FieldStatus = instance.web.form.AbstractField.extend({
     calc_domain: function() {
         var d = instance.web.pyeval.eval('domain', this.build_domain());
         var domain = []; //if there is no domain defined, fetch all the records
-        
+
         if (d.length) {
             domain = ['|',['id', '=', this.get('value')]].concat(d);
         }
-        
+
         if (! _.isEqual(domain, this.get("evaluated_selection_domain"))) {
             this.set("evaluated_selection_domain", domain);
         }
