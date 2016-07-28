@@ -1885,7 +1885,7 @@ class BaseModel(object):
         # and 'optional'
         def _check_context():
             "check context for a setting, return False if not found"
-            reverse = False
+            inverse = False
             name = sys._getframe(1).f_globals['checking']
             # name = checking
             for neg, pos in (
@@ -1894,11 +1894,11 @@ class BaseModel(object):
                     ('required', 'optional'),
                     ):
                 if name == pos:
-                    reverse = True
+                    inverse = True
                     name = neg
                     break
             result = context.get(name, False)
-            if reverse:
+            if inverse:
                 result = not result
             return result
         commands = {
