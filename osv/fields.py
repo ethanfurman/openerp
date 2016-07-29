@@ -168,7 +168,7 @@ class boolean(_column):
     _symbol_f = lambda x: x and 'True' or 'False'
     _symbol_set = (_symbol_c, _symbol_f)
 
-    def __init__(self, string='unknown', required=False, choice=(u'Yes', u'No'), **args):
+    def __init__(self, string='unknown', required=False, choice=(u'No', u'Yes'), **args):
         super(boolean, self).__init__(string=string, required=required, **args)
         self.choice = choice
         if required:
