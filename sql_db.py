@@ -226,11 +226,20 @@ class Cursor(object):
             res = self._obj.execute(query, params)
         except psycopg2.ProgrammingError, pe:
             if self._default_log_exceptions if log_exceptions is None else log_exceptions:
+                pe = str(pe)
+                if len(pe) > 1000:
+                    pe = pe[:400] + ' . . . ' + pe[-250:]
+                query = str(query)
+                if len(query) > 1000:
+                    query = query[:400] + ' . . . ' + query[-250:]
                 _logger.error("Programming error: %s, in query %s", pe, query)
             raise
         except Exception:
             if self._default_log_exceptions if log_exceptions is None else log_exceptions:
-                _logger.exception("bad query: %s", self._obj.query or query)
+                query = str(self._obj.query or query)
+                if len(query) > 1000:
+                    query = query[:400] + ' . . . ' + query[-250:]
+                _logger.exception("bad query: %s", query)
             raise
 
         if self.sql_log:
