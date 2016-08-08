@@ -2954,8 +2954,8 @@ instance.web.form.CompletionFieldMixin = {
         if (typeof this.options.limit === 'number') {
             this.limit = this.options.limit;
         }
-        var opt_create = self.options.create === true;
-        var opt_create_edit = self.options.create_edit === true;
+        var opt_create = self.options.create == true;
+        var opt_create_edit = self.options.create_edit == true;
         var create_rights;
         if (opt_create || opt_create_edit) {
                 create_rights = new instance.web.Model(this.field.relation).call("check_access_rights", ["create", false]);
