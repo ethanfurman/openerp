@@ -300,7 +300,7 @@ class HttpRequest(WebRequest):
             })))
         except Exception:
             logging.getLogger(__name__ + '.HttpRequest.dispatch').exception(
-                    "An error occurred while handling a json request")
+                    "An error occurred while handling a http request")
             r = werkzeug.exceptions.InternalServerError(cgi.escape(simplejson.dumps({
                 'code': 300,
                 'message': "OpenERP WebClient Error",
