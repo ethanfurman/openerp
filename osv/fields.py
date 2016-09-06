@@ -353,7 +353,7 @@ class datetime(_column):
             tools.DEFAULT_SERVER_DATETIME_FORMAT)
 
     @staticmethod
-    def context_timestamp(cr, uid, timestamp, context=None):
+    def context_timestamp(cr, uid, timestamp=None, context=None):
         """Returns the given timestamp converted to the client's timezone.
            This method is *not* meant for use as a _defaults initializer,
            because datetime fields are automatically converted upon
@@ -369,6 +369,7 @@ class datetime(_column):
            :return: timestamp converted to timezone-aware datetime in context
                     timezone
         """
+        timestamp = timestamp or DT.datetime.now()
         if isinstance(timestamp, basestring):
             timestamp = DT.datetime.strptime(timestamp, tools.DEFAULT_SERVER_DATETIME_FORMAT)
         assert isinstance(timestamp, DT.datetime), 'Datetime instance expected'
