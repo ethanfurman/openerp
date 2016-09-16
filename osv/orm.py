@@ -152,7 +152,8 @@ def transfer_modifiers_to_node(modifiers, node):
         node.set('modifiers', simplejson.dumps(modifiers))
 
 def setup_modifiers(node, field=None, context=None, in_tree_view=False):
-    """ Processes node attributes and field descriptors to generate
+    """
+    Processes node attributes and field descriptors to generate
     the ``modifiers`` node attribute and set it on the provided node.
 
     Alters its first argument in-place.
@@ -216,7 +217,8 @@ def modifiers_tests():
 
 
 def check_object_name(name):
-    """ Check if the given name is a valid openerp object name.
+    """
+    Check if the given name is a valid openerp object name.
 
         The _name attribute in osv and osv_memory object is subject to
         some restrictions. This function returns True or False whether
@@ -280,7 +282,8 @@ class BrowseRecordError(Exception):
     pass
 
 class browse_null(object):
-    """ Readonly python database object browser
+    """
+    Readonly python database object browser
     """
 
     def __init__(self):
@@ -309,7 +312,8 @@ class browse_null(object):
 # TODO: execute an object method on browse_record_list
 #
 class browse_record_list(list):
-    """ Collection of browse objects
+    """
+    Collection of browse objects
 
         Such an instance will be returned when doing a ``browse([ids..])``
         and will be iterable, yielding browse() objects
@@ -323,7 +327,8 @@ class browse_record_list(list):
 
 
 class browse_record(object):
-    """ An object that behaves like a row of an object's table.
+    """
+    An object that behaves like a row of an object's table.
         It has attributes after the columns of the corresponding object.
 
         Examples::
@@ -362,10 +367,10 @@ class browse_record(object):
         cache.setdefault(table._name, {})
         self._data = cache[table._name]
 
-#        if not (id and isinstance(id, (int, long,))):
-#            raise BrowseRecordError(_('Wrong ID for the browse record, got %r, expected an integer.') % (id,))
-#        if not table.exists(cr, uid, id, context):
-#            raise BrowseRecordError(_('Object %s does not exists') % (self,))
+       # if not (id and isinstance(id, (int, long,))):
+       #     raise BrowseRecordError(_('Wrong ID for the browse record, got %r, expected an integer.') % (id,))
+       # if not table.exists(cr, uid, id, context):
+       #     raise BrowseRecordError(_('Object %s does not exists') % (self,))
 
         if id not in self._data:
             self._data[id] = {'id': id}
@@ -540,7 +545,8 @@ class browse_record(object):
     __repr__ = __str__
 
     def refresh(self):
-        """Force refreshing this browse_record's data and all the data of the
+        """
+        orce refreshing this browse_record's data and all the data of the
            records that belong to the same cache, by emptying the cache completely,
            preserving only the record identifiers (for prefetching optimizations).
         """
@@ -623,7 +629,8 @@ def get_pg_type(f, type_override=None):
 
 
 class MetaModel(type):
-    """ Metaclass for the Model.
+    """
+    Metaclass for the Model.
 
     This class is used as the metaclass for the Model class to discover
     the models defined in a module (i.e. without instanciating them).
@@ -676,7 +683,8 @@ LOG_ACCESS_COLUMNS = {
 MAGIC_COLUMNS =  ['id'] + LOG_ACCESS_COLUMNS.keys()
 
 class BaseModel(object):
-    """ Base class for OpenERP models.
+    """
+    Base class for OpenERP models.
 
     OpenERP models are created by inheriting from this class' subclasses:
 
@@ -776,7 +784,8 @@ class BaseModel(object):
         pass
 
     def _field_create(self, cr, context=None):
-        """ Create entries in ir_model_fields for all the model's fields.
+        """
+        Create entries in ir_model_fields for all the model's fields.
 
         If necessary, also create an entry in ir_model, and if called from the
         modules loading scheme (by receiving 'module' in the context), also
@@ -895,7 +904,8 @@ class BaseModel(object):
     #
     @classmethod
     def create_instance(cls, pool, cr):
-        """ Instanciate a given model.
+        """
+        Instanciate a given model.
 
         This class method instanciates the class of some model (i.e. a class
         deriving from osv or osv_memory). The class might be the class passed
@@ -982,7 +992,8 @@ class BaseModel(object):
         return obj
 
     def __new__(cls):
-        """Register this model.
+        """
+        Register this model.
 
         This doesn't create an instance but simply register the model
         as being part of the module where it is defined.
@@ -1006,7 +1017,8 @@ class BaseModel(object):
         return None
 
     def __init__(self, pool, cr):
-        """ Initialize a model and make it part of the given registry.
+        """
+        Initialize a model and make it part of the given registry.
 
         - copy the stored fields' functions in the osv_pool,
         - update the _columns with the fields found in ir_model_fields,
@@ -1431,7 +1443,8 @@ class BaseModel(object):
         return {'ids': ids, 'messages': messages}
     def _extract_records(self, cr, uid, fields_, data,
                          context=None, log=lambda a: None):
-        """ Generates record dicts from the data sequence.
+        """
+        Generates record dicts from the data sequence.
 
         The result is a generator of dicts mapping field names to raw
         (unconverted, unvalidated) values.
@@ -1508,7 +1521,8 @@ class BaseModel(object):
             index += len(record_span)
     def _convert_records(self, cr, uid, records,
                          context=None, log=lambda a: None):
-        """ Converts records from the source iterable (recursive dicts of
+        """
+        Converts records from the source iterable (recursive dicts of
         strings) into forms which can be written to the database (via
         self.create or (ir.model.data)._update)
 
@@ -1735,7 +1749,8 @@ class BaseModel(object):
                         for group_ext_id in groups.split(',')])
 
     def __view_look_dom(self, cr, user, node, view_id, in_tree_view, model_fields, context=None):
-        """Return the description of the fields in the node.
+        """
+        eturn the description of the fields in the node.
 
         In a normal call to this method, node is a complete view architecture
         but it is actually possible to give some sub-node (this is used so
@@ -1760,7 +1775,8 @@ class BaseModel(object):
             return s
 
         def check_group(node):
-            """Apply group restrictions,  may be set at view level or model level::
+            """
+            Apply group restrictions,  may be set at view level or model level::
                * at view level this means the element should be made invisible to
                  people who are not members
                * at model level (exclusively for fields, obviously), this means
@@ -1969,7 +1985,8 @@ class BaseModel(object):
         return node
 
     def __view_look_dom_arch(self, cr, user, node, view_id, context=None):
-        """ Return an architecture and a description of all the fields.
+        """
+        Return an architecture and a description of all the fields.
 
         The field description combines the result of fields_get() and
         __view_look_dom().
@@ -2030,7 +2047,8 @@ class BaseModel(object):
         return arch, fields
 
     def _get_default_form_view(self, cr, user, context=None):
-        """ Generates a default single-line form view using all fields
+        """
+        Generates a default single-line form view using all fields
         of the current model except the m2m and o2m ones.
 
         :param cr: database cursor
@@ -2050,7 +2068,8 @@ class BaseModel(object):
         return view
 
     def _get_default_search_view(self, cr, user, context=None):
-        """ Generates a single-field search view, based on _rec_name.
+        """
+        Generates a single-field search view, based on _rec_name.
 
         :param cr: database cursor
         :param int user: user id
@@ -2063,7 +2082,8 @@ class BaseModel(object):
         return view
 
     def _get_default_tree_view(self, cr, user, context=None):
-        """ Generates a single-field tree view, based on _rec_name.
+        """
+        Generates a single-field tree view, based on _rec_name.
 
         :param cr: database cursor
         :param int user: user id
@@ -2076,7 +2096,8 @@ class BaseModel(object):
         return view
 
     def _get_default_calendar_view(self, cr, user, context=None):
-        """ Generates a default calendar view by trying to infer
+        """
+        Generates a default calendar view by trying to infer
         calendar fields from a number of pre-set attribute names
 
         :param cr: database cursor
@@ -2086,7 +2107,8 @@ class BaseModel(object):
         :rtype: etree._Element
         """
         def set_first_of(seq, in_, to):
-            """Sets the first value of ``seq`` also found in ``in_`` to
+            """
+            Sets the first value of ``seq`` also found in ``in_`` to
             the ``to`` attribute of the view being closed over.
 
             Returns whether it's found a suitable value (and set it on
@@ -2162,7 +2184,8 @@ class BaseModel(object):
                                  %  (child_view.xml_id, self._name, error_msg))
 
         def locate(source, spec):
-            """ Locate a node in a source (parent) architecture.
+            """
+            Locate a node in a source (parent) architecture.
 
             Given a complete source (parent) architecture (i.e. the field
             `arch` in a view), and a 'spec' node (a node in an inheriting
@@ -2204,7 +2227,8 @@ class BaseModel(object):
             return None
 
         def apply_inheritance_specs(source, specs_arch, inherit_id=None):
-            """ Apply an inheriting view.
+            """
+            Apply an inheriting view.
 
             Apply to a source architecture all the spec nodes (i.e. nodes
             describing where and what changes to apply to some parent
@@ -2275,7 +2299,8 @@ class BaseModel(object):
             return source
 
         def apply_view_inheritance(cr, user, source, inherit_id):
-            """ Apply all the (directly and indirectly) inheriting views.
+            """
+            Apply all the (directly and indirectly) inheriting views.
 
             :param source: a parent architecture to modify (with parent
                 modifications already applied)
@@ -2494,7 +2519,8 @@ class BaseModel(object):
         return self._search(cr, user, new_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
     def name_get(self, cr, user, ids, context=None):
-        """Returns the preferred display value (text representation) for the records with the
+        """
+        Returns the preferred display value (text representation) for the records with the
            given ``ids``. By default this will be the value of the ``name`` column, unless
            the model implements a custom behavior.
            Can sometimes be seen as the inverse function of :meth:`~.name_search`, but it is not
@@ -2516,7 +2542,8 @@ class BaseModel(object):
         return [(id, "%s,%s" % (self._name, id)) for id in ids]
 
     def name_search(self, cr, user, name='', args=None, operator='ilike', context=None, limit=100):
-        """Search for records that have a display name matching the given ``name`` pattern if compared
+        """
+        Search for records that have a display name matching the given ``name`` pattern if compared
            with the given ``operator``, while also matching the optional search domain (``args``).
            This is used for example to provide suggestions based on a partial value for a relational
            field.
@@ -2537,7 +2564,8 @@ class BaseModel(object):
         return self._name_search(cr, user, name, args, operator, context, limit)
 
     def name_create(self, cr, uid, name, context=None):
-        """Creates a new record by calling :meth:`~.create` with only one
+        """
+        Creates a new record by calling :meth:`~.create` with only one
            value provided: the name of the new record (``_rec_name`` field).
            The new record will also be initialized with any default values applicable
            to this model, or provided through the context. The usual behavior of
@@ -2639,7 +2667,8 @@ class BaseModel(object):
         return values
 
     def clear_caches(self):
-        """ Clear the caches
+        """
+        Clear the caches
 
         This clears the caches associated to methods decorated with
         ``tools.ormcache`` or ``tools.ormcache_multi``.
@@ -2654,7 +2683,8 @@ class BaseModel(object):
 
     def _read_group_fill_results(self, cr, uid, domain, groupby, groupby_list, aggregated_fields,
                                  read_group_result, read_group_order=None, context=None):
-        """Helper method for filling in empty groups for all possible values of
+        """
+        Helper method for filling in empty groups for all possible values of
            the field being grouped by"""
 
         # self._group_by_full should map groupable fields to a method that returns
@@ -2894,7 +2924,7 @@ class BaseModel(object):
             return
         _logger.info('Computing parent left and right for table %s...', self._table)
         def browse_rec(root, pos=0):
-# TODO: set order
+            # TODO: set order
             where = self._parent_name+'='+str(root)
             if not root:
                 where = self._parent_name+' IS NULL'
@@ -3623,7 +3653,8 @@ class BaseModel(object):
 
 
     def fields_get(self, cr, user, allfields=None, context=None, write_access=True):
-        """ Return the definition of each field.
+        """
+        Return the definition of each field.
 
         The returned value is a dictionary (indiced by field name) of
         dictionaries. The _inherits'd fields are included. The string, help,
@@ -3726,7 +3757,8 @@ class BaseModel(object):
         return fields
 
     def read(self, cr, user, ids=[None], fields=None, context=None, load='_classic_read'):
-        """ Read records with given ids with the given fields
+        """
+        Read records with given ids with the given fields
 
         :param cr: database cursor
         :param user: current user id
@@ -4033,7 +4065,8 @@ class BaseModel(object):
                 raise except_orm('ConcurrencyException', _('A document was modified since you last viewed it (%s:%d)') % (self._description, res[0]))
 
     def _check_record_rules_result_count(self, cr, uid, ids, result_ids, operation, context=None):
-        """Verify the returned rows after applying record rules matches
+        """
+        Verify the returned rows after applying record rules matches
            the length of `ids`, and raise an appropriate exception if it does not.
         """
         ids, result_ids = set(ids), set(result_ids)
@@ -4063,12 +4096,14 @@ class BaseModel(object):
 
 
     def check_access_rights(self, cr, uid, operation, raise_exception=True): # no context on purpose.
-        """Verifies that the operation given by ``operation`` is allowed for the user
+        """
+        Verifies that the operation given by ``operation`` is allowed for the user
            according to the access rights."""
         return self.pool.get('ir.model.access').check(cr, uid, self._name, operation, raise_exception)
 
     def check_access_rule(self, cr, uid, ids, operation, context=None):
-        """Verifies that the operation given by ``operation`` is allowed for the user
+        """
+        Verifies that the operation given by ``operation`` is allowed for the user
            according to ir.rules.
 
            :param operation: one of ``write``, ``unlink``
@@ -4679,7 +4714,8 @@ class BaseModel(object):
         return id_new
 
     def browse(self, cr, uid, select=[None], context=None, list_class=None, fields_process=None):
-        """Fetch records as objects allowing to use dot notation to browse fields and relations
+        """
+        Fetch records as objects allowing to use dot notation to browse fields and relations
 
         :param cr: database cursor
         :param uid: current user id
@@ -4705,7 +4741,8 @@ class BaseModel(object):
             return browse_null()
 
     def _store_get_values(self, cr, uid, ids, fields, context):
-        """Returns an ordered list of fields.functions to call due to
+        """
+        Returns an ordered list of fields.functions to call due to
            an update operation on ``fields`` of records with ``ids``,
            obtained by calling the 'store' functions of these fields,
            as setup by their 'store' attribute.
@@ -4760,7 +4797,8 @@ class BaseModel(object):
         return result
 
     def _store_set_values(self, cr, uid, ids, fields, context):
-        """Calls the fields.function's "implementation function" for all ``fields``, on records with ``ids`` (taking care of
+        """
+        Calls the fields.function's "implementation function" for all ``fields``, on records with ``ids`` (taking care of
            respecting ``multi`` attributes), and stores the resulting values in the database directly."""
         if not ids:
             return True
@@ -4843,7 +4881,8 @@ class BaseModel(object):
 
     # TODO: ameliorer avec NULL
     def _where_calc(self, cr, user, domain, active_test=True, context=None):
-        """Computes the WHERE clause needed to implement an OpenERP domain.
+        """
+        Computes the WHERE clause needed to implement an OpenERP domain.
         :param domain: the domain to compute
         :type domain: list
         :param active_test: whether the default filtering of records with ``active``
@@ -4881,7 +4920,8 @@ class BaseModel(object):
         return True
 
     def _apply_ir_rules(self, cr, uid, query, mode='read', context=None):
-        """Add what's missing in ``query`` to implement all appropriate ir.rules
+        """
+        Add what's missing in ``query`` to implement all appropriate ir.rules
           (using the ``model_name``'s rules or the current model's rules if ``model_name`` is None)
 
            :param query: the current query object
@@ -5235,7 +5275,8 @@ class BaseModel(object):
         return new_id
 
     def exists(self, cr, uid, ids, context=None):
-        """Checks whether the given id or ids exist in this model,
+        """
+        Checks whether the given id or ids exist in this model,
            and return the list of ids that do. This is simple to use for
            a truth test on a browse_record::
 
@@ -5290,7 +5331,8 @@ class BaseModel(object):
         return True
 
     def _get_external_ids(self, cr, uid, ids, *args, **kwargs):
-        """Retrieve the External ID(s) of any database record.
+        """
+        Retrieve the External ID(s) of any database record.
 
         **Synopsis**: ``_get_xml_ids(cr, uid, ids) -> { 'id': ['module.xml_id'] }``
 
@@ -5313,7 +5355,8 @@ class BaseModel(object):
         return result
 
     def get_external_id(self, cr, uid, ids, *args, **kwargs):
-        """Retrieve the External ID of any database record, if there
+        """
+        Retrieve the External ID of any database record, if there
         is one. This method works as a possible implementation
         for a function field, to be able to add it to any
         model object easily, referencing it as ``Model.get_external_id``.
@@ -5343,7 +5386,8 @@ class BaseModel(object):
 
     # Transience
     def is_transient(self):
-        """ Return whether the model is transient.
+        """
+        Return whether the model is transient.
 
         See :class:`TransientModel`.
 
@@ -5370,7 +5414,8 @@ class BaseModel(object):
         self._transient_clean_rows_older_than(cr, 300)
 
     def _transient_vacuum(self, cr, uid, force=False):
-        """Clean the transient records.
+        """
+        Clean the transient records.
 
         This unlinks old records from the transient model tables whenever the
         "_transient_max_count" or "_max_age" conditions (if any) are reached.
@@ -5404,7 +5449,8 @@ class BaseModel(object):
         return True
 
     def resolve_2many_commands(self, cr, uid, field_name, commands, fields=None, context=None):
-        """ Serializes one2many and many2many commands into record dictionaries
+        """
+        Serializes one2many and many2many commands into record dictionaries
             (as if all the records came from the database via a read()).  This
             method is aimed at onchange methods on one2many and many2many fields.
 
@@ -5462,7 +5508,8 @@ class BaseModel(object):
 import expression
 
 class Model(BaseModel):
-    """Main super-class for regular database-persisted OpenERP models.
+    """
+    Main super-class for regular database-persisted OpenERP models.
 
     OpenERP models are created by inheriting from this class::
 
@@ -5477,7 +5524,8 @@ class Model(BaseModel):
     _transient = False # True in a TransientModel
 
 class TransientModel(BaseModel):
-    """Model super-class for transient records, meant to be temporarily
+    """
+    Model super-class for transient records, meant to be temporarily
        persisted, and regularly vaccuum-cleaned.
 
        A TransientModel has a simplified access rights management,
@@ -5490,7 +5538,8 @@ class TransientModel(BaseModel):
     _transient = True
 
 class AbstractModel(BaseModel):
-    """Abstract Model super-class for creating an abstract class meant to be
+    """
+    Abstract Model super-class for creating an abstract class meant to be
        inherited by regular models (Models or TransientModels) but not meant to
        be usable on its own, or persisted.
 
@@ -5504,7 +5553,8 @@ class AbstractModel(BaseModel):
     _transient = False
 
 def itemgetter_tuple(items):
-    """ Fixes itemgetter inconsistency (useful in some cases) of not returning
+    """
+    Fixes itemgetter inconsistency (useful in some cases) of not returning
     a tuple if len(items) == 1: always returns an n-tuple where n = len(items)
     """
     if len(items) == 0:
@@ -5513,7 +5563,8 @@ def itemgetter_tuple(items):
         return lambda gettable: (gettable[items[0]],)
     return operator.itemgetter(*items)
 class ImportWarning(Warning):
-    """ Used to send warnings upwards the stack during the import process
+    """
+    Used to send warnings upwards the stack during the import process
     """
     pass
 
