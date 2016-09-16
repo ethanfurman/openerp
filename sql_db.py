@@ -239,7 +239,10 @@ class Cursor(object):
                 query = str(self._obj.query or query)
                 if len(query) > 1000:
                     query = query[:400] + ' . . . ' + query[-250:]
-                _logger.exception("bad query: %s", query)
+                _logger.error('error in query')
+                _logger.error('query:  %r', query)
+                _logger.error('params: %r', params)
+                _logger.exception("stack trace:")
             raise
 
         if self.sql_log:
