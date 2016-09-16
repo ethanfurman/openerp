@@ -22,7 +22,12 @@
 import time
 
 functions = {
-    'today': lambda x: time.strftime('%d/%m/%Y', time.localtime()).decode('latin1')
+    'today': lambda n: (
+        time.strftime(
+            n.get('format', '%Y/%m/%d'),
+            time.localtime(),
+            ).decode('latin1')
+        )
 }
 
 #
