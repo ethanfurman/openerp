@@ -130,7 +130,7 @@ def load_module_graph(cr, graph, status=None, perform_checks=True, skip_modules=
                         markup = fp.read()
                         xaml_doc = Xaml(markup).document
                         xml = tools.file_open(pathname, mode='w')
-                        xml.write(xaml_doc.bytes())
+                        xml.write(xaml_doc.pages[0].bytes())
                         xml.close()
                         fp = tools.file_open(pathname)
                     tools.convert_xml_import(cr, module_name, fp, idref, mode, noupdate, report)
