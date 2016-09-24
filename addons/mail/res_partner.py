@@ -61,14 +61,17 @@ class res_partner_mail(osv.Model):
             ids = [ids]
         mail_message = self.pool.get('mail.message')
         mail_message_subtype = self.pool.get('mail.message.subtype')
-        [discussion_id] = mail_message_subtype.search(cr, SUPERUSER_ID, [('name','=','Discussions')])
-        mail_message.create(cr, uid, values=dict(
-                type='email',
-                subtype_id=discussion_id,
-                partner_ids=[(4, id) for id in ids],
-                subject=subject,
-                body=body,
-                ))
+        [discussion_id] = mail_message_subtype.search(cr, SUPERUSER_ID, [('name','=','Discussions')], context=context)
+        mail_message.create(
+                cr, uid,
+                values=dict(
+                    type='email',
+                    subtype_id=discussion_id,
+                    partner_ids=[(4, id) for id in ids],
+                    subject=subject,
+                    body=body,
+                    ),
+                context=context)
 
     def message_post(self, cr, uid, thread_id, **kwargs):
         """ Override related to res.partner. In case of email message, set it as
