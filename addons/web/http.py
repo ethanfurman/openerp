@@ -5,7 +5,6 @@
 import ast
 import cgi
 import contextlib
-import functools
 import getpass
 import logging
 import mimetypes
@@ -26,6 +25,7 @@ import simplejson
 import werkzeug.contrib.sessions
 import werkzeug.datastructures
 import werkzeug.exceptions
+import werkzeug.routing
 import werkzeug.utils
 import werkzeug.wrappers
 import werkzeug.wsgi
@@ -341,6 +341,7 @@ class HttpRequest(WebRequest):
         """
         return werkzeug.exceptions.NotFound(description)
 
+
 def httprequest(f):
     """ Decorator marking the decorated method as being a handler for a
     normal HTTP request (the exact request path is specified via the
@@ -353,6 +354,18 @@ def httprequest(f):
     """
     f.exposed = 'http'
     return f
+
+#----------------------------------------------------------
+# Exceptions
+#----------------------------------------------------------
+
+class SeeOtherRedirect(werkzeug.routing.RequestRedirect):
+
+    code = 303
+
+    def get_response(self, environ):
+        return werkzeug.utils.redirect(self.new_url, 303)
+
 
 #----------------------------------------------------------
 # Controller registration with a metaclass
