@@ -320,7 +320,7 @@ class date(_column):
                 utc_today = UTC.localize(today, is_dst=False) # UTC = no DST
                 context_today = utc_today.astimezone(context_tz)
             except Exception:
-                _logger.debug("failed to compute context/client-specific today date, "
+                _logger.warning("failed to compute context/client-specific today date, "
                               "using the UTC value for `today`",
                               exc_info=True)
         return (context_today or today).strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
@@ -384,7 +384,7 @@ class datetime(_column):
                 utc_timestamp = UTC.localize(timestamp, is_dst=False) # UTC = no DST
                 return utc_timestamp.astimezone(context_tz)
             except Exception:
-                _logger.debug("failed to compute context/client-specific timestamp, "
+                _logger.warning("failed to compute context/client-specific timestamp, "
                               "using the UTC value",
                               exc_info=True)
         return timestamp
@@ -1132,6 +1132,12 @@ class function(_column):
             self._symbol_c = char._symbol_c
             self._symbol_f = char._symbol_f
             self._symbol_set = char._symbol_set
+
+        if type in ('many2one', 'many2many', 'one2many'):
+            if self._obj is None:
+                _logger.error('%s field %r does not have target model defined', type, args.get('string', 'unknown'))
+            if type is 'one2many' and 'fields_id' not in args:
+                _logger.warning('%s field %r does not have the target field defined', type, args.get('string', 'unknown'))
 
     def digits_change(self, cr):
         if self._type == 'float':
