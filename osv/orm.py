@@ -56,7 +56,6 @@ import sys
 import time
 import traceback
 import types
-from dbf import Date, DateTime, IsoDay, IsoMonth, RelativeDay, RelativeMonth
 from functools import partial
 
 import psycopg2
@@ -2201,7 +2200,7 @@ class BaseModel(object):
             if spec.tag == 'xpath':
                 try:
                     nodes = source.xpath(spec.get('expr'))
-                except XPathEvalError, exc:
+                except XPathEvalError:
                     _logger.warning(spec.get('expr'))
                     raise
                 return nodes[0] if nodes else None
@@ -3516,7 +3515,7 @@ class BaseModel(object):
         def unify_cons_text(txt):
             return txt.lower().replace(', ',',').replace(' (','(')
 
-        for (key, con, _) in self._sql_constraints:
+        for (key, con, _tmp) in self._sql_constraints:
             conname = '%s_%s' % (self._table, key)
 
             self._save_constraint(cr, conname, 'u')
