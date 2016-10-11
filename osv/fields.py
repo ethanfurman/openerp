@@ -534,10 +534,12 @@ class many2one(_column):
     def search(self, cr, obj, args, name, value, offset=0, limit=None, uid=None, context=None):
         return obj.pool.get(self._obj).search(cr, uid, args+self._domain+[('name', 'like', value)], offset, limit, context=context)
 
-
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
-        return value[1] if isinstance(value, tuple) else tools.ustr(value)
+        if not isinstance(value, tuple):
+            [value] = obj.pool.get(field._obj).name_get(cr, SUPERUSER_ID, value, context=context)
+        return value[1]
+
 
 class one2many(_column):
     _classic_read = False
