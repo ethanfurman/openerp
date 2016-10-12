@@ -15,8 +15,8 @@ class CashBox(osv.osv_memory):
     }
 
     def run(self, cr, uid, ids, context=None):
-        if not context:
-            context = dict()
+        if context is None:
+            context = {}
 
         active_model = context.get('active_model', False) or False
         active_ids = context.get('active_ids', []) or []

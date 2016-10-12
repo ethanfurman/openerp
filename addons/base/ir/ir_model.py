@@ -906,7 +906,7 @@ class ir_model_data(osv.osv):
 
     def _update(self,cr, uid, model, module, values, xml_id=False, store=True, noupdate=False, mode='init', res_id=False, context=None):
         model_obj = self.pool.get(model)
-        if not context:
+        if context is None:
             context = {}
         # records created during module install should not display the messages of OpenChatter
         context = dict(context, install_mode=True)

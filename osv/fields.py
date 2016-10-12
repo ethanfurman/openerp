@@ -412,7 +412,7 @@ class binary(_column):
         self.filters = filters
 
     def get(self, cr, obj, ids, name, user=None, context=None, values=None):
-        if not context:
+        if context is None:
             context = {}
         if not values:
             values = []
@@ -508,7 +508,7 @@ class many2one(_column):
         return res
 
     def set(self, cr, obj_src, id, field, values, user=None, context=None):
-        if not context:
+        if context is None:
             context = {}
         obj = obj_src.pool.get(self._obj)
         self._table = obj_src.pool.get(self._obj)._table
@@ -580,7 +580,7 @@ class one2many(_column):
 
     def set(self, cr, obj, id, field, values, user=None, context=None):
         result = []
-        if not context:
+        if context is None:
             context = {}
         if self._context:
             context = context.copy()
@@ -732,7 +732,7 @@ class many2many(_column):
         return query, where_params
 
     def get(self, cr, model, ids, name, user=None, offset=0, context=None, values=None):
-        if not context:
+        if context is None:
             context = {}
         if not values:
             values = {}
@@ -782,7 +782,7 @@ class many2many(_column):
         return res
 
     def set(self, cr, model, id, name, values, user=None, context=None):
-        if not context:
+        if context is None:
             context = {}
         if not values:
             return
@@ -1199,7 +1199,7 @@ class function(_column):
         return result
 
     def set(self, cr, obj, id, name, value, user=None, context=None):
-        if not context:
+        if context is None:
             context = {}
         if self._fnct_inv:
             self._fnct_inv(obj, cr, user, id, name, value, self._fnct_inv_arg, context)

@@ -334,10 +334,10 @@ class res_users(osv.osv):
         return super(res_users, self).unlink(cr, uid, ids, context=context)
 
     def name_search(self, cr, user, name='', args=None, operator='ilike', context=None, limit=100):
-        if not args:
-            args=[]
-        if not context:
-            context={}
+        if args is None:
+            args = []
+        if context is None:
+            context = {}
         ids = []
         if name:
             ids = self.search(cr, user, [('login','=',name)]+ args, limit=limit, context=context)

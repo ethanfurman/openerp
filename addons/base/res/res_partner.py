@@ -104,7 +104,7 @@ class res_partner_category(osv.osv):
     def name_search(self, cr, uid, name, args=None, operator='ilike', context=None, limit=100):
         if not args:
             args = []
-        if not context:
+        if context is None:
             context = {}
         if name:
             # Be sure name_search is symetric to name_get

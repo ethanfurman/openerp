@@ -262,22 +262,22 @@ class document(object):
         return etree.tostring(self.doc,encoding="utf-8",xml_declaration=True,pretty_print=True)
 
     def parse_tree(self, ids, model, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         browser = self.pool.get(model).browse(self.cr, self.uid, ids, context)
         self.parse_node(self.dom, self.doc, browser)
 
     def parse_string(self, xml, ids, model, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         # parses the xml template to memory
         self.dom = etree.XML(xml)
         # create the xml data from the xml template
         self.parse_tree(ids, model, context)
 
     def parse(self, filename, ids, model, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         # parses the xml template to memory
         src_file = tools.file_open(filename)
         try:

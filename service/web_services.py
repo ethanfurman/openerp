@@ -656,10 +656,10 @@ class report_spool(netsvc.ExportService):
         return res
 
     def exp_render_report(self, db, uid, object, ids, datas=None, context=None):
-        if not datas:
-            datas={}
-        if not context:
-            context={}
+        if datas is None:
+            datas = {}
+        if context is None:
+            context = {}
 
         self.id_protect.acquire()
         self.id += 1
@@ -693,10 +693,10 @@ class report_spool(netsvc.ExportService):
         return self._check_report(id)
 
     def exp_report(self, db, uid, object, ids, datas=None, context=None):
-        if not datas:
-            datas={}
-        if not context:
-            context={}
+        if datas is None:
+            datas = {}
+        if context is None:
+            context = {}
 
         self.id_protect.acquire()
         self.id += 1

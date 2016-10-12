@@ -84,7 +84,7 @@ class pos_box_entries(osv.osv_memory):
 
         #import pdb
         #pdb.set_trace()
-        if not context:
+        if context is None:
             context = {}
         result = context.get('active_id', False) or False
 

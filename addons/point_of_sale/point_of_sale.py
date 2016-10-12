@@ -464,7 +464,7 @@ class pos_session(osv.osv):
         return True
 
     def open_frontend_cb(self, cr, uid, ids, context=None):
-        if not context:
+        if context is None:
             context = {}
         if not ids:
             return {}
@@ -736,7 +736,7 @@ class pos_order(osv.osv):
 
     def add_payment(self, cr, uid, order_id, data, context=None):
         """Create a new payment for the order"""
-        if not context:
+        if context is None:
             context = {}
         statement_line_obj = self.pool.get('account.bank.statement.line')
         property_obj = self.pool.get('ir.property')

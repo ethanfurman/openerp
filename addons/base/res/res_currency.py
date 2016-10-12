@@ -197,7 +197,7 @@ class res_currency(osv.osv):
 
     def compute(self, cr, uid, from_currency_id, to_currency_id, from_amount,
                 round=True, currency_rate_type_from=False, currency_rate_type_to=False, context=None):
-        if not context:
+        if context is None:
             context = {}
         if not from_currency_id:
             from_currency_id = to_currency_id

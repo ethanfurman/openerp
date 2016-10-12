@@ -46,7 +46,7 @@ class asset_modify(osv.osv_memory):
 
         @return: Returns a dictionary that contains definition for fields, views, and toolbars
         """
-        if not context:
+        if context is None:
             context = {}
         asset_obj = self.pool.get('account.asset.asset')
         result = super(asset_modify, self).fields_view_get(cr, uid, view_id, view_type, context=context, toolbar=toolbar, submenu=submenu)
@@ -73,7 +73,7 @@ class asset_modify(osv.osv_memory):
         @param context: A standard dictionary
         @return: A dictionary which of fields with values.
         """
-        if not context:
+        if context is None:
             context = {}
         asset_obj = self.pool.get('account.asset.asset')
         res = super(asset_modify, self).default_get(cr, uid, fields, context=context)
@@ -99,7 +99,7 @@ class asset_modify(osv.osv_memory):
         @param context: A standard dictionary
         @return: Close the wizard.
         """
-        if not context:
+        if context is None:
             context = {}
         asset_obj = self.pool.get('account.asset.asset')
         history_obj = self.pool.get('account.asset.history')

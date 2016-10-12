@@ -1225,7 +1225,7 @@ class calendar_event(osv.osv):
         @param cr: the current row, from the database cursor,
         @param uid: the current user's ID for security checks,
         @param limit: The Number of Results to Return """
-        if not context:
+        if context is None:
             context = {}
 
         result = []
@@ -1549,7 +1549,7 @@ class calendar_event(osv.osv):
         return res or True and False
 
     def read_group(self, cr, uid, domain, fields, groupby, offset=0, limit=None, context=None, orderby=False):
-        if not context:
+        if context is None:
             context = {}
 
         if 'date' in groupby:

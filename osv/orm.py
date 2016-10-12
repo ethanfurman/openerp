@@ -319,7 +319,7 @@ class browse_record_list(list):
     """
 
     def __init__(self, lst, context=None):
-        if not context:
+        if context is None:
             context = {}
         super(browse_record_list, self).__init__(lst)
         self.context = context
@@ -1632,7 +1632,7 @@ class BaseModel(object):
         # trigger view init hook
         self.view_init(cr, uid, fields_list, context)
 
-        if not context:
+        if context is None:
             context = {}
         defaults = {}
 
@@ -2422,7 +2422,7 @@ class BaseModel(object):
     _view_look_dom_arch = __view_look_dom_arch
 
     def search_count(self, cr, user, args, context=None):
-        if not context:
+        if context is None:
             context = {}
         res = self.search(cr, user, args, context=context, count=True)
         if isinstance(res, list):
@@ -3778,7 +3778,7 @@ class BaseModel(object):
 
         """
 
-        if not context:
+        if context is None:
             context = {}
         if not isinstance(fields, (type(None), bool)):
             mirrored = [f for f in fields if f and '.' in f]
@@ -3821,7 +3821,7 @@ class BaseModel(object):
         return result
 
     def _read_flat(self, cr, user, ids, fields_to_read, context=None, load='_classic_read', order=None):
-        if not context:
+        if context is None:
             context = {}
         if not ids:
             return []
@@ -4009,7 +4009,7 @@ class BaseModel(object):
                     * write_date: date of the last change to the record
                     * xmlid: XML ID to use to refer to this record (if there is one), in format ``module.name``
         """
-        if not context:
+        if context is None:
             context = {}
         if not ids:
             return []
@@ -4043,7 +4043,7 @@ class BaseModel(object):
         return res
 
     def _check_concurrency(self, cr, ids, context):
-        if not context:
+        if context is None:
             return
         if not (context.get(self.CONCURRENCY_CHECK_FIELD) and self._log_access):
             return
@@ -4302,7 +4302,7 @@ class BaseModel(object):
                 if not edit:
                     vals.pop(field)
 
-        if not context:
+        if context is None:
             context = {}
         if not ids:
             return True
@@ -4524,7 +4524,7 @@ class BaseModel(object):
         to specify them.
 
         """
-        if not context:
+        if context is None:
             context = {}
 
         if self.is_transient():
@@ -4889,7 +4889,7 @@ class BaseModel(object):
         :return: the query expressing the given domain as provided in domain
         :rtype: osv.query.Query
         """
-        if not context:
+        if context is None:
             context = {}
         domain = domain[:]
         # if the object has a field named 'active', filter out all inactive

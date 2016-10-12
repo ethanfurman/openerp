@@ -148,8 +148,8 @@ class browse_record_list(list):
 
 class rml_parse(object):
     def __init__(self, cr, uid, name, parents=rml_parents, tag=rml_tag, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         self.cr = cr
         self.uid = uid
         self.pool = pooler.get_pool(cr.dbname)
@@ -456,8 +456,8 @@ class report_sxw(report_rml, preprocess.report):
         return self.create_single_mako2html(cr, uid, ids, data, report_xml, context or {})
 
     def create_source_pdf(self, cr, uid, ids, data, report_xml, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         pool = pooler.get_pool(cr.dbname)
         attach = report_xml.attachment
         if attach:
@@ -513,8 +513,8 @@ class report_sxw(report_rml, preprocess.report):
         return self.create_single_pdf(cr, uid, ids, data, report_xml, context)
 
     def create_single_pdf(self, cr, uid, ids, data, report_xml, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         logo = None
         context = context.copy()
         title = report_xml.name
@@ -536,8 +536,8 @@ class report_sxw(report_rml, preprocess.report):
         return pdf, report_xml.report_type
 
     def create_single_odt(self, cr, uid, ids, data, report_xml, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         context = context.copy()
         report_type = report_xml.report_type
         context['parents'] = sxw_parents
@@ -660,7 +660,7 @@ class report_sxw(report_rml, preprocess.report):
         return final_op, mime_type
 
     def create_single_html2html(self, cr, uid, ids, data, report_xml, context=None):
-        if not context:
+        if context is None:
             context = {}
         context = context.copy()
         report_type = 'html'

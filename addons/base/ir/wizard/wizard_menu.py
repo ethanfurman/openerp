@@ -29,7 +29,7 @@ class wizard_model_menu(osv.osv_memory):
     }
 
     def menu_create(self, cr, uid, ids, context=None):
-        if not context:
+        if context is None:
             context = {}
         model_pool = self.pool.get('ir.model')
         for menu in self.browse(cr, uid, ids, context):

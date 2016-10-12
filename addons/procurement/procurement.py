@@ -501,7 +501,7 @@ class stock_warehouse_orderpoint(osv.osv):
         '''
         Check if the UoM has the same category as the product standard UoM
         '''
-        if not context:
+        if context is None:
             context = {}
 
         for rule in self.browse(cr, uid, ids, context=context):
