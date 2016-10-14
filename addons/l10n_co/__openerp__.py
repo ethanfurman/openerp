@@ -35,13 +35,13 @@ Chart of account for Colombia
 Source of this chart of account is here_.
 
 All the documentation available in this website is embeded in this module, to
-be sure when you open OpenERP it has all necesary information to manage 
+be sure when you open OpenERP it has all necesary information to manage
 accounting en Colombia.
 
-The law that enable this chart of account as valid for this country is 
+The law that enable this chart of account as valid for this country is
 available in this other link_.
 
-This module has the intention to put available out of the box the chart of 
+This module has the intention to put available out of the box the chart of
 account for Colombia in Openerp.
 
 We recommend install the module account_anglo_sxon to be able to have the cost

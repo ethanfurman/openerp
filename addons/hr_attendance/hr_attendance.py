@@ -112,7 +112,7 @@ class hr_employee(osv.osv):
         for res in cr.fetchall():
             result[res[1]] = res[0] == 'sign_in' and 'present' or 'absent'
         return result
-    
+
     def _last_sign(self, cr, uid, ids, name, args, context=None):
         result = {}
         if not ids:

@@ -715,6 +715,38 @@ class crm_lead(base_stage, format_address, osv.osv):
 
         return True
 
+    def _display_address(self, cr, uid, lead, without_company=False, context=None):
+        '''
+        The purpose of this function is to build and return an address formatted accordingly to the
+        standards of the country where it belongs.
+
+        :param lead: browse record of the res.partner to format
+        :returns: the address formatted in a display that fit its country habits (or the default ones
+            if not country is specified)
+        :rtype: string
+        '''
+        # get the information that will be injected into the display format
+        # get the address format
+        address_format = lead.country_id and lead.country_id.address_format or \
+              "%(street)s\n%(street2)s\n%(city)s %(state_code)s %(zip)s\n%(country_name)s"
+        args = {
+            'state_code': lead.state_id and lead.state_id.code or '',
+            'state_name': lead.state_id and lead.state_id.name or '',
+            'country_code': lead.country_id and lead.country_id.code or '',
+            'country_name': lead.country_id and lead.country_id.name or '',
+            'company_name': lead.partner_name or '',
+        }
+        address_field = ['title', 'street', 'street2', 'zip', 'city']
+        for field in address_field :
+            args[field] = getattr(lead, field) or ''
+        if without_company:
+            args['company_name'] = ''
+        elif lead.partner_name:
+            address_format = '%(company_name)s\n' + address_format
+        address = address_format % args
+        address = '\n'.join([line for line in address.split('\n') if line])
+        return address
+
     def _lead_create_contact(self, cr, uid, lead, name, is_company, parent_id=False, context=None):
         partner = self.pool.get('res.partner')
         vals = {'name': name,

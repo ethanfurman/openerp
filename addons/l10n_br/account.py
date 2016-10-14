@@ -21,9 +21,9 @@ from openerp import pooler
 from openerp.osv import fields, osv
 
 TAX_CODE_COLUMNS = {
-                    'domain':fields.char('Domain', size=32, 
+                    'domain':fields.char('Domain', size=32,
                                          help="This field is only used if you develop your own module allowing developers to create specific taxes in a custom domain."),
-                    'tax_discount': fields.boolean('Discount this Tax in Prince', 
+                    'tax_discount': fields.boolean('Discount this Tax in Prince',
                                                    help="Mark it for (ICMS, PIS, COFINS and others taxes included)."),
                     }
 
@@ -37,17 +37,17 @@ class account_tax_code_template(osv.osv):
     _inherit = 'account.tax.code.template'
     _columns = TAX_CODE_COLUMNS
 
-    def generate_tax_code(self, cr, uid, tax_code_root_id, company_id, 
+    def generate_tax_code(self, cr, uid, tax_code_root_id, company_id,
                          context=None):
-        """This function generates the tax codes from the templates of tax 
-        code that are children of the given one passed in argument. Then it 
-        returns a dictionary with the mappping between the templates and the 
+        """This function generates the tax codes from the templates of tax
+        code that are children of the given one passed in argument. Then it
+        returns a dictionary with the mappping between the templates and the
         real objects.
 
-        :param tax_code_root_id: id of the root of all the tax code templates 
+        :param tax_code_root_id: id of the root of all the tax code templates
                                  to process.
         :param company_id: id of the company the wizard is running for
-        :returns: dictionary with the mappping between the templates and the 
+        :returns: dictionary with the mappping between the templates and the
                   real objects.
         :rtype: dict
         """
@@ -81,7 +81,7 @@ class account_tax_code_template(osv.osv):
                 #recording the new tax code to do the mapping
                 tax_code_template_ref[tax_code_template.id] = new_tax_code
         return tax_code_template_ref
-    
+
 
 
 class account_tax_code(osv.osv):
@@ -99,26 +99,26 @@ def get_precision_tax():
 class account_tax_template(osv.osv):
     """ Add fields used to define some brazilian taxes """
     _inherit = 'account.tax.template'
-    
+
     _columns = {
-               'tax_discount': fields.boolean('Discount this Tax in Prince', 
+               'tax_discount': fields.boolean('Discount this Tax in Prince',
                                               help="Mark it for (ICMS, PIS e etc.)."),
-               'base_reduction': fields.float('Redution', required=True, 
-                                              digits_compute=get_precision_tax(), 
+               'base_reduction': fields.float('Redution', required=True,
+                                              digits_compute=get_precision_tax(),
                                               help="Um percentual decimal em % entre 0-1."),
-               'amount_mva': fields.float('MVA Percent', required=True, 
-                                          digits_compute=get_precision_tax(), 
+               'amount_mva': fields.float('MVA Percent', required=True,
+                                          digits_compute=get_precision_tax(),
                                           help="Um percentual decimal em % entre 0-1."),
-               'type': fields.selection([('percent','Percentage'), 
-                                         ('fixed','Fixed Amount'), 
-                                         ('none','None'), 
-                                         ('code','Python Code'), 
-                                         ('balance','Balance'), 
+               'type': fields.selection([('percent','Percentage'),
+                                         ('fixed','Fixed Amount'),
+                                         ('none','None'),
+                                         ('code','Python Code'),
+                                         ('balance','Balance'),
                                          ('quantity','Quantity')], 'Tax Type', required=True,
                                         help="The computation method for the tax amount."),
                }
     _defaults = TAX_DEFAULTS
-    
+
     def _generate_tax(self, cr, uid, tax_templates, tax_code_template_ref, company_id, context=None):
         """
         This method generate taxes from templates.
@@ -132,19 +132,19 @@ class account_tax_template(osv.osv):
             'account_dict': dictionary containing a to-do list with all the accounts to assign on new taxes
             }
         """
-        result = super(account_tax_template, self)._generate_tax(cr, uid, 
-                                                                 tax_templates, 
-                                                                 tax_code_template_ref, 
-                                                                 company_id, 
+        result = super(account_tax_template, self)._generate_tax(cr, uid,
+                                                                 tax_templates,
+                                                                 tax_code_template_ref,
+                                                                 company_id,
                                                                  context)
-        tax_templates = self.browse(cr, uid, result['tax_template_to_tax'].keys(), context)   
+        tax_templates = self.browse(cr, uid, result['tax_template_to_tax'].keys(), context)
         obj_acc_tax = self.pool.get('account.tax')
         for tax_template in tax_templates:
             if tax_template.tax_code_id:
                 obj_acc_tax.write(cr, uid, result['tax_template_to_tax'][tax_template.id], {'domain': tax_template.tax_code_id.domain,
-                                                                                            'tax_discount': tax_template.tax_code_id.tax_discount})    
+                                                                                            'tax_discount': tax_template.tax_code_id.tax_discount})
         return result
-    
+
     def onchange_tax_code_id(self, cr, uid, ids, tax_code_id, context=None):
 
         result = {'value': {}}
@@ -152,7 +152,7 @@ class account_tax_template(osv.osv):
         if not tax_code_id:
             return result
 
-        obj_tax_code = self.pool.get('account.tax.code.template').browse(cr, uid, tax_code_id)     
+        obj_tax_code = self.pool.get('account.tax.code.template').browse(cr, uid, tax_code_id)
 
         if obj_tax_code:
             result['value']['tax_discount'] = obj_tax_code.tax_discount
@@ -165,35 +165,35 @@ class account_tax_template(osv.osv):
 class account_tax(osv.osv):
     """ Add fields used to define some brazilian taxes """
     _inherit = 'account.tax'
-    
+
     _columns = {
-               'tax_discount': fields.boolean('Discount this Tax in Prince', 
+               'tax_discount': fields.boolean('Discount this Tax in Prince',
                                               help="Mark it for (ICMS, PIS e etc.)."),
-               'base_reduction': fields.float('Redution', required=True, 
-                                              digits_compute=get_precision_tax(), 
+               'base_reduction': fields.float('Redution', required=True,
+                                              digits_compute=get_precision_tax(),
                                               help="Um percentual decimal em % entre 0-1."),
-               'amount_mva': fields.float('MVA Percent', required=True, 
-                                          digits_compute=get_precision_tax(), 
+               'amount_mva': fields.float('MVA Percent', required=True,
+                                          digits_compute=get_precision_tax(),
                                           help="Um percentual decimal em % entre 0-1."),
-               'type': fields.selection([('percent','Percentage'), 
-                                         ('fixed','Fixed Amount'), 
-                                         ('none','None'), 
-                                         ('code','Python Code'), 
-                                         ('balance','Balance'), 
+               'type': fields.selection([('percent','Percentage'),
+                                         ('fixed','Fixed Amount'),
+                                         ('none','None'),
+                                         ('code','Python Code'),
+                                         ('balance','Balance'),
                                          ('quantity','Quantity')], 'Tax Type', required=True,
                                         help="The computation method for the tax amount."),
                }
     _defaults = TAX_DEFAULTS
-    
+
     def onchange_tax_code_id(self, cr, uid, ids, tax_code_id, context=None):
 
         result = {'value': {}}
 
         if not tax_code_id:
             return result
-        
-        obj_tax_code = self.pool.get('account.tax.code').browse(cr, uid, tax_code_id)      
-    
+
+        obj_tax_code = self.pool.get('account.tax.code').browse(cr, uid, tax_code_id)
+
         if obj_tax_code:
             result['value']['tax_discount'] = obj_tax_code.tax_discount
             result['value']['domain'] = obj_tax_code.domain

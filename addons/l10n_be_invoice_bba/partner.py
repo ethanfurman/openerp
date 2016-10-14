@@ -2,10 +2,10 @@
 ##############################################################################
 #
 #    OpenERP, Open Source Management Solution
-#    
+#
 #    Created by Luc De Meyer
 #    Copyright (c) 2010 Noviat nv/sa (www.noviat.be). All rights reserved.
-# 
+#
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
@@ -25,14 +25,14 @@ from openerp.osv import fields, osv
 import time
 from openerp.tools.translate import _
 
-class res_partner(osv.osv):  
+class res_partner(osv.osv):
     """ add field to indicate default 'Communication Type' on customer invoices """
     _inherit = 'res.partner'
-    
+
     def _get_comm_type(self, cr, uid, context=None):
         res = self.pool.get('account.invoice')._get_reference_type(cr, uid,context=context)
         return res
-    
+
     _columns = {
         'out_inv_comm_type': fields.selection(_get_comm_type, 'Communication Type', change_default=True,
             help='Select Default Communication Type for Outgoing Invoices.' ),
@@ -47,6 +47,6 @@ class res_partner(osv.osv):
     _default = {
         'out_inv_comm_type': 'none',
     }
-res_partner()    
+res_partner()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

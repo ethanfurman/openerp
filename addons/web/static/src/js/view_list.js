@@ -1488,7 +1488,17 @@ instance.web.ListView.Groups = instance.web.Class.extend( /** @lends instance.we
         var sequence_field = _(this.columns).find(function (c) {
             return c.widget === 'handle';
         });
-        var seqname = sequence_field ? sequence_field.name : 'sequence';
+        if (typeof(sequence_field) === "undefined") {
+            sequence_field = _(this.columns).find(function (c) {
+                return c.name === 'sequence';
+            });
+        }
+        if (sequence_field.options) {
+            if (JSON.parse(sequence_field.options.replace(/'/g, '"')).resequence === false) {
+                return;
+            }
+        }
+        var seqname = sequence_field.name;
 
         // ondrop, move relevant record & fix sequences
         list.$current.sortable({
@@ -1496,7 +1506,7 @@ instance.web.ListView.Groups = instance.web.Class.extend( /** @lends instance.we
             items: '> tr[data-id]',
             helper: 'clone'
         });
-        if (sequence_field) {
+        if (seqname !== 'sequence') {
             list.$current.sortable('option', 'handle', '.oe_list_field_handle');
         }
         list.$current.sortable('option', {
@@ -2060,6 +2070,7 @@ instance.web.list.columns = new instance.web.Registry({
     'field': 'instance.web.list.Column',
     'field.boolean': 'instance.web.list.Boolean',
     'field.binary': 'instance.web.list.Binary',
+    'field.html': 'instance.web.list.HTML',
     'field.progressbar': 'instance.web.list.ProgressBar',
     'field.handle': 'instance.web.list.Handle',
     'button': 'instance.web.list.Button',
@@ -2226,6 +2237,16 @@ instance.web.list.Binary = instance.web.list.Column.extend({
             href: download_url,
             size: instance.web.binary_to_binsize(value),
         });
+    }
+});
+instance.web.list.HTML = instance.web.list.Column.extend({
+    /**
+     * Returns actual content of HTML field
+     *
+     * @private
+     */
+    _format: function (row_data, options) {
+        return row_data[this.id].value;
     }
 });
 instance.web.list.ProgressBar = instance.web.list.Column.extend({

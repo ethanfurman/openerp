@@ -26,7 +26,7 @@ HOST = '127.0.0.1'
 
 ADMIN_USER = 'admin'
 ADMIN_USER_ID = openerp.SUPERUSER_ID
-ADMIN_PASSWORD = 'admin'
+ADMIN_PASSWORD = openerp.tools.config['admin_passwd'] or 'admin'
 
 def start_openerp():
     """
@@ -46,7 +46,7 @@ def stop_openerp():
 class BaseCase(unittest2.TestCase):
     """
     Subclass of TestCase for common OpenERP-specific code.
-    
+
     This class is abstract and expects self.cr and self.uid to be initialized by subclasses.
     """
 

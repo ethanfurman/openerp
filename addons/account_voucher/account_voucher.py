@@ -50,7 +50,7 @@ class account_config_settings(osv.osv_memory):
             'company_id', 'income_currency_exchange_account_id',
             type='many2one',
             relation='account.account',
-            string="Gain Exchange Rate Account", 
+            string="Gain Exchange Rate Account",
             domain="[('type', '=', 'other')]"),
         'expense_currency_exchange_account_id': fields.related(
             'company_id', 'expense_currency_exchange_account_id',
@@ -63,10 +63,10 @@ class account_config_settings(osv.osv_memory):
         res = super(account_config_settings, self).onchange_company_id(cr, uid, ids, company_id, context=context)
         if company_id:
             company = self.pool.get('res.company').browse(cr, uid, company_id, context=context)
-            res['value'].update({'income_currency_exchange_account_id': company.income_currency_exchange_account_id and company.income_currency_exchange_account_id.id or False, 
+            res['value'].update({'income_currency_exchange_account_id': company.income_currency_exchange_account_id and company.income_currency_exchange_account_id.id or False,
                                  'expense_currency_exchange_account_id': company.expense_currency_exchange_account_id and company.expense_currency_exchange_account_id.id or False})
-        else: 
-            res['value'].update({'income_currency_exchange_account_id': False, 
+        else:
+            res['value'].update({'income_currency_exchange_account_id': False,
                                  'expense_currency_exchange_account_id': False})
         return res
 
@@ -581,10 +581,10 @@ class account_voucher(osv.osv):
         vals = self.recompute_payment_rate(cr, uid, ids, res, currency_id, date, ttype, journal_id, amount, context=context)
         for key in vals.keys():
             res[key].update(vals[key])
-        #TODO: onchange_partner_id() should not returns [pre_line, line_dr_ids, payment_rate...] for type sale, and not 
+        #TODO: onchange_partner_id() should not returns [pre_line, line_dr_ids, payment_rate...] for type sale, and not
         # [pre_line, line_cr_ids, payment_rate...] for type purchase.
-        # We should definitively split account.voucher object in two and make distinct on_change functions. In the 
-        # meanwhile, bellow lines must be there because the fields aren't present in the view, what crashes if the 
+        # We should definitively split account.voucher object in two and make distinct on_change functions. In the
+        # meanwhile, bellow lines must be there because the fields aren't present in the view, what crashes if the
         # onchange returns a value for them
         if ttype == 'sale':
             del(res['value']['line_dr_ids'])

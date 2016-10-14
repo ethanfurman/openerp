@@ -70,23 +70,32 @@ class crm_case_stage(osv.osv):
     _columns = {
         'name': fields.char('Stage Name', size=64, required=True, translate=True),
         'sequence': fields.integer('Sequence', help="Used to order stages. Lower is better."),
-        'probability': fields.float('Probability (%)', required=True, help="This percentage depicts the default/average probability of the Case for this stage to be a success"),
-        'on_change': fields.boolean('Change Probability Automatically', help="Setting this stage will change the probability automatically on the opportunity."),
+        'probability': fields.float('Probability (%)', required=True,
+                help="This percentage depicts the default/average probability of the Case for this stage to be a success"),
+        'on_change': fields.boolean('Change Probability Automatically',
+                help="Setting this stage will change the probability automatically on the opportunity."),
         'requirements': fields.text('Requirements'),
         'section_ids':fields.many2many('crm.case.section', 'section_stage_rel', 'stage_id', 'section_id', string='Sections',
-                        help="Link between stages and sales teams. When set, this limitate the current stage to the selected sales teams."),
+                help="Link between stages and sales teams. When set, this limitate the current stage to "
+                     "the selected sales teams."),
         'state': fields.selection(AVAILABLE_STATES, 'Related Status', required=True,
-            help="The status of your document will automatically change regarding the selected stage. " \
-                "For example, if a stage is related to the status 'Close', when your document reaches this stage, it is automatically closed."),
+                help="The status of your document will automatically change regarding the selected stage. "
+                     "For example, if a stage is related to the status 'Close', when your document reaches this stage, "
+                     "it is automatically closed."),
         'case_default': fields.boolean('Default to New Sales Team',
-                        help="If you check this field, this stage will be proposed by default on each sales team. It will not assign this stage to existing teams."),
+                help="If you check this field, this stage will be proposed by default on each sales team. "
+                     "It will not assign this stage to existing teams."),
         'fold': fields.boolean('Fold by Default',
-                        help="This stage is not visible, for example in status bar or kanban view, when there are no records in that stage to display."),
-        'type': fields.selection([  ('lead','Lead'),
-                                    ('opportunity', 'Opportunity'),
-                                    ('both', 'Both')],
-                                    string='Type', size=16, required=True,
-                                    help="This field is used to distinguish stages related to Leads from stages related to Opportunities, or to specify stages available for both types."),
+                help="This stage is not visible, for example in status bar or kanban view, when there are "
+                     "no records in that stage to display."),
+        'type': fields.selection([
+                ('lead','Lead'),
+                ('opportunity', 'Opportunity'),
+                ('both', 'Both')
+                ],
+                string='Type', size=16, required=True,
+                help="This field is used to distinguish stages related to Leads from stages related to "
+                "Opportunities, or to specify stages available for both types."),
     }
 
     _defaults = {
@@ -113,12 +122,14 @@ class crm_case_section(osv.osv):
         'name': fields.char('Sales Team', size=64, required=True, translate=True),
         'complete_name': fields.function(get_full_name, type='char', size=256, readonly=True, store=True),
         'code': fields.char('Code', size=8),
-        'active': fields.boolean('Active', help="If the active field is set to "\
-                        "true, it will allow you to hide the sales team without removing it."),
-        'change_responsible': fields.boolean('Reassign Escalated', help="When escalating to this team override the salesman with the team leader."),
+        'active': fields.boolean('Active',
+                help="If the active field is set to true, it will allow you to hide the sales team without removing it."),
+        'change_responsible': fields.boolean('Reassign Escalated',
+                help="When escalating to this team override the salesman with the team leader."),
         'user_id': fields.many2one('res.users', 'Team Leader'),
         'member_ids':fields.many2many('res.users', 'sale_member_rel', 'section_id', 'member_id', 'Team Members'),
-        'reply_to': fields.char('Reply-To', size=64, help="The email address put in the 'Reply-To' of all emails sent by OpenERP about cases in this sales team"),
+        'reply_to': fields.char('Reply-To', size=64,
+                help="The email address put in the 'Reply-To' of all emails sent by OpenERP about cases in this sales team"),
         'parent_id': fields.many2one('crm.case.section', 'Parent Team'),
         'child_ids': fields.one2many('crm.case.section', 'parent_id', 'Child Teams'),
         'resource_calendar_id': fields.many2one('resource.calendar', "Working Time", help="Used to compute open days"),
@@ -126,8 +137,8 @@ class crm_case_section(osv.osv):
         'working_hours': fields.float('Working Hours', digits=(16,2 )),
         'stage_ids': fields.many2many('crm.case.stage', 'section_stage_rel', 'section_id', 'stage_id', 'Stages'),
         'alias_id': fields.many2one('mail.alias', 'Alias', ondelete="cascade", required=True,
-                                    help="The email address associated with this team. New emails received will automatically "
-                                         "create new leads assigned to the team."),
+                help="The email address associated with this team. New emails received will automatically "
+                     "create new leads assigned to the team."),
     }
 
     def _get_stage_common(self, cr, uid, context):
@@ -194,12 +205,17 @@ class crm_case_categ(osv.osv):
         'section_id': fields.many2one('crm.case.section', 'Sales Team'),
         'object_id': fields.many2one('ir.model', 'Object Name'),
     }
+
     def _find_object_id(self, cr, uid, context=None):
         """Finds id for case object"""
         context = context or {}
         object_id = context.get('object_id', False)
-        ids = self.pool.get('ir.model').search(cr, uid, ['|',('id', '=', object_id),('model', '=', context.get('object_name', False))])
+        ids = self.pool.get('ir.model').search(
+                cr, uid,
+                ['|',('id', '=', object_id),('model', '=', context.get('object_name', False))],
+                )
         return ids and ids[0] or False
+
     _defaults = {
         'object_id' : _find_object_id
     }

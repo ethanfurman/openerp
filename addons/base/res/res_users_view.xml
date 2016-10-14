@@ -136,9 +136,14 @@
                 <form string="Users" version="7.0">
                     <field name="id" invisible="1"/>
                     <sheet>
-                        <div class="oe_right oe_button_box">
-                            <button string="Change Password" type="action" name="%(change_password_wizard_action)d"
-                                help="Change the user password."/>
+                        <div class="oe_right oe_edit_only">
+                            <label for="partner_id" string="Master Partner Record" />
+                            <field name="partner_id" required="0" on_change="onchange_partner(partner_id)"/>
+                            <separator/>
+                            <div class="oe_right oe_button_box">
+                                <button string="Change Password" type="action" name="%(change_password_wizard_action)d"
+                                    help="Change the user password."/>
+                            </div>
                         </div>
                         <field name="image" widget='image' class="oe_avatar oe_left" options='{"preview_image": "image_medium"}'/>
                         <div class="oe_title">
@@ -165,7 +170,10 @@
                                     </group>
                                     <group groups="base.group_no_one">
                                         <field name="action_id"/>
+                                        <field name="menu_id" required="True"/>
+                                        <!--
                                         <field domain="[('usage','=','menu')]" name="menu_id" required="True"/>
+                                        -->
                                     </group>
                                 </group>
                                 <group>

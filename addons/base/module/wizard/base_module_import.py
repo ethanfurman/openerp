@@ -42,7 +42,7 @@ class base_module_import(osv.osv_memory):
           'module_name': fields.char('Module Name', size=128),
     }
 
-    _defaults = {  
+    _defaults = {
         'state': 'init',
     }
 

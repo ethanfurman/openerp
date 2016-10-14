@@ -22,7 +22,7 @@
 
 {
     'name': 'Helpdesk',
-    'category': 'Customer Relationship Management', 
+    'category': 'Customer Relationship Management',
     'version': '1.0',
     'description': """
 Helpdesk Management.

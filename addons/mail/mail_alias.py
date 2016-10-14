@@ -47,7 +47,7 @@ class mail_alias(osv.Model):
        of that alias. If the message is a reply it will be attached to the
        existing discussion on the corresponding record, otherwise a new
        record of the corresponding model will be created.
-       
+
        This is meant to be used in combination with a catch-all email configuration
        on the company's mail server, so that as soon as a new mail.alias is
        created, it becomes immediately usable and OpenERP will accept email for it.
@@ -97,7 +97,7 @@ class mail_alias(osv.Model):
     }
 
     _sql_constraints = [
-        ('alias_unique', 'UNIQUE(alias_name)', 'Unfortunately this email alias is already used, please choose a unique one')
+        ('alias_unique', 'UNIQUE(alias_name)', 'Unfortunately this email alias is already used, please choose another')
     ]
 
     def _check_alias_defaults(self, cr, uid, ids, context=None):
@@ -117,6 +117,8 @@ class mail_alias(osv.Model):
            mail catchall domain from config.
            e.g. `jobs@openerp.my.openerp.com` or `sales@openerp.my.openerp.com`
         """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         return [(record['id'], "%s@%s" % (record['alias_name'], record['alias_domain']))
                     for record in self.read(cr, uid, ids, ['alias_name', 'alias_domain'], context=context)]
 
@@ -150,7 +152,7 @@ class mail_alias(osv.Model):
                 model column name used for default values (i.e. {'job_id': 'id'})
         """
 
-        # disable the unique alias_id not null constraint, to avoid spurious warning during 
+        # disable the unique alias_id not null constraint, to avoid spurious warning during
         # super.auto_init. We'll reinstall it afterwards.
         alias_id_column.required = False
 
@@ -186,9 +188,9 @@ class mail_alias(osv.Model):
     def create_unique_alias(self, cr, uid, vals, model_name=None, context=None):
         """Creates an email.alias record according to the values provided in ``vals``,
         with 2 alterations: the ``alias_name`` value may be suffixed in order to
-        make it unique (and certain unsafe characters replaced), and 
+        make it unique (and certain unsafe characters replaced), and
         he ``alias_model_id`` value will set to the model ID of the ``model_name``
-        value, if provided, 
+        value, if provided,
         """
         # when an alias name appears to already be an email, we keep the local part only
         alias_name = remove_accents(vals['alias_name']).lower().split('@')[0]

@@ -28,7 +28,7 @@ class account_voucher(osv.osv):
     _inherit = 'account.voucher'
 
     def _make_journal_search(self, cr, uid, ttype, context=None):
-        if context is None: 
+        if context is None:
             context = {}
         journal_pool = self.pool.get('account.journal')
         if context.get('write_check',False) :
@@ -43,7 +43,7 @@ class account_voucher(osv.osv):
 
     def onchange_amount(self, cr, uid, ids, amount, rate, partner_id, journal_id, currency_id, ttype, date, payment_rate_currency_id, company_id, context=None):
         """ Inherited - add amount_in_word and allow_check_writting in returned value dictionary """
-        if not context:
+        if context is None:
             context = {}
         default = super(account_voucher, self).onchange_amount(cr, uid, ids, amount, rate, partner_id, journal_id, currency_id, ttype, date, payment_rate_currency_id, company_id, context=context)
         if 'value' in default:
@@ -70,7 +70,7 @@ class account_voucher(osv.osv):
 
         check_layout = self.browse(cr, uid, ids[0], context=context).company_id.check_layout
         return {
-            'type': 'ir.actions.report.xml', 
+            'type': 'ir.actions.report.xml',
             'report_name':check_layout_report[check_layout],
             'datas': {
                     'model':'account.voucher',
@@ -86,7 +86,8 @@ class account_voucher(osv.osv):
             Add domain 'allow_check_writting = True' on journal_id field and remove 'widget = selection' on the same
             field because the dynamic domain is not allowed on such widget
         """
-        if not context: context = {}
+        if context is None:
+            context = {}
         res = super(account_voucher, self).fields_view_get(cr, uid, view_id=view_id, view_type=view_type, context=context, toolbar=toolbar, submenu=submenu)
         doc = etree.XML(res['arch'])
         nodes = doc.xpath("//field[@name='journal_id']")

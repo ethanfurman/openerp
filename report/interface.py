@@ -95,8 +95,8 @@ class report_rml(report_int):
         return pdf, report_type
 
     def create_xml(self, cr, uid, ids, datas, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         doc = print_xml.document(cr, uid, datas, {})
         self.bin_datas.update( doc.bin_datas  or {})
         doc.parse(self.tmpl, ids, self.table, context)
@@ -106,8 +106,8 @@ class report_rml(report_int):
 
     def post_process_xml_data(self, cr, uid, xml, context=None):
 
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         # find the position of the 3rd tag
         # (skip the <?xml ...?> and the "root" tag)
         iter = re.finditer('<[^>]*>', xml)
@@ -134,8 +134,8 @@ class report_rml(report_int):
     def create_rml(self, cr, xml, uid, context=None):
         if self.tmpl=='' and not self.internal_header:
             self.internal_header=True
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         pool = pooler.get_pool(cr.dbname)
         ir_translation_obj = pool.get('ir.translation')
 

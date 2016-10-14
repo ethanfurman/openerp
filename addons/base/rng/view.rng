@@ -178,6 +178,7 @@
             <rng:optional><rng:attribute name="string"/></rng:optional>
             <rng:optional><rng:attribute name="type"/></rng:optional>
             <rng:optional><rng:attribute name="link"/></rng:optional>
+            <rng:optional><rng:attribute name="setup"/></rng:optional>
             <rng:ref name="container"/>
         </rng:element>
     </rng:define>
@@ -428,6 +429,7 @@
             <rng:optional><rng:attribute name="name"/></rng:optional>
             <rng:optional><rng:attribute name="attrs"/></rng:optional>
             <rng:optional><rng:attribute name="invisible"/></rng:optional>
+            <rng:optional><rng:attribute name="visible"/></rng:optional>
             <rng:zeroOrMore>
                 <rng:choice>
                     <rng:element name="newline"><rng:empty/></rng:element>
@@ -557,6 +559,7 @@
             <rng:optional><rng:attribute name="domain"/></rng:optional>
             <rng:optional><rng:attribute name="filter_domain"/></rng:optional>
             <rng:optional><rng:attribute name="invisible"/></rng:optional>
+            <rng:optional><rng:attribute name="visible"/></rng:optional>
             <rng:optional><rng:attribute name="password"/></rng:optional>
             <rng:optional><rng:attribute name="comparator"/></rng:optional>
             <rng:optional><rng:attribute name="sum"/></rng:optional>
@@ -569,7 +572,9 @@
             <rng:optional><rng:attribute name="nolabel"/></rng:optional>
             <rng:optional><rng:attribute name="default_get"/></rng:optional>
             <rng:optional><rng:attribute name="required"/></rng:optional>
+            <rng:optional><rng:attribute name="optional"/></rng:optional>
             <rng:optional><rng:attribute name="readonly"/></rng:optional>
+            <rng:optional><rng:attribute name="writeonly"/></rng:optional>
             <rng:optional><rng:attribute name="view_mode"/></rng:optional>
             <rng:optional><rng:attribute name="widget"/></rng:optional>
             <rng:optional><rng:attribute name="context"/></rng:optional>
@@ -634,6 +639,7 @@
             <rng:optional><rng:attribute name="name"/></rng:optional>
             <rng:optional><rng:attribute name="color" /></rng:optional>
             <rng:optional><rng:attribute name="invisible"/></rng:optional>
+            <rng:optional><rng:attribute name="visible"/></rng:optional>
             <rng:ref name="container"/>
         </rng:element>
     </rng:define>
@@ -679,6 +685,7 @@
             <rng:ref name="modifiable"/>
             <rng:optional><rng:attribute name="attrs"/></rng:optional>
             <rng:optional><rng:attribute name="invisible"/></rng:optional>
+            <rng:optional><rng:attribute name="visible"/></rng:optional>
             <rng:optional><rng:attribute name="name" /></rng:optional>
             <rng:optional><rng:attribute name="icon" /></rng:optional>
             <rng:optional><rng:attribute name="string" /></rng:optional>
@@ -689,6 +696,7 @@
             <rng:optional><rng:attribute name="colspan"/></rng:optional>
             <rng:optional><rng:attribute name="target"/></rng:optional>
             <rng:optional><rng:attribute name="readonly"/></rng:optional>
+            <rng:optional><rng:attribute name="writeonly"/></rng:optional>
             <rng:optional><rng:attribute name="context"/></rng:optional>
             <rng:optional><rng:attribute name="confirm"/></rng:optional>
             <rng:optional><rng:attribute name="help"/></rng:optional>
@@ -725,6 +733,7 @@
             <rng:ref name="modifiable"/>
             <rng:optional><rng:attribute name="attrs"/></rng:optional>
             <rng:optional><rng:attribute name="invisible"/></rng:optional>
+            <rng:optional><rng:attribute name="visible"/></rng:optional>
             <rng:optional><rng:attribute name="name" /></rng:optional>
             <rng:optional><rng:attribute name="separator" /></rng:optional>
             <rng:optional><rng:attribute name="icon" /></rng:optional>

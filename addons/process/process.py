@@ -204,7 +204,7 @@ class process_process(osv.osv):
                 if not nodes[nid]['gray']:
                     nodes[nid]['active'] = eval(nodes[nid]['model_states'], ref_expr_context)
             except:
-                pass 
+                pass
             for r in relatives:
                 node = nodes[r]
                 if 'res' not in node:
@@ -249,7 +249,7 @@ class process_process(osv.osv):
         for k, v in nodes.items():
             y = v['y']
             v['y'] = min(y - miny + 10, y)
-        
+
         nodes = dict([str(n_key), n_val] for n_key, n_val in nodes.iteritems())
         transitions = dict([str(t_key), t_val] for t_key, t_val in transitions.iteritems())
         return dict(name=name, resource=resource, state=state, perm=perm, notes=notes, nodes=nodes, transitions=transitions)
@@ -260,7 +260,7 @@ class process_process(osv.osv):
 
         if not default:
             default = {}
-        
+
         pool = pooler.get_pool(cr.dbname)
         process = pool.get('process.process').browse(cr, uid, id, context=context)
 
@@ -378,7 +378,7 @@ class process_transition_action(osv.osv):
     def copy_data(self, cr, uid, id, default=None, context=None):
         if not default:
             default = {}
-            
+
         state = self.pool.get('process.transition.action').browse(cr, uid, id, context=context).state
         if state:
             default['state'] = state

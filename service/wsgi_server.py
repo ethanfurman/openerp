@@ -311,7 +311,7 @@ def http_to_wsgi(http_dir):
                 handler.auth_provider.checkRequest(handler, path)
             except websrv_lib.AuthRequiredExc, ae:
                 # Darwin 9.x.x webdav clients will report "HTTP/1.0" to us, while they support (and need) the
-                # authorisation features of HTTP/1.1 
+                # authorisation features of HTTP/1.1
                 if request_version != 'HTTP/1.1' and ('Darwin/9.' not in handler.headers.get('User-Agent', '')):
                     start_response("403 Forbidden", [])
                     return []
@@ -388,7 +388,7 @@ def application_unproxied(environ, start_response):
     # web.session.OpenERPSession.send() and at RPC dispatch in
     # openerp.service.web_services.objects_proxy.dispatch().
     # /!\ The cleanup cannot be done at the end of this `application`
-    # method because werkzeug still produces relevant logging afterwards 
+    # method because werkzeug still produces relevant logging afterwards
     if hasattr(threading.current_thread(), 'uid'):
         del threading.current_thread().uid
     if hasattr(threading.current_thread(), 'dbname'):

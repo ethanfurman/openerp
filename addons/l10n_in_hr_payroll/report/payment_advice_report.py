@@ -75,7 +75,7 @@ class payment_advice_report(osv.osv):
                 from
                     hr_payroll_advice as p
                     left join hr_payroll_advice_line as l on (p.id=l.advice_id)
-                where 
+                where
                     l.employee_id IS NOT NULL
                 group by
                     p.number,p.name,p.date,p.state,p.company_id,p.bank_id,p.chaque_nos,p.neft,

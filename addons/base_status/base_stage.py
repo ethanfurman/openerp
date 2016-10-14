@@ -39,9 +39,7 @@ class base_stage(object):
         """ Gives id of partner for current user
             :param context: if portal not in context returns False
         """
-        if context is None:
-            context = {}
-        if context.get('portal'):
+        if context and context.get('portal'):
             user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
             return user.partner_id.id
         return False
@@ -50,20 +48,16 @@ class base_stage(object):
         """ Gives default email address for current user
             :param context: if portal not in context returns False
         """
-        if context is None:
-            context = {}
-        if context.get('portal'):
+        if context and context.get('portal'):
             user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
             return user.email
-        return False        
+        return False
 
     def _get_default_user(self, cr, uid, context=None):
         """ Gives current user id
             :param context: if portal not in context returns False
         """
-        if context is None:
-            context = {}
-        if not context or context.get('portal'):
+        if not context or not context.get('portal'):
             return False
         return uid
 

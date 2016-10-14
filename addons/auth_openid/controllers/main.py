@@ -63,7 +63,7 @@ def get_system_user():
         info = '%s-%d' % (info, euid())
     return info
 
-_storedir = os.path.join(tempfile.gettempdir(), 
+_storedir = os.path.join(tempfile.gettempdir(),
                          'openerp-auth_openid-%s-store' % get_system_user())
 
 class GoogleAppsAwareConsumer(consumer.GenericConsumer):

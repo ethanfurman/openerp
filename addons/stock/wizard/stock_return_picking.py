@@ -73,7 +73,7 @@ class stock_return_picking(osv.osv_memory):
                     res.update({'invoice_state': '2binvoiced'})
                 else:
                     res.update({'invoice_state': 'none'})
-            return_history = self.get_return_history(cr, uid, record_id, context)       
+            return_history = self.get_return_history(cr, uid, record_id, context)
             for line in pick.move_lines:
                 qty = line.product_qty - return_history.get(line.id, 0)
                 if qty > 0:
@@ -108,9 +108,9 @@ class stock_return_picking(osv.osv_memory):
             if not valid_lines:
                 raise osv.except_osv(_('Warning!'), _("No products to return (only lines in Done state and not fully returned yet can be returned)!"))
         return res
-    
+
     def get_return_history(self, cr, uid, pick_id, context=None):
-        """ 
+        """
          Get  return_history.
          @param self: The object pointer.
          @param cr: A database cursor
@@ -136,7 +136,7 @@ class stock_return_picking(osv.osv_memory):
         return return_history
 
     def create_returns(self, cr, uid, ids, context=None):
-        """ 
+        """
          Creates return picking.
          @param self: The object pointer.
          @param cr: A database cursor
@@ -146,7 +146,7 @@ class stock_return_picking(osv.osv_memory):
          @return: A dictionary which of fields with values.
         """
         if context is None:
-            context = {} 
+            context = {}
         record_id = context and context.get('active_id', False) or False
         move_obj = self.pool.get('stock.move')
         pick_obj = self.pool.get('stock.picking')
@@ -160,7 +160,7 @@ class stock_return_picking(osv.osv_memory):
         date_cur = time.strftime('%Y-%m-%d %H:%M:%S')
         set_invoice_state_to_none = True
         returned_lines = 0
-        
+
 #        Create new picking for returned products
         if pick.type =='out':
             new_type = 'in'
@@ -172,13 +172,13 @@ class stock_return_picking(osv.osv_memory):
         new_pick_name = self.pool.get('ir.sequence').get(cr, uid, seq_obj_name)
         new_picking = pick_obj.copy(cr, uid, pick.id, {
                                         'name': _('%s-%s-return') % (new_pick_name, pick.name),
-                                        'move_lines': [], 
-                                        'state':'draft', 
+                                        'move_lines': [],
+                                        'state':'draft',
                                         'type': new_type,
-                                        'date':date_cur, 
+                                        'date':date_cur,
                                         'invoice_state': data['invoice_state'],
         })
-        
+
         val_id = data['product_return_moves']
         for v in val_id:
             data_get = data_obj.browse(cr, uid, v, context=context)
@@ -197,9 +197,9 @@ class stock_return_picking(osv.osv_memory):
                 new_move=move_obj.copy(cr, uid, move.id, {
                                             'product_qty': new_qty,
                                             'product_uos_qty': uom_obj._compute_qty(cr, uid, move.product_uom.id, new_qty, move.product_uos.id),
-                                            'picking_id': new_picking, 
+                                            'picking_id': new_picking,
                                             'state': 'draft',
-                                            'location_id': new_location, 
+                                            'location_id': new_location,
                                             'location_dest_id': move.location_id.id,
                                             'date': date_cur,
                 })

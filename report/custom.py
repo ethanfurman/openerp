@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2009 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -49,7 +49,7 @@ class external_pdf(render.render):
 theme.use_color = 1
 
 
-#TODO: devrait heriter de report_rml a la place de report_int 
+#TODO: devrait heriter de report_rml a la place de report_int
 # -> pourrait overrider que create_xml a la place de tout create
 # heuu, ca marche pas ds tous les cas car graphs sont generes en pdf directment
 # par pychart, et on passe donc pas par du rml
@@ -121,12 +121,12 @@ class report_custom(report_int):
                         result += self._row_get(cr, uid, objs, field_new, cond_new, row, group_by)
                     else:
                         result.append(row)
-        return result 
+        return result
 
 
     def create(self, cr, uid, ids, datas, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         self.pool = pooler.get_pool(cr.dbname)
         report = self.pool.get('ir.report.custom').browse(cr, uid, [datas['report_id']])[0]
         datas['model'] = report.model_id.model
@@ -233,7 +233,7 @@ class report_custom(report_int):
                         row.append(fct[str(fields[col]['operation'])](map(lambda x: x[col], res_dic[key])))
                 new_res.append(row)
             results = new_res
-        
+
         if report['type']=='table':
             if report['field_parent']:
                 res = self._create_tree(uid, ids, report, fields, level, results, context)
@@ -281,7 +281,7 @@ class report_custom(report_int):
             pageSize=[pageSize[1],pageSize[0]]
 
         new_doc = etree.Element('report')
-        
+
         config = etree.SubElement(new_doc, 'config')
 
         def _append_node(name, text):
@@ -343,14 +343,14 @@ class report_custom(report_int):
         pool = pooler.get_pool(cr.dbname)
         pdf_string = cStringIO.StringIO()
         can = canvas.init(fname=pdf_string, format='pdf')
-        
+
         can.show(80,380,'/16/H'+report['title'])
-        
+
         ar = area.T(size=(350,350),
         #x_coord = category_coord.T(['2005-09-01','2005-10-22'],0),
         x_axis = axis.X(label = fields[0]['name'], format="/a-30{}%s"),
         y_axis = axis.Y(label = ', '.join(map(lambda x : x['name'], fields[1:]))))
-        
+
         process_date = {
             'D': lambda x: reduce(lambda xx, yy: xx + '-' + yy, x.split('-')[1:3]),
             'M': lambda x: x.split('-')[1],
@@ -364,8 +364,8 @@ class report_custom(report_int):
         }
 
         abscissa = []
-        
-        idx = 0 
+
+        idx = 0
         date_idx = None
         fct = {}
         for f in fields:
@@ -374,7 +374,7 @@ class report_custom(report_int):
                 type = pool.get('ir.model.fields').read(cr, uid, [field_id],['ttype'])
                 if type[0]['ttype'] == 'date':
                     date_idx = idx
-                    fct[idx] = process_date[report['frequency']] 
+                    fct[idx] = process_date[report['frequency']]
                 else:
                     fct[idx] = lambda x : x
             else:
@@ -430,7 +430,7 @@ class report_custom(report_int):
                 ar.add_plot(plot)
                 abscissa.update(fields_bar[idx])
                 idx0 += 1
-        
+
         abscissa = map(lambda x : [x, None], abscissa)
         ar.x_coord = category_coord.T(abscissa,0)
         ar.draw(can)
@@ -447,9 +447,9 @@ class report_custom(report_int):
         pool = pooler.get_pool(cr.dbname)
         pdf_string = cStringIO.StringIO()
         can = canvas.init(fname=pdf_string, format='pdf')
-        
+
         can.show(80,380,'/16/H'+report['title'])
-        
+
         process_date = {
             'D': lambda x: reduce(lambda xx, yy: xx + '-' + yy, x.split('-')[1:3]),
             'M': lambda x: x.split('-')[1],
@@ -466,7 +466,7 @@ class report_custom(report_int):
             x_axis = axis.X(label = fields[0]['name'], format="/a-30{}%s"),
             y_axis = axis.Y(label = ', '.join(map(lambda x : x['name'], fields[1:]))))
 
-        idx = 0 
+        idx = 0
         date_idx = None
         fct = {}
         for f in fields:
@@ -475,13 +475,13 @@ class report_custom(report_int):
                 type = pool.get('ir.model.fields').read(cr, uid, [field_id],['ttype'])
                 if type[0]['ttype'] == 'date':
                     date_idx = idx
-                    fct[idx] = process_date[report['frequency']] 
+                    fct[idx] = process_date[report['frequency']]
                 else:
                     fct[idx] = lambda x : x
             else:
                 fct[idx] = lambda x : x
             idx+=1
-        
+
         # plot are usually displayed year by year
         # so we do so if the first field is a date
         data_by_year = {}
@@ -499,7 +499,7 @@ class report_custom(report_int):
 
         nb_bar = len(data_by_year)*(len(fields)-1)
         colors = map(lambda x:fill_style.Plain(bgcolor=x), misc.choice_colors(nb_bar))
-        
+
         abscissa = {}
         for line in data_by_year.keys():
             fields_bar = []
@@ -527,7 +527,7 @@ class report_custom(report_int):
                     data_cum.append([k, float(data[k])+float(prev)])
                     if fields[idx+1]['cumulate']:
                         prev += data[k]
-                        
+
                 idx0 = 0
                 plot = bar_plot.T(label=fields[idx+1]['name']+' '+str(line), data = data_cum, cluster=(idx0*(len(fields)-1)+idx,nb_bar), fill_style=colors[idx0*(len(fields)-1)+idx])
                 ar.add_plot(plot)

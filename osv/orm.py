@@ -52,12 +52,15 @@ import operator
 import pickle
 import re
 import simplejson
+import sys
 import time
 import traceback
 import types
+from functools import partial
 
 import psycopg2
 from lxml import etree
+from lxml.etree import XPathEvalError
 
 import fields
 import openerp
@@ -79,9 +82,12 @@ from openerp.tools import SKIPPED_ELEMENT_TYPES
 regex_order = re.compile('^(([a-z0-9_]+|"[a-z0-9_]+")( *desc| *asc)?( *, *|))+$', re.I)
 regex_object_name = re.compile(r'^[a-z0-9_.]+$')
 
+from openerp.tools.misc import Period
+
 def transfer_field_to_modifiers(field, modifiers):
     default_values = {}
     state_exceptions = {}
+
     for attr in ('invisible', 'readonly', 'required'):
         state_exceptions[attr] = []
         default_values[attr] = bool(field.get(attr))
@@ -100,7 +106,7 @@ def transfer_field_to_modifiers(field, modifiers):
 # Don't deal with groups, it is done by check_group().
 # Need the context to evaluate the invisible attribute on tree views.
 # For non-tree views, the context shouldn't be given.
-def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False):
+def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False, commands=None):
     if node.get('attrs'):
         modifiers.update(eval(node.get('attrs')))
 
@@ -111,9 +117,18 @@ def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False
         else:
             modifiers['invisible'] = [('state', 'not in', node.get('states').split(','))]
 
-    for a in ('invisible', 'readonly', 'required'):
-        if node.get(a):
-            v = bool(eval(node.get(a), {'context': context or {}}))
+    for a, b in (('invisible', 'visible'), ('readonly', 'writeonly'), ('required', 'optional')):
+        neg, pos = node.get(a), node.get(b)
+        if neg and pos:
+            raise ValueError('cannot specify both %r and %r' % (neg, pos))
+        if neg or pos:
+            if neg:
+                checking = a
+            else:
+                checking = b
+            v = bool(eval(neg or pos, {'context': context or {}, 'checking': checking}, commands))
+            if pos:
+                v = not v
             if in_tree_view and a == 'invisible':
                 # Invisible in a tree view has a specific meaning, make it a
                 # new key in the modifiers attribute.
@@ -125,7 +140,7 @@ def transfer_node_to_modifiers(node, modifiers, context=None, in_tree_view=False
 
 
 def simplify_modifiers(modifiers):
-    for a in ('invisible', 'readonly', 'required'):
+    for a in ('invisible', 'readonly', 'required', 'visible', 'writeonly', 'optional'):
         if a in modifiers and not modifiers[a]:
             del modifiers[a]
 
@@ -136,7 +151,8 @@ def transfer_modifiers_to_node(modifiers, node):
         node.set('modifiers', simplejson.dumps(modifiers))
 
 def setup_modifiers(node, field=None, context=None, in_tree_view=False):
-    """ Processes node attributes and field descriptors to generate
+    """
+    Processes node attributes and field descriptors to generate
     the ``modifiers`` node attribute and set it on the provided node.
 
     Alters its first argument in-place.
@@ -200,7 +216,8 @@ def modifiers_tests():
 
 
 def check_object_name(name):
-    """ Check if the given name is a valid openerp object name.
+    """
+    Check if the given name is a valid openerp object name.
 
         The _name attribute in osv and osv_memory object is subject to
         some restrictions. This function returns True or False whether
@@ -238,6 +255,9 @@ POSTGRES_CONFDELTYPES = {
 def intersect(la, lb):
     return filter(lambda x: x in lb, la)
 
+def not_found(la, lb):
+    return filter(lambda x: x not in lb, la)
+
 def fix_import_export_id_paths(fieldname):
     """
     Fixes the id fields in import and exports, and splits field paths
@@ -261,7 +281,8 @@ class BrowseRecordError(Exception):
     pass
 
 class browse_null(object):
-    """ Readonly python database object browser
+    """
+    Readonly python database object browser
     """
 
     def __init__(self):
@@ -290,21 +311,23 @@ class browse_null(object):
 # TODO: execute an object method on browse_record_list
 #
 class browse_record_list(list):
-    """ Collection of browse objects
+    """
+    Collection of browse objects
 
         Such an instance will be returned when doing a ``browse([ids..])``
         and will be iterable, yielding browse() objects
     """
 
     def __init__(self, lst, context=None):
-        if not context:
+        if context is None:
             context = {}
         super(browse_record_list, self).__init__(lst)
         self.context = context
 
 
 class browse_record(object):
-    """ An object that behaves like a row of an object's table.
+    """
+    An object that behaves like a row of an object's table.
         It has attributes after the columns of the corresponding object.
 
         Examples::
@@ -343,10 +366,10 @@ class browse_record(object):
         cache.setdefault(table._name, {})
         self._data = cache[table._name]
 
-#        if not (id and isinstance(id, (int, long,))):
-#            raise BrowseRecordError(_('Wrong ID for the browse record, got %r, expected an integer.') % (id,))
-#        if not table.exists(cr, uid, id, context):
-#            raise BrowseRecordError(_('Object %s does not exists') % (self,))
+       # if not (id and isinstance(id, (int, long,))):
+       #     raise BrowseRecordError(_('Wrong ID for the browse record, got %r, expected an integer.') % (id,))
+       # if not table.exists(cr, uid, id, context):
+       #     raise BrowseRecordError(_('Object %s does not exists') % (self,))
 
         if id not in self._data:
             self._data[id] = {'id': id}
@@ -486,7 +509,7 @@ class browse_record(object):
             raise AttributeError(e)
 
     def __contains__(self, name):
-        return (name in self._table._columns) or (name in self._table._inherit_fields) or hasattr(self._table, name)
+        return (name in self._table._columns) or (name in self._table._inherit_fields) or (name in self._table._mirror_source) or hasattr(self._table, name)
 
     def __iter__(self):
         raise NotImplementedError("Iteration is not allowed on %s" % self)
@@ -521,7 +544,8 @@ class browse_record(object):
     __repr__ = __str__
 
     def refresh(self):
-        """Force refreshing this browse_record's data and all the data of the
+        """
+        orce refreshing this browse_record's data and all the data of the
            records that belong to the same cache, by emptying the cache completely,
            preserving only the record identifiers (for prefetching optimizations).
         """
@@ -530,6 +554,11 @@ class browse_record(object):
             cached_ids = dict([(i, {'id': i}) for i in model_cache.keys()])
             self._cache[model].clear()
             self._cache[model].update(cached_ids)
+
+    def write(self, values, context=None):
+        if context is None:
+            context = self._context
+        return self._model.write(self._cr, self._uid, self._id, values, context=context)
 
 def pg_varchar(size=0):
     """ Returns the VARCHAR declaration for the provided size:
@@ -557,6 +586,7 @@ FIELDS_TO_PGTYPES = {
     fields.date: 'date',
     fields.datetime: 'timestamp',
     fields.binary: 'bytea',
+    fields.binaryname: 'text',
     fields.many2one: 'int4',
     fields.serialized: 'text',
 }
@@ -598,7 +628,8 @@ def get_pg_type(f, type_override=None):
 
 
 class MetaModel(type):
-    """ Metaclass for the Model.
+    """
+    Metaclass for the Model.
 
     This class is used as the metaclass for the Model class to discover
     the models defined in a module (i.e. without instanciating them).
@@ -610,6 +641,12 @@ class MetaModel(type):
     module_to_models = {}
 
     def __init__(self, name, bases, attrs):
+        # check for mirrored fields -- if any, fill in _mirror_source
+        for mirror in self._mirrors:
+            link_field = mirror.split('.', 1)[0]
+            link_table = self._columns[link_field]._obj
+            self._mirror_source[link_field] = link_table
+
         if not self._register:
             self._register = True
             super(MetaModel, self).__init__(name, bases, attrs)
@@ -645,7 +682,8 @@ LOG_ACCESS_COLUMNS = {
 MAGIC_COLUMNS =  ['id'] + LOG_ACCESS_COLUMNS.keys()
 
 class BaseModel(object):
-    """ Base class for OpenERP models.
+    """
+    Base class for OpenERP models.
 
     OpenERP models are created by inheriting from this class' subclasses:
 
@@ -686,6 +724,9 @@ class BaseModel(object):
     # Transience
     _transient = False # True in a TransientModel
 
+    # _inherit is for subclassing, mostly used with AbstractModels
+    # _inherits is to have a field point to another table
+
     # structure:
     #  { 'parent_model': 'm2o_field', ... }
     _inherits = {}
@@ -699,6 +740,23 @@ class BaseModel(object):
     #                   field_column_obj, origina_parent_model), ... }
     _inherit_fields = {}
 
+    # dict of link_fields to mirror_fields to mirror from some other table; akin to _inherit_fields except
+    # only the fields listed will be added locally with the dotted name, and (at this point) all mirrored
+    # fields are read-only, and if link_field is False so are the mirror fields (so the link is not required)
+    # Example:
+    #   { 'user_id': ['name', 'last_login'] }
+    _mirrors = {}
+
+    # if any mirrored fields, metaclass will fill in the mirror sources
+    _mirror_source = {}
+
+    # _sort_selection_fields controls which, if any, selection type fields are sorted by position instead of
+    # by the alphabetical order of the internal value
+    # i.e.
+    #   'blah': fields.select(('this', 'This'), ('after', 'Later'))
+    # would sort Later, This by default, but instead will sort This, Later if _sort_selection_fields == ('blah', )
+    _sort_selection_fields = ()
+
     # Mapping field name/column_info object
     # This is similar to _inherit_fields but:
     # 1. includes self fields,
@@ -709,7 +767,11 @@ class BaseModel(object):
     _invalids = set()
     _log_create = False
     _sql_constraints = []
-    _protected = ['read', 'write', 'create', 'default_get', 'perm_read', 'unlink', 'fields_get', 'fields_view_get', 'search', 'name_get', 'distinct_field_get', 'name_search', 'copy', 'import_data', 'search_count', 'exists']
+    _protected = [
+        'read', 'write', 'create', 'default_get', 'perm_read', 'unlink', 'fields_get',
+        'fields_view_get', 'search', 'name_get', 'distinct_field_get', 'name_search',
+        'copy', 'import_data', 'search_count', 'exists',
+        ]
 
     CONCURRENCY_CHECK_FIELD = '__last_update'
 
@@ -721,7 +783,8 @@ class BaseModel(object):
         pass
 
     def _field_create(self, cr, context=None):
-        """ Create entries in ir_model_fields for all the model's fields.
+        """
+        Create entries in ir_model_fields for all the model's fields.
 
         If necessary, also create an entry in ir_model, and if called from the
         modules loading scheme (by receiving 'module' in the context), also
@@ -840,7 +903,8 @@ class BaseModel(object):
     #
     @classmethod
     def create_instance(cls, pool, cr):
-        """ Instanciate a given model.
+        """
+        Instanciate a given model.
 
         This class method instanciates the class of some model (i.e. a class
         deriving from osv or osv_memory). The class might be the class passed
@@ -927,13 +991,13 @@ class BaseModel(object):
         return obj
 
     def __new__(cls):
-        """Register this model.
+        """
+        Register this model.
 
         This doesn't create an instance but simply register the model
         as being part of the module where it is defined.
 
         """
-
 
         # Set the module name (e.g. base, sale, accounting, ...) on the class.
         module = cls.__module__.split('.')[0]
@@ -952,7 +1016,8 @@ class BaseModel(object):
         return None
 
     def __init__(self, pool, cr):
-        """ Initialize a model and make it part of the given registry.
+        """
+        Initialize a model and make it part of the given registry.
 
         - copy the stored fields' functions in the osv_pool,
         - update the _columns with the fields found in ir_model_fields,
@@ -1377,7 +1442,8 @@ class BaseModel(object):
         return {'ids': ids, 'messages': messages}
     def _extract_records(self, cr, uid, fields_, data,
                          context=None, log=lambda a: None):
-        """ Generates record dicts from the data sequence.
+        """
+        Generates record dicts from the data sequence.
 
         The result is a generator of dicts mapping field names to raw
         (unconverted, unvalidated) values.
@@ -1454,7 +1520,8 @@ class BaseModel(object):
             index += len(record_span)
     def _convert_records(self, cr, uid, records,
                          context=None, log=lambda a: None):
-        """ Converts records from the source iterable (recursive dicts of
+        """
+        Converts records from the source iterable (recursive dicts of
         strings) into forms which can be written to the database (via
         self.create or (ir.model.data)._update)
 
@@ -1565,7 +1632,7 @@ class BaseModel(object):
         # trigger view init hook
         self.view_init(cr, uid, fields_list, context)
 
-        if not context:
+        if context is None:
             context = {}
         defaults = {}
 
@@ -1612,31 +1679,33 @@ class BaseModel(object):
                 if fld_def._type == 'many2many':
                     obj = self.pool.get(fld_def._obj)
                     field_value2 = []
-                    for i in range(len(field_value or [])):
-                        if not obj.search(cr, uid, [('id', '=',
-                            field_value[i])]):
+                    field_value = field_value and field_value[0][2] or []
+                    for i in field_value:
+                        if not obj.search(cr, uid, [('id', '=', i)]):
                             continue
-                        field_value2.append(field_value[i])
+                        field_value2.append(i)
                     field_value = field_value2
                 if fld_def._type == 'one2many':
-                    obj = self.pool.get(fld_def._obj)
-                    field_value2 = []
-                    for i in range(len(field_value or [])):
-                        field_value2.append({})
-                        for field2 in field_value[i]:
-                            if field2 in obj._columns.keys() and obj._columns[field2]._type == 'many2one':
-                                obj2 = self.pool.get(obj._columns[field2]._obj)
-                                if not obj2.search(cr, uid,
-                                        [('id', '=', field_value[i][field2])]):
-                                    continue
-                            elif field2 in obj._inherit_fields.keys() and obj._inherit_fields[field2][2]._type == 'many2one':
-                                obj2 = self.pool.get(obj._inherit_fields[field2][2]._obj)
-                                if not obj2.search(cr, uid,
-                                        [('id', '=', field_value[i][field2])]):
-                                    continue
-                            # TODO add test for many2many and one2many
-                            field_value2[i][field2] = field_value[i][field2]
-                    field_value = field_value2
+                    pass
+                    # original code
+                    # obj = self.pool.get(fld_def._obj)
+                    # field_value2 = []
+                    # for i in range(len(field_value or [])):
+                    #     field_value2.append({})
+                    #     for field2 in field_value[i]:
+                    #         if field2 in obj._columns.keys() and obj._columns[field2]._type == 'many2one':
+                    #             obj2 = self.pool.get(obj._columns[field2]._obj)
+                    #             if not obj2.search(cr, uid,
+                    #                     [('id', '=', field_value[i][field2])]):
+                    #                 continue
+                    #         elif field2 in obj._inherit_fields.keys() and obj._inherit_fields[field2][2]._type == 'many2one':
+                    #             obj2 = self.pool.get(obj._inherit_fields[field2][2]._obj)
+                    #             if not obj2.search(cr, uid,
+                    #                     [('id', '=', field_value[i][field2])]):
+                    #                 continue
+                    #         # TODO add test for many2many and one2many
+                    #         field_value2[i][field2] = field_value[i][field2]
+                    # field_value = field_value2
                 defaults[field] = field_value
 
         # get the default values from the context
@@ -1679,7 +1748,8 @@ class BaseModel(object):
                         for group_ext_id in groups.split(',')])
 
     def __view_look_dom(self, cr, user, node, view_id, in_tree_view, model_fields, context=None):
-        """Return the description of the fields in the node.
+        """
+        eturn the description of the fields in the node.
 
         In a normal call to this method, node is a complete view architecture
         but it is actually possible to give some sub-node (this is used so
@@ -1704,7 +1774,8 @@ class BaseModel(object):
             return s
 
         def check_group(node):
-            """Apply group restrictions,  may be set at view level or model level::
+            """
+            Apply group restrictions,  may be set at view level or model level::
                * at view level this means the element should be made invisible to
                  people who are not members
                * at model level (exclusively for fields, obviously), this means
@@ -1713,6 +1784,7 @@ class BaseModel(object):
 
                :return: True if field should be included in the result of fields_view_get
             """
+            # check for group override in table
             if node.tag == 'field' and node.get('name') in self._all_columns:
                 column = self._all_columns[node.get('name')].column
                 if column.groups and not self.user_has_groups(cr, user,
@@ -1722,6 +1794,7 @@ class BaseModel(object):
                     fields.pop(node.get('name'), None)
                     # no point processing view-level ``groups`` anymore, return
                     return False
+            # check for group override in view
             if node.get('groups'):
                 can_see = self.user_has_groups(cr, user,
                                                groups=node.get('groups'),
@@ -1803,6 +1876,7 @@ class BaseModel(object):
 
                 field = model_fields.get(node.get('name'))
                 if field:
+                    field['name'] = node.get('name')
                     transfer_field_to_modifiers(field, modifiers)
 
 
@@ -1821,9 +1895,32 @@ class BaseModel(object):
             # node must be removed, no need to proceed further with its children
             return fields
 
-        # The view architeture overrides the python model.
-        # Get the attrs before they are (possibly) deleted by check_group below
-        transfer_node_to_modifiers(node, modifiers, context, in_tree_view)
+        # The view architeture can further restrict the python model.
+        # support commands for 'invisible', 'visible', 'readonly', 'writeonly', 'required',
+        # and 'optional'
+        def _check_context():
+            "check context for a setting, return False if not found"
+            inverse = False
+            name = sys._getframe(1).f_globals['checking']
+            # name = checking
+            for neg, pos in (
+                    ('readonly', 'writeonly'),
+                    ('invisible', 'visible'),
+                    ('required', 'optional'),
+                    ):
+                if name == pos:
+                    inverse = True
+                    name = neg
+                    break
+            result = context.get(name, False)
+            if inverse:
+                result = not result
+            return result
+        commands = {
+                'check_context': _check_context,
+                'groups': partial(self.user_has_groups, cr, user, context=context),
+                }
+        transfer_node_to_modifiers(node, modifiers, context, in_tree_view, commands)
 
         # TODO remove attrs couterpart in modifiers when invisible is true ?
 
@@ -1887,7 +1984,8 @@ class BaseModel(object):
         return node
 
     def __view_look_dom_arch(self, cr, user, node, view_id, context=None):
-        """ Return an architecture and a description of all the fields.
+        """
+        Return an architecture and a description of all the fields.
 
         The field description combines the result of fields_get() and
         __view_look_dom().
@@ -1914,13 +2012,23 @@ class BaseModel(object):
         node = self._disable_workflow_buttons(cr, user, node)
         if node.tag in ('kanban', 'tree', 'form', 'gantt'):
             for action, operation in (('create', 'create'), ('delete', 'unlink'), ('edit', 'write')):
-                if not node.get(action) and not self.check_access_rights(cr, user, operation, raise_exception=False):
+                actual_action = node.get(action)
+                if not actual_action and not self.check_access_rights(cr, user, operation, raise_exception=False):
                     node.set(action, 'false')
+                elif actual_action not in ('0', 'false', '1', 'true', None):
+                    # must be one or more group names, check if user is a member of any of them
+                    groups = actual_action.split(',')
+                    res_users = self.pool.get('res.users')
+                    if any(res_users.has_group(cr, user, [user], g) for g in groups):
+                        node.set(action, 'true')
+                    else:
+                        node.set(action, 'false')
+
         arch = etree.tostring(node, encoding="utf-8").replace('\t', '')
         for k in fields.keys():
             if k not in fields_def:
                 del fields[k]
-        for field in fields_def:
+        for field in fields_def.keys():
             if field == 'id':
                 # sometime, the view may contain the (invisible) field 'id' needed for a domain (when 2 objects have cross references)
                 fields['id'] = {'readonly': True, 'type': 'integer', 'string': 'ID'}
@@ -1938,7 +2046,8 @@ class BaseModel(object):
         return arch, fields
 
     def _get_default_form_view(self, cr, user, context=None):
-        """ Generates a default single-line form view using all fields
+        """
+        Generates a default single-line form view using all fields
         of the current model except the m2m and o2m ones.
 
         :param cr: database cursor
@@ -1958,7 +2067,8 @@ class BaseModel(object):
         return view
 
     def _get_default_search_view(self, cr, user, context=None):
-        """ Generates a single-field search view, based on _rec_name.
+        """
+        Generates a single-field search view, based on _rec_name.
 
         :param cr: database cursor
         :param int user: user id
@@ -1971,7 +2081,8 @@ class BaseModel(object):
         return view
 
     def _get_default_tree_view(self, cr, user, context=None):
-        """ Generates a single-field tree view, based on _rec_name.
+        """
+        Generates a single-field tree view, based on _rec_name.
 
         :param cr: database cursor
         :param int user: user id
@@ -1984,7 +2095,8 @@ class BaseModel(object):
         return view
 
     def _get_default_calendar_view(self, cr, user, context=None):
-        """ Generates a default calendar view by trying to infer
+        """
+        Generates a default calendar view by trying to infer
         calendar fields from a number of pre-set attribute names
 
         :param cr: database cursor
@@ -1994,7 +2106,8 @@ class BaseModel(object):
         :rtype: etree._Element
         """
         def set_first_of(seq, in_, to):
-            """Sets the first value of ``seq`` also found in ``in_`` to
+            """
+            Sets the first value of ``seq`` also found in ``in_`` to
             the ``to`` attribute of the view being closed over.
 
             Returns whether it's found a suitable value (and set it on
@@ -2070,7 +2183,8 @@ class BaseModel(object):
                                  %  (child_view.xml_id, self._name, error_msg))
 
         def locate(source, spec):
-            """ Locate a node in a source (parent) architecture.
+            """
+            Locate a node in a source (parent) architecture.
 
             Given a complete source (parent) architecture (i.e. the field
             `arch` in a view), and a 'spec' node (a node in an inheriting
@@ -2084,7 +2198,11 @@ class BaseModel(object):
 
             """
             if spec.tag == 'xpath':
-                nodes = source.xpath(spec.get('expr'))
+                try:
+                    nodes = source.xpath(spec.get('expr'))
+                except XPathEvalError:
+                    _logger.warning(spec.get('expr'))
+                    raise
                 return nodes[0] if nodes else None
             elif spec.tag == 'field':
                 # Only compare the field name: a field can be only once in a given view
@@ -2108,7 +2226,8 @@ class BaseModel(object):
             return None
 
         def apply_inheritance_specs(source, specs_arch, inherit_id=None):
-            """ Apply an inheriting view.
+            """
+            Apply an inheriting view.
 
             Apply to a source architecture all the spec nodes (i.e. nodes
             describing where and what changes to apply to some parent
@@ -2179,7 +2298,8 @@ class BaseModel(object):
             return source
 
         def apply_view_inheritance(cr, user, source, inherit_id):
-            """ Apply all the (directly and indirectly) inheriting views.
+            """
+            Apply all the (directly and indirectly) inheriting views.
 
             :param source: a parent architecture to modify (with parent
                 modifications already applied)
@@ -2285,7 +2405,7 @@ class BaseModel(object):
                          if view_type == 'tree' or not action[2].get('multi')]
             resprint = [clean(print_) for print_ in resprint
                         if view_type == 'tree' or not print_[2].get('multi')]
-            #When multi="True" set it will display only in More of the list view 
+            #When multi="True" set it will display only in More of the list view
             resrelate = [clean(action) for action in resrelate
                          if (action[2].get('multi') and view_type == 'tree') or (not action[2].get('multi') and view_type == 'form')]
 
@@ -2302,7 +2422,7 @@ class BaseModel(object):
     _view_look_dom_arch = __view_look_dom_arch
 
     def search_count(self, cr, user, args, context=None):
-        if not context:
+        if context is None:
             context = {}
         res = self.search(cr, user, args, context=context, count=True)
         if isinstance(res, list):
@@ -2351,10 +2471,55 @@ class BaseModel(object):
             (name is 'ABC' AND (language is NOT english) AND (country is Belgium OR Germany))
 
         """
-        return self._search(cr, user, args, offset=offset, limit=limit, order=order, context=context, count=count)
+        for key, value in (context or {}).items():
+            if key.endswith('_domain') and key[:-7] == self._name:
+                args += value
+        new_args = []
+        today = fields.date.context_today(self, cr, user, context=context)
+        for arg in args:
+            if isinstance(arg, basestring) or not isinstance(arg[0], basestring):
+                new_args.append(arg)
+                continue
+            field, op, period = arg
+            if (
+                    '.' in field or
+                    field == 'id' or
+                    field not in self._columns or
+                    self._columns[field]._type not in ('date', 'datetime') or
+                    not hasattr(Period, period)
+                    ):
+                new_args.append(arg)
+                continue
+            period = Period[period]
+            start, stop = period.past_period(today)
+            old_op = op
+            if arg[1] in ('=', 'in'):
+                op = '&'
+                first = '>='
+                last = '<='
+            elif arg[1] in ('!=', 'not in'):
+                op = '|'
+                first = '<'
+                last = '>'
+            if op != old_op:
+                new_args.append(op)
+                new_args.append([field, first, start])
+                new_args.append([field, last, stop])
+            elif op == '<':
+                new_args.append([field, op, start])
+            elif op == '<=':
+                new_args.append([field, op, stop])
+            elif op == '>=':
+                new_args.append([field, op, start])
+            elif op == '>':
+                new_args.append([field, op, stop])
+            else:
+                raise ValueError('unable to process domain: %r' % arg)
+        return self._search(cr, user, new_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
     def name_get(self, cr, user, ids, context=None):
-        """Returns the preferred display value (text representation) for the records with the
+        """
+        Returns the preferred display value (text representation) for the records with the
            given ``ids``. By default this will be the value of the ``name`` column, unless
            the model implements a custom behavior.
            Can sometimes be seen as the inverse function of :meth:`~.name_search`, but it is not
@@ -2376,7 +2541,8 @@ class BaseModel(object):
         return [(id, "%s,%s" % (self._name, id)) for id in ids]
 
     def name_search(self, cr, user, name='', args=None, operator='ilike', context=None, limit=100):
-        """Search for records that have a display name matching the given ``name`` pattern if compared
+        """
+        Search for records that have a display name matching the given ``name`` pattern if compared
            with the given ``operator``, while also matching the optional search domain (``args``).
            This is used for example to provide suggestions based on a partial value for a relational
            field.
@@ -2397,7 +2563,8 @@ class BaseModel(object):
         return self._name_search(cr, user, name, args, operator, context, limit)
 
     def name_create(self, cr, uid, name, context=None):
-        """Creates a new record by calling :meth:`~.create` with only one
+        """
+        Creates a new record by calling :meth:`~.create` with only one
            value provided: the name of the new record (``_rec_name`` field).
            The new record will also be initialized with any default values applicable
            to this model, or provided through the context. The usual behavior of
@@ -2499,7 +2666,8 @@ class BaseModel(object):
         return values
 
     def clear_caches(self):
-        """ Clear the caches
+        """
+        Clear the caches
 
         This clears the caches associated to methods decorated with
         ``tools.ormcache`` or ``tools.ormcache_multi``.
@@ -2514,7 +2682,8 @@ class BaseModel(object):
 
     def _read_group_fill_results(self, cr, uid, domain, groupby, groupby_list, aggregated_fields,
                                  read_group_result, read_group_order=None, context=None):
-        """Helper method for filling in empty groups for all possible values of
+        """
+        Helper method for filling in empty groups for all possible values of
            the field being grouped by"""
 
         # self._group_by_full should map groupable fields to a method that returns
@@ -2680,17 +2849,17 @@ class BaseModel(object):
 
         order = orderby or groupby
         data_ids = self.search(cr, uid, [('id', 'in', alldata.keys())], order=order, context=context)
-        
+
         # the IDs of records that have groupby field value = False or '' should be included too
         data_ids += set(alldata.keys()).difference(data_ids)
-        
-        if groupby:   
+
+        if groupby:
             data = self.read(cr, uid, data_ids, [groupby], context=context)
             # restore order of the search as read() uses the default _order (this is only for groups, so the footprint of data should be small):
             data_dict = dict((d['id'], d[groupby] ) for d in data)
             result = [{'id': i, groupby: data_dict[i]} for i in data_ids]
         else:
-            result = [{'id': i} for i in data_ids] 
+            result = [{'id': i} for i in data_ids]
 
         for d in result:
             if groupby:
@@ -2754,7 +2923,7 @@ class BaseModel(object):
             return
         _logger.info('Computing parent left and right for table %s...', self._table)
         def browse_rec(root, pos=0):
-# TODO: set order
+            # TODO: set order
             where = self._parent_name+'='+str(root)
             if not root:
                 where = self._parent_name+' IS NULL'
@@ -3144,6 +3313,9 @@ class BaseModel(object):
 
                             if isinstance(f, fields.many2one):
                                 dest_model = self.pool.get(f._obj)
+                                if dest_model is None:
+                                    raise except_orm('Programming Error', "'%s.%s' links to %r, but %r has not been loaded...  dependency issue?" %
+                                            (self._table, k, f._obj, f._obj.split('.')[0]))
                                 if dest_model._table != 'ir_actions':
                                     self._m2o_fix_foreign_key(cr, self._table, k, dest_model, f.ondelete)
 
@@ -3343,7 +3515,7 @@ class BaseModel(object):
         def unify_cons_text(txt):
             return txt.lower().replace(', ',',').replace(' (','(')
 
-        for (key, con, _) in self._sql_constraints:
+        for (key, con, _tmp) in self._sql_constraints:
             conname = '%s_%s' % (self._table, key)
 
             self._save_constraint(cr, conname, 'u')
@@ -3480,7 +3652,8 @@ class BaseModel(object):
 
 
     def fields_get(self, cr, user, allfields=None, context=None, write_access=True):
-        """ Return the definition of each field.
+        """
+        Return the definition of each field.
 
         The returned value is a dictionary (indiced by field name) of
         dictionaries. The _inherits'd fields are included. The string, help,
@@ -3537,6 +3710,17 @@ class BaseModel(object):
                             sel2.append((key, val2 or val))
                         res[f]['selection'] = sel2
 
+        for link_field, mirrors in self._mirrors.items():
+            if allfields and link_field not in allfields:
+                continue
+            link_table = res[link_field]['relation']
+            link_table_fields = self.pool.get(link_table).fields_get(cr, user, mirrors, context, write_access)
+            for mirror in mirrors:
+                link_mirror = link_field + '.' + mirror
+                res[link_mirror] = link_table_fields[mirror]
+                # TODO: eventually support writing to mirrored fields
+                res[link_mirror]['readonly'] = True
+
         return res
 
     def check_field_access_rights(self, cr, user, operation, fields, context=None):
@@ -3546,6 +3730,7 @@ class BaseModel(object):
         fields (as is if the fields is not falsy, or the readable/writable
         fields if fields is falsy).
         """
+
         def p(field_name):
             """Predicate to test if the user has access to the given field name."""
             # Ignore requested field if it doesn't exist. This is ugly but
@@ -3570,8 +3755,9 @@ class BaseModel(object):
                     (self._description, operation))
         return fields
 
-    def read(self, cr, user, ids, fields=None, context=None, load='_classic_read'):
-        """ Read records with given ids with the given fields
+    def read(self, cr, user, ids=[None], fields=None, context=None, load='_classic_read'):
+        """
+        Read records with given ids with the given fields
 
         :param cr: database cursor
         :param user: current user id
@@ -3592,14 +3778,24 @@ class BaseModel(object):
 
         """
 
-        if not context:
+        if context is None:
             context = {}
+        if not isinstance(fields, (type(None), bool)):
+            mirrored = [f for f in fields if f and '.' in f]
+            fields = [f for f in fields if not f or '.' not in f]
+        else:
+            mirrored = []
         self.check_access_rights(cr, user, 'read')
         fields = self.check_field_access_rights(cr, user, 'read', fields)
         if isinstance(ids, (int, long)):
             select = [ids]
+        elif ids and not isinstance(ids[0], (int, long)):
+            if ids == [None]:
+                ids = []
+            select = self.search(cr, user, ids, context=context)
         else:
             select = ids
+
         select = map(lambda x: isinstance(x, dict) and x['id'] or x, select)
         result = self._read_flat(cr, user, select, fields, context, load)
 
@@ -3607,18 +3803,40 @@ class BaseModel(object):
             for key, v in r.items():
                 if v is None:
                     r[key] = False
+            # set the mirrored fields
+            for mirror in mirrored:
+                link_field, target_field = mirror.split('.', 2)
+                if r[link_field] is False:
+                    # no link, no field, no value
+                    r[mirror] = False
+                    continue
+                link_table = self._mirror_source[link_field]
+                link_record = self.pool.get(link_table).read(
+                        cr, user, r[link_field][0], fields=[target_field], context=context, load=load,
+                        )
+                r[mirror] = link_record[target_field]
 
         if isinstance(ids, (int, long, dict)):
             return result and result[0] or False
         return result
 
-    def _read_flat(self, cr, user, ids, fields_to_read, context=None, load='_classic_read'):
-        if not context:
+    def _read_flat(self, cr, user, ids, fields_to_read, context=None, load='_classic_read', order=None):
+        if context is None:
             context = {}
         if not ids:
             return []
         if fields_to_read is None:
             fields_to_read = self._columns.keys()
+        if not self._name.endswith('.alias'):
+            # fields_to_read can, under some circumstances, contain boolean and not string
+            # values
+            fields_to_check = [f for f in fields_to_read if f and not f.startswith(('__', 'alias_'))]
+            existing_fields = self._columns.keys() + self._inherit_fields.keys() + ['id']
+            if self._log_access:
+                existing_fields += LOG_ACCESS_COLUMNS.keys()
+            missing_fields = not_found(fields_to_check, existing_fields)
+            if missing_fields:
+                raise except_orm('Error','field(s) not found in %s: %r' % (self._name, missing_fields))
 
         # Construct a clause for the security rules.
         # 'tables' hold the list of tables necessary for the SELECT including the ir.rule clauses,
@@ -3646,7 +3864,7 @@ class BaseModel(object):
                 return f_qual
 
             fields_pre2 = map(convert_field, fields_pre)
-            order_by = self._parent_order or self._order
+            order_by = order or self._parent_order or self._order
             select_fields = ','.join(fields_pre2 + ['%s.id' % self._table])
             query = 'SELECT %s FROM %s WHERE %s.id IN %%s' % (select_fields, ','.join(tables), self._table)
             if rule_clause:
@@ -3674,6 +3892,7 @@ class BaseModel(object):
 
         for table in self._inherits:
             col = self._inherits[table]
+
             cols = [x for x in intersect(self._inherit_fields.keys(), fields_to_read) if x not in self._columns.keys()]
             if not cols:
                 continue
@@ -3772,6 +3991,8 @@ class BaseModel(object):
                             vals[field] = False
         return res
 
+
+
     # TODO check READ access
     def perm_read(self, cr, user, ids, context=None, details=True):
         """
@@ -3788,7 +4009,7 @@ class BaseModel(object):
                     * write_date: date of the last change to the record
                     * xmlid: XML ID to use to refer to this record (if there is one), in format ``module.name``
         """
-        if not context:
+        if context is None:
             context = {}
         if not ids:
             return []
@@ -3822,7 +4043,7 @@ class BaseModel(object):
         return res
 
     def _check_concurrency(self, cr, ids, context):
-        if not context:
+        if context is None:
             return
         if not (context.get(self.CONCURRENCY_CHECK_FIELD) and self._log_access):
             return
@@ -3843,7 +4064,8 @@ class BaseModel(object):
                 raise except_orm('ConcurrencyException', _('A document was modified since you last viewed it (%s:%d)') % (self._description, res[0]))
 
     def _check_record_rules_result_count(self, cr, uid, ids, result_ids, operation, context=None):
-        """Verify the returned rows after applying record rules matches
+        """
+        Verify the returned rows after applying record rules matches
            the length of `ids`, and raise an appropriate exception if it does not.
         """
         ids, result_ids = set(ids), set(result_ids)
@@ -3865,7 +4087,7 @@ class BaseModel(object):
                 if operation in ('read','unlink'):
                     # No need to warn about deleting an already deleted record.
                     # And no error when reading a record that was deleted, to prevent spurious
-                    # errors for non-transactional search/read sequences coming from clients 
+                    # errors for non-transactional search/read sequences coming from clients
                     return
                 _logger.warning('Failed operation on deleted record(s): %s, uid: %s, model: %s', operation, uid, self._name)
                 raise except_orm(_('Missing document(s)'),
@@ -3873,12 +4095,14 @@ class BaseModel(object):
 
 
     def check_access_rights(self, cr, uid, operation, raise_exception=True): # no context on purpose.
-        """Verifies that the operation given by ``operation`` is allowed for the user
+        """
+        Verifies that the operation given by ``operation`` is allowed for the user
            according to the access rights."""
         return self.pool.get('ir.model.access').check(cr, uid, self._name, operation, raise_exception)
 
     def check_access_rule(self, cr, uid, ids, operation, context=None):
-        """Verifies that the operation given by ``operation`` is allowed for the user
+        """
+        Verifies that the operation given by ``operation`` is allowed for the user
            according to ir.rules.
 
            :param operation: one of ``write``, ``unlink``
@@ -4078,7 +4302,7 @@ class BaseModel(object):
                 if not edit:
                     vals.pop(field)
 
-        if not context:
+        if context is None:
             context = {}
         if not ids:
             return True
@@ -4300,7 +4524,7 @@ class BaseModel(object):
         to specify them.
 
         """
-        if not context:
+        if context is None:
             context = {}
 
         if self.is_transient():
@@ -4353,12 +4577,12 @@ class BaseModel(object):
                 del vals[self._inherits[table]]
 
             record_id = tocreate[table].pop('id', None)
-            
+
             # When linking/creating parent records, force context without 'no_store_function' key that
-            # defers stored functions computing, as these won't be computed in batch at the end of create(). 
+            # defers stored functions computing, as these won't be computed in batch at the end of create().
             parent_context = dict(context)
             parent_context.pop('no_store_function', None)
-            
+
             if record_id is None or not record_id:
                 record_id = self.pool.get(table).create(cr, user, tocreate[table], context=parent_context)
             else:
@@ -4407,7 +4631,7 @@ class BaseModel(object):
                 upd0 = upd0 + ',"' + field + '"'
                 upd1 = upd1 + ',' + self._columns[field]._symbol_set[0]
                 upd2.append(self._columns[field]._symbol_set[1](vals[field]))
-                #for the function fields that receive a value, we set them directly in the database 
+                #for the function fields that receive a value, we set them directly in the database
                 #(they may be required), but we also need to trigger the _fct_inv()
                 if (hasattr(self._columns[field], '_fnct_inv')) and not isinstance(self._columns[field], fields.related):
                     #TODO: this way to special case the related fields is really creepy but it shouldn't be changed at
@@ -4488,8 +4712,9 @@ class BaseModel(object):
         self._workflow_trigger(cr, user, [id_new], 'trg_create', context=context)
         return id_new
 
-    def browse(self, cr, uid, select, context=None, list_class=None, fields_process=None):
-        """Fetch records as objects allowing to use dot notation to browse fields and relations
+    def browse(self, cr, uid, select=[None], context=None, list_class=None, fields_process=None):
+        """
+        Fetch records as objects allowing to use dot notation to browse fields and relations
 
         :param cr: database cursor
         :param uid: current user id
@@ -4505,12 +4730,18 @@ class BaseModel(object):
         if isinstance(select, (int, long)):
             return browse_record(cr, uid, select, self, cache, context=context, list_class=self._list_class, fields_process=fields_process)
         elif isinstance(select, list):
+            # either a list of integers, or a domain selection list
+            if select and not isinstance(select[0], (int, long)):
+                if select == [None]:
+                    select = []
+                select = self.search(cr, uid, select, context=context)
             return self._list_class([browse_record(cr, uid, id, self, cache, context=context, list_class=self._list_class, fields_process=fields_process) for id in select], context=context)
         else:
             return browse_null()
 
     def _store_get_values(self, cr, uid, ids, fields, context):
-        """Returns an ordered list of fields.functions to call due to
+        """
+        Returns an ordered list of fields.functions to call due to
            an update operation on ``fields`` of records with ``ids``,
            obtained by calling the 'store' functions of these fields,
            as setup by their 'store' attribute.
@@ -4565,7 +4796,8 @@ class BaseModel(object):
         return result
 
     def _store_set_values(self, cr, uid, ids, fields, context):
-        """Calls the fields.function's "implementation function" for all ``fields``, on records with ``ids`` (taking care of
+        """
+        Calls the fields.function's "implementation function" for all ``fields``, on records with ``ids`` (taking care of
            respecting ``multi`` attributes), and stores the resulting values in the database directly."""
         if not ids:
             return True
@@ -4648,7 +4880,8 @@ class BaseModel(object):
 
     # TODO: ameliorer avec NULL
     def _where_calc(self, cr, user, domain, active_test=True, context=None):
-        """Computes the WHERE clause needed to implement an OpenERP domain.
+        """
+        Computes the WHERE clause needed to implement an OpenERP domain.
         :param domain: the domain to compute
         :type domain: list
         :param active_test: whether the default filtering of records with ``active``
@@ -4656,7 +4889,7 @@ class BaseModel(object):
         :return: the query expressing the given domain as provided in domain
         :rtype: osv.query.Query
         """
-        if not context:
+        if context is None:
             context = {}
         domain = domain[:]
         # if the object has a field named 'active', filter out all inactive
@@ -4686,7 +4919,8 @@ class BaseModel(object):
         return True
 
     def _apply_ir_rules(self, cr, uid, query, mode='read', context=None):
-        """Add what's missing in ``query`` to implement all appropriate ir.rules
+        """
+        Add what's missing in ``query`` to implement all appropriate ir.rules
           (using the ``model_name``'s rules or the current model's rules if ``model_name`` is None)
 
            :param query: the current query object
@@ -4797,7 +5031,21 @@ class BaseModel(object):
                 elif order_field in self._columns:
                     order_column = self._columns[order_field]
                     if order_column._classic_read:
-                        inner_clause = '"%s"."%s"' % (self._table, order_field)
+                        order = None
+                        if order_column._type == 'selection':
+                            sort_order = getattr(order_column, '_sort_order', None)
+                            if sort_order == 'definition':
+                                order = [s[0] for s in order_column.selection]
+                            elif sort_order == 'user_name':
+                                order = [s[0] for s in sorted(order_column.selection, key=lambda e: e[1])]
+                        if order is not None:
+                            selection_order = 'CASE '
+                            for i, state in enumerate(order):
+                                selection_order += '''WHEN "%s"."state" = '%s' THEN %i ''' % (self._table, state, i)
+                            selection_order += 'END '
+                            inner_clause = selection_order
+                        else:
+                            inner_clause = '"%s"."%s"' % (self._table, order_field)
                     elif order_column._type == 'many2one':
                         inner_clause = self._generate_m2o_order_by(order_field, query)
                     else:
@@ -5026,7 +5274,8 @@ class BaseModel(object):
         return new_id
 
     def exists(self, cr, uid, ids, context=None):
-        """Checks whether the given id or ids exist in this model,
+        """
+        Checks whether the given id or ids exist in this model,
            and return the list of ids that do. This is simple to use for
            a truth test on a browse_record::
 
@@ -5081,7 +5330,8 @@ class BaseModel(object):
         return True
 
     def _get_external_ids(self, cr, uid, ids, *args, **kwargs):
-        """Retrieve the External ID(s) of any database record.
+        """
+        Retrieve the External ID(s) of any database record.
 
         **Synopsis**: ``_get_xml_ids(cr, uid, ids) -> { 'id': ['module.xml_id'] }``
 
@@ -5104,7 +5354,8 @@ class BaseModel(object):
         return result
 
     def get_external_id(self, cr, uid, ids, *args, **kwargs):
-        """Retrieve the External ID of any database record, if there
+        """
+        Retrieve the External ID of any database record, if there
         is one. This method works as a possible implementation
         for a function field, to be able to add it to any
         model object easily, referencing it as ``Model.get_external_id``.
@@ -5134,7 +5385,8 @@ class BaseModel(object):
 
     # Transience
     def is_transient(self):
-        """ Return whether the model is transient.
+        """
+        Return whether the model is transient.
 
         See :class:`TransientModel`.
 
@@ -5161,7 +5413,8 @@ class BaseModel(object):
         self._transient_clean_rows_older_than(cr, 300)
 
     def _transient_vacuum(self, cr, uid, force=False):
-        """Clean the transient records.
+        """
+        Clean the transient records.
 
         This unlinks old records from the transient model tables whenever the
         "_transient_max_count" or "_max_age" conditions (if any) are reached.
@@ -5195,7 +5448,8 @@ class BaseModel(object):
         return True
 
     def resolve_2many_commands(self, cr, uid, field_name, commands, fields=None, context=None):
-        """ Serializes one2many and many2many commands into record dictionaries
+        """
+        Serializes one2many and many2many commands into record dictionaries
             (as if all the records came from the database via a read()).  This
             method is aimed at onchange methods on one2many and many2many fields.
 
@@ -5253,7 +5507,8 @@ class BaseModel(object):
 import expression
 
 class Model(BaseModel):
-    """Main super-class for regular database-persisted OpenERP models.
+    """
+    Main super-class for regular database-persisted OpenERP models.
 
     OpenERP models are created by inheriting from this class::
 
@@ -5268,7 +5523,8 @@ class Model(BaseModel):
     _transient = False # True in a TransientModel
 
 class TransientModel(BaseModel):
-    """Model super-class for transient records, meant to be temporarily
+    """
+    Model super-class for transient records, meant to be temporarily
        persisted, and regularly vaccuum-cleaned.
 
        A TransientModel has a simplified access rights management,
@@ -5281,7 +5537,8 @@ class TransientModel(BaseModel):
     _transient = True
 
 class AbstractModel(BaseModel):
-    """Abstract Model super-class for creating an abstract class meant to be
+    """
+    Abstract Model super-class for creating an abstract class meant to be
        inherited by regular models (Models or TransientModels) but not meant to
        be usable on its own, or persisted.
 
@@ -5295,7 +5552,8 @@ class AbstractModel(BaseModel):
     _transient = False
 
 def itemgetter_tuple(items):
-    """ Fixes itemgetter inconsistency (useful in some cases) of not returning
+    """
+    Fixes itemgetter inconsistency (useful in some cases) of not returning
     a tuple if len(items) == 1: always returns an n-tuple where n = len(items)
     """
     if len(items) == 0:
@@ -5304,7 +5562,8 @@ def itemgetter_tuple(items):
         return lambda gettable: (gettable[items[0]],)
     return operator.itemgetter(*items)
 class ImportWarning(Warning):
-    """ Used to send warnings upwards the stack during the import process
+    """
+    Used to send warnings upwards the stack during the import process
     """
     pass
 

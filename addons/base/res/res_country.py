@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2009 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -89,7 +89,7 @@ class CountryState(osv.osv):
     _columns = {
         'country_id': fields.many2one('res.country', 'Country',
             required=True),
-        'name': fields.char('State Name', size=64, required=True, 
+        'name': fields.char('State Name', size=64, required=True,
                             help='Administrative divisions of a country. E.g. Fed. State, Departement, Canton'),
         'code': fields.char('State Code', size=3,
             help='The state code in max. three chars.', required=True),

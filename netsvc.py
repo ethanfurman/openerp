@@ -107,7 +107,7 @@ class ExportService(object):
     """
 
     _services = {}
-    
+
     def __init__(self, name):
         ExportService._services[name] = self
         self.__name = name
@@ -157,6 +157,7 @@ def init_logger():
     # create a format for log messages and dates
     format = '%(asctime)s %(pid)s %(levelname)s %(dbname)s %(name)s: %(message)s'
 
+    handler = None
     if tools.config['syslog']:
         # SysLog Handler
         if os.name == 'nt':
@@ -174,29 +175,39 @@ def init_logger():
             if dirname and not os.path.isdir(dirname):
                 os.makedirs(dirname)
             if tools.config['logrotate'] is not False:
-                handler = logging.handlers.TimedRotatingFileHandler(logf,'D',1,30)
+                handler = logging.handlers.TimedRotatingFileHandler(logf, when='MIDNIGHT', backupCount=30)
             elif os.name == 'posix':
                 handler = logging.handlers.WatchedFileHandler(logf)
             else:
                 handler = logging.handlers.FileHandler(logf)
         except Exception:
             sys.stderr.write("ERROR: couldn't create the logfile directory. Logging to the standard output.\n")
-            handler = logging.StreamHandler(sys.stdout)
+            tools.config['logconsole'] = True
     else:
+        tools.config['logconsole'] = True
+
+    conhandler = None
+    if tools.config['logconsole'] in (None, True):
         # Normal Handler on standard output
-        handler = logging.StreamHandler(sys.stdout)
+        if handler is None:
+            handler = logging.StreamHandler(sys.stdout)
+        else:
+            conhandler = logging.StreamHandler(sys.stdout)
 
     # Check that handler.stream has a fileno() method: when running OpenERP
     # behind Apache with mod_wsgi, handler.stream will have type mod_wsgi.Log,
     # which has no fileno() method. (mod_wsgi.Log is what is being bound to
     # sys.stderr when the logging.StreamHandler is being constructed above.)
-    if isinstance(handler, logging.StreamHandler) \
-        and hasattr(handler.stream, 'fileno') \
-        and os.isatty(handler.stream.fileno()):
-        formatter = ColoredFormatter(format)
-    else:
-        formatter = DBFormatter(format)
-    handler.setFormatter(formatter)
+    for h in (handler, conhandler):
+        if h is None:
+            continue
+        if isinstance(h, logging.StreamHandler) \
+            and hasattr(h.stream, 'fileno') \
+            and os.isatty(h.stream.fileno()):
+            formatter = ColoredFormatter(format)
+        else:
+            formatter = DBFormatter(format)
+        h.setFormatter(formatter)
 
     # Configure handlers
     default_config = [
@@ -237,6 +248,8 @@ def init_logger():
         logger.handlers = []
         logger.setLevel(level)
         logger.addHandler(handler)
+        if conhandler:
+            logger.addHandler(conhandler)
         if loggername != '':
             logger.propagate = False
 

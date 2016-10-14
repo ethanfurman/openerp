@@ -24,7 +24,7 @@ from openerp.tools.translate import _
 
 
 class product_product(osv.osv):
-    _inherit = "product.product"    
+    _inherit = "product.product"
     _columns = {
         "bom_ids": fields.one2many('mrp.bom', 'product_id','Bill of Materials', domain=[('bom_id','=',False)]),
     }

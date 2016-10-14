@@ -431,6 +431,7 @@ class module(osv.osv):
         """Perform the various steps required to uninstall a module completely
         including the deletion of all database structures created by the module:
         tables, columns, constraints, etc."""
+        # XXX: this currently misses data in related via function field tables
         ir_model_data = self.pool.get('ir.model.data')
         ir_model_constraint = self.pool.get('ir.model.constraint')
         modules_to_remove = [m.name for m in self.browse(cr, uid, ids, context)]
@@ -798,4 +799,3 @@ class module_dependency(osv.osv):
         ], string='Status', readonly=True, select=True),
     }
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

@@ -366,7 +366,7 @@ class YamlInterpreter(object):
                             # if field is missing in view or has a readonly modifier, drop it
                             field_elem = arch.xpath("//field[@name='%s']" % field_key)
                             if field_elem and (field_elem[0].get('modifiers', '{}').find('"readonly": true') >= 0):
-                                # TODO: currently we only support if readonly is True in the modifiers. Some improvement may be done in 
+                                # TODO: currently we only support if readonly is True in the modifiers. Some improvement may be done in
                                 # order to support also modifiers that look like {"readonly": [["state", "not in", ["draft", "confirm"]]]}
                                 del rec[field_key]
                     # now that unwanted values have been removed from val, we can encapsulate it in a tuple as returned value
@@ -377,7 +377,7 @@ class YamlInterpreter(object):
 
             # we want to return only the fields that aren't readonly
             if el.get('modifiers', '{}').find('"readonly": true') >= 0:
-                # TODO: currently we only support if readonly is True in the modifiers. Some improvement may be done in 
+                # TODO: currently we only support if readonly is True in the modifiers. Some improvement may be done in
                 # order to support also modifiers that look like {"readonly": [["state", "not in", ["draft", "confirm"]]]}
                 return False
 

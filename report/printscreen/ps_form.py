@@ -53,8 +53,8 @@ class report_printscreen_list(report_int):
         return self._parse_node(dom)
 
     def create(self, cr, uid, ids, datas, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         datas['ids'] = ids
         pool = pooler.get_pool(cr.dbname)
         model = pool.get(datas['model'])

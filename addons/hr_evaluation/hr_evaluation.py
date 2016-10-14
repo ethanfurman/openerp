@@ -117,7 +117,7 @@ class hr_employee(osv.osv):
 
         emp_ids =self.search(cr, uid, [
             ('evaluation_plan_id','<>',False), ('evaluation_date','<=', time.strftime("%Y-%m-%d")),
-            ], context=context) 
+            ], context=context)
         for emp in self.browse(cr, uid, emp_ids, context=context):
             next_date = (now + relativedelta(months=emp.evaluation_plan_id.month_next)).strftime('%Y-%m-%d')
             self.write(cr, uid, [emp.id], {'evaluation_date': next_date}, context=context)
@@ -258,7 +258,7 @@ class hr_evaluation(osv.osv):
         default = default.copy()
         default['survey_request_ids'] = []
         return super(hr_evaluation, self).copy(cr, uid, id, default, context=context)
-    
+
     def write(self, cr, uid, ids, vals, context=None):
         if vals.get('employee_id'):
             employee_id = self.pool.get('hr.employee').browse(cr, uid, vals.get('employee_id'), context=context)

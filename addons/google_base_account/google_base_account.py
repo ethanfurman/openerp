@@ -20,14 +20,14 @@
 ##############################################################################
 
 from openerp.osv import fields,osv
-    
+
 class res_users(osv.osv):
     _inherit = "res.users"
     _columns = {
         'gmail_user': fields.char('Username', size=64,),
         'gmail_password': fields.char('Password', size=64),
     }
-res_users()    
+res_users()
 
 # vim:expandtab:smartindent:toabstop=4:softtabstop=4:shiftwidth=4:
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2010 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -25,15 +25,15 @@ from openerp.tools.translate import _
 class stock_inventory_merge(osv.osv_memory):
     _name = "stock.inventory.merge"
     _description = "Merge Inventory"
-    
-    def fields_view_get(self, cr, uid, view_id=None, view_type='form', 
+
+    def fields_view_get(self, cr, uid, view_id=None, view_type='form',
                         context=None, toolbar=False, submenu=False):
-        """ 
+        """
          Changes the view dynamically
          @param self: The object pointer.
          @param cr: A database cursor
          @param uid: ID of the user currently logged in
-         @param context: A standard dictionary 
+         @param context: A standard dictionary
          @return: New arch of view.
         """
         if context is None:
@@ -42,17 +42,17 @@ class stock_inventory_merge(osv.osv_memory):
         if context.get('active_model','') == 'stock.inventory' and len(context['active_ids']) < 2:
             raise osv.except_osv(_('Warning!'),
             _('Please select multiple physical inventories to merge in the list view.'))
-        return res    
-        
+        return res
+
     def do_merge(self, cr, uid, ids, context=None):
         """ To merge selected Inventories.
         @param self: The object pointer.
         @param cr: A database cursor
         @param uid: ID of the user currently logged in
-        @param ids: List of IDs selected 
-        @param context: A standard dictionary 
-        @return: 
-        """ 
+        @param ids: List of IDs selected
+        @param context: A standard dictionary
+        @return:
+        """
         invent_obj = self.pool.get('stock.inventory')
         invent_line_obj = self.pool.get('stock.inventory.line')
         invent_lines = {}

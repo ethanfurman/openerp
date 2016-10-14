@@ -117,10 +117,10 @@ class view(osv.osv):
     def _check_render_view(self, cr, uid, view, context=None):
         """Verify that the given view's hierarchy is valid for rendering, along with all the changes applied by
            its inherited views, by rendering it using ``fields_view_get()``.
-           
+
            @param browse_record view: view to validate
            @return: the rendered definition (arch) of the view, always utf-8 bytestring (legacy convention)
-               if no error occurred, else False.  
+               if no error occurred, else False.
         """
         try:
             fvg = self.pool.get(view.model).fields_view_get(cr, uid, view_id=view.id, view_type=view.type, context=context)
@@ -177,15 +177,15 @@ class view(osv.osv):
         """
         user_groups = frozenset(self.pool.get('res.users').browse(cr, 1, uid, context).groups_id)
         if self.pool._init:
-            # Module init currently in progress, only consider views from modules whose code was already loaded 
+            # Module init currently in progress, only consider views from modules whose code was already loaded
             query = """SELECT v.id FROM ir_ui_view v LEFT JOIN ir_model_data md ON (md.model = 'ir.ui.view' AND md.res_id = v.id)
-                       WHERE v.inherit_id=%s AND v.model=%s AND md.module in %s  
+                       WHERE v.inherit_id=%s AND v.model=%s AND md.module in %s
                        ORDER BY priority"""
             query_params = (view_id, model, tuple(self.pool._init_modules))
         else:
             # Modules fully loaded, consider all views
             query = """SELECT v.id FROM ir_ui_view v
-                       WHERE v.inherit_id=%s AND v.model=%s  
+                       WHERE v.inherit_id=%s AND v.model=%s
                        ORDER BY priority"""
             query_params = (view_id, model)
         cr.execute(query, query_params)

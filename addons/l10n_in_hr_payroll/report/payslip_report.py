@@ -76,7 +76,7 @@ class payslip_report(osv.osv):
                 from
                     hr_payslip as p
                     left join hr_payslip_line as l on (p.id=l.slip_id)
-                where 
+                where
                     l.employee_id IS NOT NULL
                 group by
                     p.number,l.name,p.date_from,p.date_to,p.state,p.company_id,p.paid,

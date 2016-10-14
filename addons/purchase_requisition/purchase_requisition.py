@@ -43,7 +43,7 @@ class purchase_requisition(osv.osv):
         'company_id': fields.many2one('res.company', 'Company', required=True),
         'purchase_ids' : fields.one2many('purchase.order','requisition_id','Purchase Orders',states={'done': [('readonly', True)]}),
         'line_ids' : fields.one2many('purchase.requisition.line','requisition_id','Products to Purchase',states={'done': [('readonly', True)]}),
-        'warehouse_id': fields.many2one('stock.warehouse', 'Warehouse'),        
+        'warehouse_id': fields.many2one('stock.warehouse', 'Warehouse'),
         'state': fields.selection([('draft','New'),('in_progress','Sent to Suppliers'),('cancel','Cancelled'),('done','Purchase Done')],
             'Status', track_visibility='onchange', required=True)
     }
@@ -65,7 +65,7 @@ class purchase_requisition(osv.osv):
             'name': self.pool.get('ir.sequence').get(cr, uid, 'purchase.order.requisition'),
         })
         return super(purchase_requisition, self).copy(cr, uid, id, default, context)
-    
+
     def tender_cancel(self, cr, uid, ids, context=None):
         purchase_order_obj = self.pool.get('purchase.order')
         for purchase in self.browse(cr, uid, ids, context=context):
@@ -160,7 +160,7 @@ class purchase_requisition(osv.osv):
                     'date_planned': date_planned,
                     'taxes_id': [(6, 0, taxes)],
                 }, context=context)
-                
+
         return res
 
 
@@ -243,7 +243,7 @@ class procurement_order(osv.osv):
         procurement = self.browse(cr, uid, ids, context=context)[0]
         if procurement.product_id.purchase_requisition:
              warehouse_id = warehouse_obj.search(cr, uid, [('company_id', '=', procurement.company_id.id or company.id)], context=context)
-             res[procurement.id] = requisition_obj.create(cr, uid, 
+             res[procurement.id] = requisition_obj.create(cr, uid,
                    {
                     'origin': procurement.origin,
                     'date_end': procurement.date_planned,

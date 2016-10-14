@@ -53,7 +53,7 @@ _ref_vat = {
     'gb': 'GB123456782',
     'gr': 'GR12345670',
     'hu': 'HU12345676',
-    'hr': 'HR01234567896', # Croatia, contributed by Milan Tribuson 
+    'hr': 'HR01234567896', # Croatia, contributed by Milan Tribuson
     'ie': 'IE1234567T',
     'it': 'IT12345670017',
     'lt': 'LT123456715',
@@ -156,7 +156,7 @@ class res_partner(osv.osv):
         '''
         Check Switzerland VAT number.
         '''
-        # VAT number in Switzerland will change between 2011 and 2013 
+        # VAT number in Switzerland will change between 2011 and 2013
         # http://www.estv.admin.ch/mwst/themen/00154/00589/01107/index.html?lang=fr
         # Old format is "TVA 123456" we will admit the user has to enter ch before the number
         # Format will becomes such as "CHE-999.999.99C TVA"
@@ -172,10 +172,10 @@ class res_partner(osv.osv):
         #     CHE-###.###.### MWST
         #     CHE-###.###.### TVA
         #     CHE-###.###.### IVA
-        #     
+        #
         if self.__check_vat_ch_re1.match(vat):
             return True
-        match = self.__check_vat_ch_re2.match(vat) 
+        match = self.__check_vat_ch_re2.match(vat)
         if match:
             # For new TVA numbers, do a mod11 check
             num = filter(lambda s: s.isdigit(), match.group(1))        # get the digits only

@@ -6,6 +6,44 @@ openerp.web.views = function(instance) {
 var QWeb = instance.web.qweb,
     _t = instance.web._t;
 
+function addOeMainWindow() {
+    var newChildren = [];
+    var currentChild, getAttr, oldClass, newClass;
+    var i;
+    var found = false;
+    for (i=0, len=document.childNodes.length; i<len; i+=1) {
+        newChildren.push(document.childNodes[i]);
+    }
+    newChildren.push(undefined);
+    while (newChildren.length > 0) {
+        currentChild = newChildren.shift();
+        if (currentChild === undefined) {
+            if (found) {
+                return;
+            }
+        } else {
+            getAttr = currentChild.getAttribute;
+            if (getAttr !== undefined) {
+                oldClass = currentChild.getAttribute("class");
+                if (/oe_view_manager/.test(oldClass)) {
+                    if (!/oe_main_window/.test(oldClass)) {
+                        newClass = oldClass + " oe_main_window";
+                        currentChild.setAttribute("class", newClass);
+                    }
+                    found = true;
+                }
+            }
+        }
+        if (currentChild !== undefined && currentChild.childNodes.length) {
+            for (i=0; i<currentChild.childNodes.length; i+=1) {
+                newChildren.push(currentChild.childNodes[i]);
+            }
+            newChildren.push(undefined);
+        }
+    }
+    return;
+}
+
 instance.web.ActionManager = instance.web.Widget.extend({
     init: function(parent) {
         this._super(parent);
@@ -867,6 +905,7 @@ instance.web.ViewManagerAction = instance.web.ViewManager.extend({
 
         this.$el.find('.oe_debug_view').change(this.on_debug_changed);
         this.$el.addClass("oe_view_manager_" + (this.action.target || 'current'));
+        addOeMainWindow();
         return manager_ready;
     },
     on_debug_changed: function (evt) {

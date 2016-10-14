@@ -1,0 +1,28 @@
+#!/usr/bin/python
+from __future__ import print_function
+
+from scription import *
+from openerplib import get_connection, get_records, AttrDict
+
+@Script()
+def main():
+    config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
+    module.OE = OE = AttrDict()
+    OE.conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
+
+
+@Command()
+@Alias('to-db')
+def migrate_to_db():
+    ir_attachment = OE.conn.get_model('ir.attachment')
+    on_disk = get_records(ir_attachment, domain=[('store_fname','!=',False)], fields=['id', 'datas', 'name', 'file_size'])
+    for f in on_disk:
+        print('name %s is %d bytes' % (f.name, f.file_size))
+        print('actual data is %d bytes' % len(f.datas))
+        if not f.datas:
+            continue
+        print('moving', f.name)
+        print('record:', f)
+        ir_attachment.write(f.id, {'datas':f.datas}, context={'migrate_to_db':True})
+
+Main()

@@ -30,11 +30,11 @@
 The base module to manage lunch.
 ================================
 
-Many companies order sandwiches, pizzas and other, from usual suppliers, for their employees to offer them more facilities. 
+Many companies order sandwiches, pizzas and other, from usual suppliers, for their employees to offer them more facilities.
 
-However lunches management within the company requires proper administration especially when the number of employees or suppliers is important. 
+However lunches management within the company requires proper administration especially when the number of employees or suppliers is important.
 
-The “Lunch Order” module has been developed to make this management easier but also to offer employees more tools and usability. 
+The “Lunch Order” module has been developed to make this management easier but also to offer employees more tools and usability.
 
 In addition to a full meal and supplier management, this module offers the possibility to display warning and provides quick order selection based on employee’s preferences.
 

@@ -34,7 +34,7 @@ def memoize(maxsize):
         wrapper.__doc__ = f.__doc__
         wrapper.__name__ = f.__name__
         wrapper.hits = wrapper.misses = 0
-        return wrapper 
+        return wrapper
     return decorating_function
 
 

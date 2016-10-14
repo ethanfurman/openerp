@@ -31,7 +31,6 @@ import time
 import cron
 import netrpc_server
 import web_services
-import web_services
 import wsgi_server
 
 import openerp.modules
@@ -120,6 +119,7 @@ def stop_services():
 
     _logger.debug('--')
     openerp.modules.registry.RegistryManager.delete_all()
+    _logger.info('Done.')
     logging.shutdown()
 
 def start_services_workers():
@@ -155,5 +155,26 @@ def restart_server():
         else:
             openerp.phoenix = True
             os.kill(os.getpid(), signal.SIGINT)
+
+class OpenERP(object):
+    """context manager to start/stop OpenERP services"""
+    def __init__(self, database):
+        self.db = database
+    def __enter__(self):
+        openerp.service.start_services()
+        time.sleep(2)
+        self.db, self.pool = openerp.pooler.get_db_and_pool(self.db)
+        self.cr = self.db.cursor()
+        return self
+    def __exit__(self, *args):
+        try:
+            if args == (None, None, None):
+                self.cr.commit()
+            else:
+                self.cr.rollback()
+        finally:
+            self.cr.close()
+            openerp.service.stop_services()
+
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

@@ -10,4 +10,16 @@
 .*\.woff
 .*\.swp
 .*\.pyc
+.*\.rej
+.*\.orig
+.*/\..*\.sw.
+.*/original_xml/.*
 PKG-INFO
+filestore/
+addons/automated_clearing_house
+addons/cmms
+addons/fis_integration
+addons/fnx
+addons/personal_address_book
+addons/salesinq
+addons/status

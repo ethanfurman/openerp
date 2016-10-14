@@ -40,7 +40,7 @@ class report_print_check(report_sxw.rml_parse):
             return ' '.join([amount,'*'*stars])
 
         else: return amount
-    
+
     def get_lines(self, voucher_lines):
         result = []
         self.number_lines = len(voucher_lines)

@@ -371,9 +371,11 @@ def normalize_leaf(element):
         operator = '!='
     if isinstance(right, bool) and operator in ('in', 'not in'):
         _logger.warning("The domain term '%s' should use the '=' or '!=' operator." % ((left, original, right),))
+        _logger.warning('\n' + traceback.extract_stack())
         operator = '=' if operator == 'in' else '!='
     if isinstance(right, (list, tuple)) and operator in ('=', '!='):
         _logger.warning("The domain term '%s' should use the 'in' or 'not in' operator." % ((left, original, right),))
+        _logger.warning('\n' + traceback.extract_stack())
         operator = 'in' if operator == '=' else 'not in'
     return left, operator, right
 
@@ -580,7 +582,7 @@ class ExtendedLeaf(object):
                 - left is in MAGIC_COLUMNS
         """
         if not is_operator(self.leaf) and not is_leaf(self.leaf, True):
-            raise ValueError("Invalid leaf %s" % str(self.leaf))
+            raise ValueError("Invalid leaf %r" % (self.leaf, ))
 
     def is_operator(self):
         return is_operator(self.leaf)
@@ -802,7 +804,7 @@ class expression(object):
                 push_result(leaf)
 
             elif not field:
-                raise ValueError("Invalid field %r in leaf %r" % (left, str(leaf)))
+                raise ValueError("Invalid field %r in leaf %r" % (left, leaf))
 
             # ----------------------------------------
             # PATH SPOTTED
@@ -834,7 +836,7 @@ class expression(object):
                     push(create_substitution_leaf(leaf, AND_OPERATOR, relational_model))
 
             elif len(field_path) > 1 and field._auto_join:
-                raise NotImplementedError('_auto_join attribute not supported on many2many field %s' % left)
+                raise NotImplementedError('_auto_join attribute not supported on many2many field %r' % left)
 
             elif len(field_path) > 1 and field._type == 'many2one':
                 right_ids = relational_model.search(cr, uid, [(field_path[1], operator, right)], context=context)
@@ -1096,6 +1098,7 @@ class expression(object):
             # abuse and handled for backward compatibility.
             if isinstance(right, bool):
                 _logger.warning("The domain term '%s' should use the '=' or '!=' operator." % (leaf,))
+                _logger.warning('\n' + traceback.extract_stack())
                 if operator == 'in':
                     r = 'NOT NULL' if right else 'NULL'
                 else:

@@ -146,6 +146,7 @@ class product_uom(osv.osv):
         'uom_type': fields.selection([('bigger','Bigger than the reference Unit of Measure'),
                                       ('reference','Reference Unit of Measure for this category'),
                                       ('smaller','Smaller than the reference Unit of Measure')],'Type', required=1),
+        'full_name': fields.char('Full Name', size=32),
     }
 
     _defaults = {
@@ -318,12 +319,12 @@ class product_template(osv.osv):
             ('end','End of Lifecycle'),
             ('obsolete','Obsolete')], 'Status'),
         'uom_id': fields.many2one('product.uom', 'Unit of Measure', required=True, help="Default Unit of Measure used for all stock operation."),
-        'uom_po_id': fields.many2one('product.uom', 'Purchase Unit of Measure', required=True, help="Default Unit of Measure used for purchase orders. It must be in the same category than the default unit of measure."),
+        'uom_po_id': fields.many2one('product.uom', 'Unit of Purchase', required=True, help="Default Unit of Measure used for purchase orders. It must be in the same category as the default unit of measure."),
         'uos_id' : fields.many2one('product.uom', 'Unit of Sale',
             help='Sepcify a unit of measure here if invoicing is made in another unit of measure than inventory. Keep empty to use the default unit of measure.'),
-        'uos_coeff': fields.float('Unit of Measure -> UOS Coeff', digits_compute= dp.get_precision('Product UoS'),
+        'uos_coeff': fields.float('UoM --> UoS ', digits_compute= dp.get_precision('Product UoS'),
             help='Coefficient to convert default Unit of Measure to Unit of Sale\n'
-            ' uos = uom * coeff'),
+            ' UoS = UoM * Ratio'),
         'mes_type': fields.selection((('fixed', 'Fixed'), ('variable', 'Variable')), 'Measure Type'),
         'seller_ids': fields.one2many('product.supplierinfo', 'product_id', 'Supplier'),
         'company_id': fields.many2one('res.company', 'Company', select=1),
@@ -352,14 +353,16 @@ class product_template(osv.osv):
             return {'value': {'uom_po_id': uom_id}}
         return {}
 
-    def write(self, cr, uid, ids, vals, context=None):
-        if 'uom_po_id' in vals:
-            new_uom = self.pool.get('product.uom').browse(cr, uid, vals['uom_po_id'], context=context)
-            for product in self.browse(cr, uid, ids, context=context):
-                old_uom = product.uom_po_id
-                if old_uom.category_id.id != new_uom.category_id.id:
-                    raise osv.except_osv(_('Unit of Measure categories Mismatch!'), _("New Unit of Measure '%s' must belong to same Unit of Measure category '%s' as of old Unit of Measure '%s'. If you need to change the unit of measure, you may deactivate this product from the 'Procurements' tab and create a new one.") % (new_uom.name, old_uom.category_id.name, old_uom.name,))
-        return super(product_template, self).write(cr, uid, ids, vals, context=context)
+    #def write(self, cr, uid, ids, vals, context=None):
+    #    # TODO: show Unit of Measure category on screen, allow that to change
+    #    #       and only show UoMs in that category
+    #    if 'uom_po_id' in vals:
+    #        new_uom = self.pool.get('product.uom').browse(cr, uid, vals['uom_po_id'], context=context)
+    #        for product in self.browse(cr, uid, ids, context=context):
+    #            old_uom = product.uom_po_id
+    #            if old_uom.category_id.id != new_uom.category_id.id:
+    #                raise osv.except_osv(_('Unit of Measure categories Mismatch!'), _("New Unit of Measure '%s' must belong to same Unit of Measure category '%s' as of old Unit of Measure '%s'. If you need to change the unit of measure, you may deactivate this product from the 'Procurements' tab and create a new one.") % (new_uom.name, old_uom.category_id.name, old_uom.name,))
+    #    return super(product_template, self).write(cr, uid, ids, vals, context=context)
 
     _defaults = {
         'company_id': lambda s,cr,uid,c: s.pool.get('res.company')._company_default_get(cr, uid, 'product.template', context=c),
@@ -536,6 +539,7 @@ class product_product(osv.osv):
     _inherits = {'product.template': 'product_tmpl_id'}
     _inherit = ['mail.thread']
     _order = 'default_code,name_template'
+    _mirrors = {'seller_id': ['phone',]}
     _columns = {
         'qty_available': fields.function(_product_qty_available, type='float', string='Quantity On Hand'),
         'virtual_available': fields.function(_product_virtual_available, type='float', string='Quantity Available'),
@@ -839,7 +843,7 @@ class product_supplierinfo(osv.osv):
         'name' : fields.many2one('res.partner', 'Supplier', required=True,domain = [('supplier','=',True)], ondelete='cascade', help="Supplier of this product"),
         'product_name': fields.char('Supplier Product Name', size=128, help="This supplier's product name will be used when printing a request for quotation. Keep empty to use the internal one."),
         'product_code': fields.char('Supplier Product Code', size=64, help="This supplier's product code will be used when printing a request for quotation. Keep empty to use the internal one."),
-        'sequence' : fields.integer('Sequence', help="Assigns the priority to the list of product supplier."),
+        'sequence' : fields.integer('Sequence', help="Assigns the priority to the list of product supplier. (smaller number = higher priority"),
         'product_uom': fields.related('product_id', 'uom_po_id', type='many2one', relation='product.uom', string="Supplier Unit of Measure", readonly="1", help="This comes from the product form."),
         'min_qty': fields.float('Minimal Quantity', required=True, help="The minimal quantity to purchase to this supplier, expressed in the supplier Product Unit of Measure if not empty, in the default unit of measure of the product otherwise."),
         'qty': fields.function(_calc_qty, store=True, type='float', string='Quantity', multi="qty", help="This is a quantity which is converted into Default Unit of Measure."),
@@ -850,6 +854,7 @@ class product_supplierinfo(osv.osv):
     }
     _defaults = {
         'qty': lambda *a: 0.0,
+        'min_qty': lambda *a: 0.0,
         'sequence': lambda *a: 1,
         'delay': lambda *a: 1,
         'company_id': lambda self,cr,uid,c: self.pool.get('res.company')._company_default_get(cr, uid, 'product.supplierinfo', context=c),

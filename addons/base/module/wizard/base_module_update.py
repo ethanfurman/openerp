@@ -33,7 +33,7 @@ class base_module_update(osv.osv_memory):
         'state':fields.selection([('init','init'),('done','done')], 'Status', readonly=True),
     }
 
-    _defaults = {  
+    _defaults = {
         'state': 'init',
     }
 

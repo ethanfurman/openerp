@@ -43,6 +43,7 @@ from openerp import SUPERUSER_ID
 from openerp.tools.translate import _
 from openerp.modules.module import initialize_sys_path, \
     load_openerp_module, init_module_models, adapt_version
+from xaml import Xaml
 
 _logger = logging.getLogger(__name__)
 
@@ -123,7 +124,15 @@ def load_module_graph(cr, graph, status=None, perform_checks=True, skip_modules=
                     process_sql_file(cr, fp)
                 elif ext == '.yml':
                     tools.convert_yaml_import(cr, module_name, fp, kind, idref, mode, noupdate, report)
-                elif ext == '.xml':
+                elif ext in ('.xaml', '.xml'):
+                    if ext == '.xaml':
+                        pathname = pathname[:-4] + 'xml'
+                        markup = fp.read()
+                        xaml_doc = Xaml(markup).document
+                        xml = tools.file_open(pathname, mode='w')
+                        xml.write(xaml_doc.pages[0].bytes())
+                        xml.close()
+                        fp = tools.file_open(pathname)
                     tools.convert_xml_import(cr, module_name, fp, idref, mode, noupdate, report)
                 elif ext == '.js':
                     pass # .js files are valid but ignored here.
@@ -148,6 +157,8 @@ def load_module_graph(cr, graph, status=None, perform_checks=True, skip_modules=
     cr.execute('SELECT * FROM ir_model_fields WHERE state=%s', ('manual',))
     for field in cr.dictfetchall():
         pool.fields_by_model.setdefault(field['model'], []).append(field)
+
+    test_module = tools.config.options['test_module'] or ''
 
     # register, instantiate and initialize models for each modules
     for index, package in enumerate(graph):
@@ -223,12 +234,15 @@ def load_module_graph(cr, graph, status=None, perform_checks=True, skip_modules=
                 if hasattr(package, kind):
                     delattr(package, kind)
 
+        if module_name == test_module:
+            report.record_result(openerp.modules.module.run_unit_tests(module_name))
         cr.commit()
+
 
     # The query won't be valid for models created later (i.e. custom model
     # created after the registry has been loaded), so empty its result.
     pool.fields_by_model = None
-    
+
     cr.commit()
 
     return loaded_modules, processed_modules
@@ -291,7 +305,7 @@ def load_modules(db, force_demo=False, status=None, update_module=False):
         if 'base' in tools.config['update'] or 'all' in tools.config['update']:
             cr.execute("update ir_module_module set state=%s where name=%s and state=%s", ('to upgrade', 'base', 'installed'))
 
-        # STEP 1: LOAD BASE (must be done before module dependencies can be computed for later steps) 
+        # STEP 1: LOAD BASE (must be done before module dependencies can be computed for later steps)
         graph = openerp.modules.graph.Graph()
         graph.add_module(cr, 'base', force)
         if not graph:
@@ -386,7 +400,7 @@ def load_modules(db, force_demo=False, status=None, update_module=False):
 
         cr.commit()
 
-        # STEP 5: Cleanup menus 
+        # STEP 5: Cleanup menus
         # Remove menu items that are not referenced by any of other
         # (child) menu item, ir_values, or ir_model_data.
         # TODO: This code could be a method of ir_ui_menu. Remove menu without actions of children
@@ -431,6 +445,3 @@ def load_modules(db, force_demo=False, status=None, update_module=False):
 
     finally:
         cr.close()
-
-
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

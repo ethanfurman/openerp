@@ -52,7 +52,7 @@ class document_page(osv.osv):
 
     _columns = {
         'name': fields.char('Title', required=True),
-        'type':fields.selection([('content','Content'), ('category','Category')], 'Type', help="Page type"), 
+        'type':fields.selection([('content','Content'), ('category','Category')], 'Type', help="Page type"),
 
         'parent_id': fields.many2one('document.page', 'Category', domain=[('type','=','category')]),
         'child_ids': fields.one2many('document.page', 'parent_id', 'Children'),

@@ -38,7 +38,7 @@ _logger = logging.getLogger(__name__)
 
 def try_report(cr, uid, rname, ids, data=None, context=None, our_module=None):
     """ Try to render a report <rname> with contents of ids
-    
+
         This function should also check for common pitfalls of reports.
     """
     if data is None:

@@ -84,11 +84,11 @@ class res_currency(osv.osv):
     _order = "name"
 
     def init(self, cr):
-        # CONSTRAINT/UNIQUE INDEX on (name,company_id) 
+        # CONSTRAINT/UNIQUE INDEX on (name,company_id)
         # /!\ The unique constraint 'unique_name_company_id' is not sufficient, because SQL92
         # only support field names in constraint definitions, and we need a function here:
         # we need to special-case company_id to treat all NULL company_id as equal, otherwise
-        # we would allow duplicate "global" currencies (all having company_id == NULL) 
+        # we would allow duplicate "global" currencies (all having company_id == NULL)
         cr.execute("""SELECT indexname FROM pg_indexes WHERE indexname = 'res_currency_unique_name_company_id_idx'""")
         if not cr.fetchone():
             cr.execute("""CREATE UNIQUE INDEX res_currency_unique_name_company_id_idx
@@ -164,7 +164,7 @@ class res_currency(osv.osv):
         """Returns true if ``amount`` is small enough to be treated as
            zero according to ``currency``'s rounding rules.
 
-           Warning: ``is_zero(amount1-amount2)`` is not always equivalent to 
+           Warning: ``is_zero(amount1-amount2)`` is not always equivalent to
            ``compare_amounts(amount1,amount2) == 0``, as the former will round after
            computing the difference, while the latter will round before, giving
            different results for e.g. 0.006 and 0.002 at 2 digits precision.
@@ -197,7 +197,7 @@ class res_currency(osv.osv):
 
     def compute(self, cr, uid, from_currency_id, to_currency_id, from_amount,
                 round=True, currency_rate_type_from=False, currency_rate_type_to=False, context=None):
-        if not context:
+        if context is None:
             context = {}
         if not from_currency_id:
             from_currency_id = to_currency_id

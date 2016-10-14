@@ -39,7 +39,7 @@ class account_financial_report(osv.osv):
     _description = "Account Report"
 
     def _get_level(self, cr, uid, ids, field_name, arg, context=None):
-        '''Returns a dictionary with key=the ID of a record and value = the level of this  
+        '''Returns a dictionary with key=the ID of a record and value = the level of this
             record in the tree structure.'''
         res = {}
         for report in self.browse(cr, uid, ids, context=context):
@@ -60,7 +60,7 @@ class account_financial_report(osv.osv):
         return res
 
     def _get_balance(self, cr, uid, ids, field_names, args, context=None):
-        '''returns a dictionary with key=the ID of a record and value=the balance amount 
+        '''returns a dictionary with key=the ID of a record and value=the balance amount
            computed for this record. If the record is of type :
                'accounts' : it's the sum of the linked accounts
                'account_type' : it's the sum of leaf accoutns with such an account_type

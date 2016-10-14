@@ -122,7 +122,7 @@ address_pattern = re.compile(r'([^ ,<@]+@[^> ,]+)')
 
 def extract_rfc2822_addresses(text):
     """Returns a list of valid RFC2822 addresses
-       that can be found in ``source``, ignoring 
+       that can be found in ``source``, ignoring
        malformed ones and non-ASCII ones.
     """
     if not text: return []
@@ -158,7 +158,7 @@ def encode_rfc2822_address_header(header_text):
     # contain non-ASCII characters
     return COMMASPACE.join(extract_rfc2822_addresses(header_text_utf8))
 
- 
+
 class ir_mail_server(osv.osv):
     """Represents an SMTP server, able to send outgoing emails, with SSL and TLS capabilities."""
     _name = "ir.mail_server"
@@ -224,7 +224,7 @@ class ir_mail_server(osv.osv):
         """Returns a new SMTP connection to the give SMTP server, authenticated
            with ``user`` and ``password`` if provided, and encrypted as requested
            by the ``encryption`` parameter.
-        
+
            :param host: host or IP of SMTP server to connect to
            :param int port: SMTP port to connect to
            :param user: optional username to authenticate with
@@ -258,7 +258,7 @@ class ir_mail_server(osv.osv):
             # certain hashing schemes, like HMAC.
             # See also bug #597143 and python issue #5285
             user = tools.ustr(user).encode('utf-8')
-            password = tools.ustr(password).encode('utf-8') 
+            password = tools.ustr(password).encode('utf-8')
             connection.login(user, password)
         return connection
 
@@ -268,7 +268,7 @@ class ir_mail_server(osv.osv):
         """Constructs an RFC2822 email.message.Message object based on the keyword arguments passed, and returns it.
 
            :param string email_from: sender email address
-           :param list email_to: list of recipient addresses (to be joined with commas) 
+           :param list email_to: list of recipient addresses (to be joined with commas)
            :param string subject: email subject (no pre-encoding/quoting necessary)
            :param string body: email body, of the type ``subtype`` (by default, plaintext).
                                If html subtype is used, the message will be automatically converted

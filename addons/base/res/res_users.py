@@ -30,6 +30,7 @@ from openerp import pooler, tools
 import openerp.exceptions
 from openerp.osv import fields,osv
 from openerp.osv.orm import browse_record
+from openerp.osv.osv import except_osv as ERPError
 from openerp.tools.translate import _
 
 _logger = logging.getLogger(__name__)
@@ -52,11 +53,10 @@ class groups(osv.osv):
         operand = args[0][2]
         operator = args[0][1]
         values = operand.split('/')
-        group_name = values[0]
+        group_name = values[-1].strip()
         where = [('name', operator, group_name)]
         if len(values) > 1:
-            application_name = values[0]
-            group_name = values[1]
+            application_name = values[0].strip()
             where = ['|',('category_id.name', operator, application_name)] + where
         return where
 
@@ -95,7 +95,7 @@ class groups(osv.osv):
     def write(self, cr, uid, ids, vals, context=None):
         if 'name' in vals:
             if vals['name'].startswith('-'):
-                raise osv.except_osv(_('Error'),
+                raise ERPError(_('Error'),
                         _('The name of the group can not start with "-"'))
         res = super(groups, self).write(cr, uid, ids, vals, context=context)
         self.pool.get('ir.model.access').call_cache_clearing_methods(cr)
@@ -128,7 +128,7 @@ class res_users(osv.osv):
             # To change their own password users must use the client-specific change password wizard,
             # so that the new password is immediately used for further RPC requests, otherwise the user
             # will face unexpected 'Access Denied' exceptions.
-            raise osv.except_osv(_('Operation Canceled'), _('Please use the change password wizard (in User Preferences or User menu) to change your own password.'))
+            raise ERPError(_('Operation Canceled'), _('Please use the change password wizard (in User Preferences or User menu) to change your own password.'))
         self.write(cr, uid, id, {'password': value})
 
     def _get_password(self, cr, uid, ids, arg, karg, context=None):
@@ -151,8 +151,13 @@ class res_users(osv.osv):
                  "a change of password, the user has to login again."),
         'signature': fields.text('Signature'),
         'active': fields.boolean('Active'),
-        'action_id': fields.many2one('ir.actions.actions', 'Home Action', help="If specified, this action will be opened at logon for this user, in addition to the standard menu."),
-        'menu_id': fields.many2one('ir.actions.actions', 'Menu Action', help="If specified, the action will replace the standard menu for this user."),
+        'action_id': fields.many2one('ir.actions.actions', 'Login Action', help="If specified, this action will be opened at logon for this user, in addition to the standard menu."),
+        'menu_id': fields.many2one(
+            'ir.actions.actions',
+            'Menu Action',
+            # domain=['|',('parent_id','=',False),('parent_id.parent_id','=',False)],
+            help="If specified, restricts the user to that menu.",
+            ),
         'groups_id': fields.many2many('res.groups', 'res_groups_users_rel', 'uid', 'gid', 'Groups'),
         # Special behavior for this field: res.company.search() will only return the companies
         # available to the current user (should be the user's companies?), when the user_preference
@@ -191,6 +196,18 @@ class res_users(osv.osv):
         """
         partner_ids = [user.partner_id.id for user in self.browse(cr, uid, ids, context=context)]
         return self.pool.get('res.partner').onchange_address(cr, uid, partner_ids, use_parent_address, parent_id, context=context)
+
+    def onchange_partner(self, cr, uid, ids, partner_id, context=None):
+        """
+        Update name and email fields from selected partner record.
+        """
+        partner = self.pool.get('res.partner').browse(cr, uid, partner_id, context=context)
+        res = {}
+        if partner:
+            res['value'] = values = {}
+            values['name'] = partner.name
+            values['email'] = partner.email
+        return res
 
     def _check_company(self, cr, uid, ids, context=None):
         return all(((this.company_id in this.company_ids) or not this.company_ids) for this in self.browse(cr, uid, ids, context))
@@ -308,7 +325,7 @@ class res_users(osv.osv):
 
     def unlink(self, cr, uid, ids, context=None):
         if 1 in ids:
-            raise osv.except_osv(_('Can not remove root user!'), _('You can not remove the admin user as it is used internally for resources created by OpenERP (updates, module installation, ...)'))
+            raise ERPError(_('Can not remove root user!'), _('You can not remove the admin user as it is used internally for resources created by OpenERP (updates, module installation, ...)'))
         db = cr.dbname
         if db in self._uid_cache:
             for id in ids:
@@ -317,10 +334,10 @@ class res_users(osv.osv):
         return super(res_users, self).unlink(cr, uid, ids, context=context)
 
     def name_search(self, cr, user, name='', args=None, operator='ilike', context=None, limit=100):
-        if not args:
-            args=[]
-        if not context:
-            context={}
+        if args is None:
+            args = []
+        if context is None:
+            context = {}
         ids = []
         if name:
             ids = self.search(cr, user, [('login','=',name)]+ args, limit=limit, context=context)
@@ -389,20 +406,21 @@ class res_users(osv.osv):
                 user_id = res[0]
                 # check credentials
                 self.check_credentials(cr, user_id, password)
-                # We effectively unconditionally write the res_users line.
-                # Even w/ autocommit there's a chance the user row will be locked,
-                # in which case we can't delay the login just for the purpose of
-                # update the last login date - hence we use FOR UPDATE NOWAIT to
-                # try to get the lock - fail-fast
-                # Failing to acquire the lock on the res_users row probably means
-                # another request is holding it. No big deal, we don't want to
-                # prevent/delay login in that case. It will also have been logged
-                # as a SQL error, if anyone cares.
-                try:
-                    cr.execute("SELECT id FROM res_users WHERE id=%s FOR UPDATE NOWAIT", (user_id,), log_exceptions=False)
-                    cr.execute("UPDATE res_users SET login_date = now() AT TIME ZONE 'UTC' WHERE id=%s", (user_id,))
-                except Exception:
-                    _logger.debug("Failed to update last_login for db:%s login:%s", db, login, exc_info=True)
+                if user_id != SUPERUSER_ID:
+                    # We effectively unconditionally write the res_users line.
+                    # Even w/ autocommit there's a chance the user row will be locked,
+                    # in which case we can't delay the login just for the purpose of
+                    # update the last login date - hence we use FOR UPDATE NOWAIT to
+                    # try to get the lock - fail-fast
+                    # Failing to acquire the lock on the res_users row probably means
+                    # another request is holding it. No big deal, we don't want to
+                    # prevent/delay login in that case. It will also have been logged
+                    # as a SQL error, if anyone cares.
+                    try:
+                        cr.execute("SELECT id FROM res_users WHERE id=%s FOR UPDATE NOWAIT", (user_id,), log_exceptions=False)
+                        cr.execute("UPDATE res_users SET login_date = now() AT TIME ZONE 'UTC' WHERE id=%s", (user_id,))
+                    except Exception:
+                        _logger.debug("Failed to update last_login for db:%s login:%s", db, login, exc_info=True)
         except openerp.exceptions.AccessDenied:
             _logger.info("Login failed for db:%s login:%s", db, login)
             user_id = False
@@ -470,7 +488,7 @@ class res_users(osv.osv):
         self.check(cr.dbname, uid, old_passwd)
         if new_passwd:
             return self.write(cr, uid, uid, {'password': new_passwd})
-        raise osv.except_osv(_('Warning!'), _("Setting empty passwords is not allowed for security reasons!"))
+        raise ERPError(_('Warning!'), _("Setting empty passwords is not allowed for security reasons!"))
 
     def preference_save(self, cr, uid, ids, context=None):
         return {
@@ -485,21 +503,35 @@ class res_users(osv.osv):
             'target': 'new',
         }
 
-    def has_group(self, cr, uid, group_ext_id):
+    def has_group(self, cr, uid, ids, group_ext_id=None, context=None):
         """Checks whether user belongs to given group.
 
         :param str group_ext_id: external ID (XML ID) of the group.
            Must be provided in fully-qualified form (``module.ext_id``), as there
-           is no implicit module to use..
-        :return: True if the current user is a member of the group with the
+           is no implicit module to use.
+        :return: True if the current user, or all users in ids, is a member of the group with the
            given external ID (XML ID), else False.
+
+        bugfix: ids and context added so this method can be called from a browse_record;
+                to support direct table calls we check if ids is a string, and if so
+                move it to group_ext_id.
         """
-        assert group_ext_id and '.' in group_ext_id, "External ID must be fully qualified"
+        if isinstance(ids, basestring):
+            if group_ext_id is not None:
+                raise ERPError(_('Error'), _('group_ext_id cannot be a string if ids is'))
+            ids, group_ext_id = [uid], ids
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        if not isinstance(group_ext_id, basestring) or group_ext_id.count('.') != 1:
+            raise ERPError(_('Error'), _('External ID must be fully qualified ("module.ext_id", not %r)' % group_ext_id))
         module, ext_id = group_ext_id.split('.')
-        cr.execute("""SELECT 1 FROM res_groups_users_rel WHERE uid=%s AND gid IN
+        for uid in ids:
+            cr.execute("""SELECT 1 FROM res_groups_users_rel WHERE uid=%s AND gid IN
                         (SELECT res_id FROM ir_model_data WHERE module=%s AND name=%s)""",
                    (uid, module, ext_id))
-        return bool(cr.fetchone())
+            if not bool(cr.fetchone()):
+                return False
+        return True
 
 
 #
@@ -637,6 +669,7 @@ def is_reified_group(name):
 def get_boolean_group(name): return int(name[9:])
 def get_boolean_groups(name): return map(int, name[10:].split('_'))
 def get_selection_groups(name): return map(int, name[11:].split('_'))
+def get_reified_groups(name): return map(int, name.split('_', 2)[2].split('_'))
 
 def partition(f, xs):
     "return a pair equivalent to (filter(f, xs), filter(lambda x: not f(x), xs))"
@@ -835,5 +868,22 @@ class users_view(osv.osv):
                         'help': g.comment,
                     }
         return res
+
+    def search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False):
+        adjusted_args = []
+        for arg in args:
+            if not isinstance(arg, basestring) and isinstance(arg[0], basestring) and is_reified_group(arg[0]):
+                field, op, condition = arg
+                group_ids = get_reified_groups(field)
+                field = 'groups_id'
+                if condition in (True, False, 'false'):
+                    if condition != True:
+                        op = ('!=', '=')[op != '=']
+                    condition = group_ids
+                else:
+                    condition = int(condition)
+                arg = [field, op, condition]
+            adjusted_args.append(arg)
+        return super(users_view, self).search(cr, user, adjusted_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

@@ -11,7 +11,7 @@ class test_menu(common.TransactionCase):
            are indeed made orphans"""
         cr, uid, Menus = self.cr, self.uid, self.Menus
 
-        # Generic trick necessary for search() calls to avoid hidden menus 
+        # Generic trick necessary for search() calls to avoid hidden menus
         ctx = {'ir.ui.menu.full_list': True}
 
         root_id = Menus.create(cr, uid, {'name': 'Test root'})

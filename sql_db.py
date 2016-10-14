@@ -176,7 +176,7 @@ class Cursor(object):
         self.dbname = dbname
 
         # Whether to enable snapshot isolation level for this cursor.
-        # see also the docstring of Cursor.  
+        # see also the docstring of Cursor.
         self._serialized = serialized
 
         self._cnx = pool.borrow(dsn(dbname))
@@ -226,11 +226,23 @@ class Cursor(object):
             res = self._obj.execute(query, params)
         except psycopg2.ProgrammingError, pe:
             if self._default_log_exceptions if log_exceptions is None else log_exceptions:
+                pe = str(pe)
+                if len(pe) > 1000:
+                    pe = pe[:400] + ' . . . ' + pe[-250:]
+                query = str(query)
+                if len(query) > 1000:
+                    query = query[:400] + ' . . . ' + query[-250:]
                 _logger.error("Programming error: %s, in query %s", pe, query)
             raise
         except Exception:
             if self._default_log_exceptions if log_exceptions is None else log_exceptions:
-                _logger.exception("bad query: %s", self._obj.query or query)
+                query = str(self._obj.query or query)
+                if len(query) > 1000:
+                    query = query[:400] + ' . . . ' + query[-250:]
+                _logger.error('error in query')
+                _logger.error('query:  %r', query)
+                _logger.error('params: %r', params)
+                _logger.exception("stack trace:")
             raise
 
         if self.sql_log:
@@ -361,10 +373,10 @@ class PsycoConnection(psycopg2.extensions.connection):
 
 class ConnectionPool(object):
     """ The pool of connections to database(s)
-    
+
         Keep a set of connections to pg databases open, and reuse them
         to open cursors for all transactions.
-        
+
         The connections are *not* automatically closed. Only a close_db()
         can trigger that.
     """

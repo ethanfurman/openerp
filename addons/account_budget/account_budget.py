@@ -111,7 +111,7 @@ class crossovered_budget_lines(osv.osv):
     def _prac_amt(self, cr, uid, ids, context=None):
         res = {}
         result = 0.0
-        if context is None: 
+        if context is None:
             context = {}
         for line in self.browse(cr, uid, ids, context=context):
             acc_ids = [x.id for x in line.general_budget_id.account_ids]
@@ -141,7 +141,7 @@ class crossovered_budget_lines(osv.osv):
 
     def _theo_amt(self, cr, uid, ids, context=None):
         res = {}
-        if context is None: 
+        if context is None:
             context = {}
         for line in self.browse(cr, uid, ids, context=context):
             today = datetime.datetime.today()

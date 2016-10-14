@@ -6,7 +6,7 @@ _logger = logging.getLogger(__name__)
 
 
 def valid_page_in_book(arch):
-    """A `page` node must be below a `book` node."""
+    """A `page` node must be in a `notebook` node."""
     return not arch.xpath('//page[not(ancestor::notebook)]')
 
 

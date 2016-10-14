@@ -38,8 +38,8 @@ class workflow(osv.osv):
     }
 
     def write(self, cr, user, ids, vals, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         wf_service = netsvc.LocalService("workflow")
         wf_service.clear_cache(cr, user)
         return super(workflow, self).write(cr, user, ids, vals, context=context)
@@ -60,8 +60,8 @@ class workflow(osv.osv):
         return {'wkf': wkfinfo, 'workitems':  workitems}
 
     def create(self, cr, user, vals, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         wf_service = netsvc.LocalService("workflow")
         wf_service.clear_cache(cr, user)
         return super(workflow, self).create(cr, user, vals, context=context)

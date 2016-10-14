@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2010 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -85,15 +85,15 @@ class subscription_subscription(osv.osv):
         'state': lambda *a: 'draft'
     }
 
-    def _auto_end(self, cr, context=None):    
+    def _auto_end(self, cr, context=None):
         super(subscription_subscription, self)._auto_end(cr, context=context)
         # drop the FK from subscription to ir.cron, as it would cause deadlocks
         # during cron job execution. When model_copy() tries to write() on the subscription,
-        # it has to wait for an ExclusiveLock on the cron job record, but the latter 
+        # it has to wait for an ExclusiveLock on the cron job record, but the latter
         # is locked by the cron system for the duration of the job!
         # FIXME: the subscription module should be reviewed to simplify the scheduling process
         #        and to use a unique cron job for all subscriptions, so that it never needs to
-        #        be updated during its execution. 
+        #        be updated during its execution.
         cr.execute("ALTER TABLE %s DROP CONSTRAINT %s" % (self._table, '%s_cron_id_fkey' % self._table))
 
     def set_process(self, cr, uid, ids, context=None):

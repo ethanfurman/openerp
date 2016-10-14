@@ -2,7 +2,7 @@
 <openerp>
     <data>
 
-    
+
         <record id="res_company_form_l10n_fr_payroll" model="ir.ui.view">
             <field name="name">res.company.form.l10n.fr.payroll</field>
             <field name="model">res.company</field>

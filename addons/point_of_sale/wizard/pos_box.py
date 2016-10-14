@@ -9,8 +9,8 @@ class PosBox(CashBox):
     _register = False
 
     def run(self, cr, uid, ids, context=None):
-        if not context:
-            context = dict()
+        if context is None:
+            context = {}
 
         active_model = context.get('active_model', False) or False
         active_ids = context.get('active_ids', []) or []
@@ -31,10 +31,10 @@ class PosBoxIn(PosBox):
     _inherit = 'cash.box.in'
 
     def _compute_values_for_statement_line(self, cr, uid, box, record, context=None):
-        
+
         if context is None:
             context = {}
-    
+
         values = super(PosBoxIn, self)._compute_values_for_statement_line(cr, uid, box, record, context=context)
 
         active_model = context.get('active_model', False) or False

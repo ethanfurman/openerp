@@ -50,13 +50,13 @@ class pos_details(report_sxw.rml_parse):
                 result = {
                     'code': pol.product_id.default_code,
                     'name': pol.product_id.name,
-                    'invoice_id': pos.invoice_id.id, 
-                    'price_unit': pol.price_unit, 
-                    'qty': pol.qty, 
-                    'discount': pol.discount, 
-                    'total': (pol.price_unit * pol.qty * (1 - (pol.discount) / 100.0)), 
-                    'date_order': pos.date_order, 
-                    'pos_name': pos.name, 
+                    'invoice_id': pos.invoice_id.id,
+                    'price_unit': pol.price_unit,
+                    'qty': pol.qty,
+                    'discount': pol.discount,
+                    'total': (pol.price_unit * pol.qty * (1 - (pol.discount) / 100.0)),
+                    'date_order': pos.date_order,
+                    'pos_name': pos.name,
                     'uom': pol.product_id.uom_id.name
                 }
                 data.append(result)

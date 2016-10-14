@@ -352,7 +352,7 @@ class audittrail_objects_proxy(object_proxy):
                             if resource_id in field_resource_ids:
                                 field_resource_ids.remove(resource_id)
                         data.update(self.get_data(cr, SUPERUSER_ID, pool, field_resource_ids, x2m_model, method))
-    
+
             data[(model.id, resource_id)] = {'text':values_text, 'value': values}
         return data
 

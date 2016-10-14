@@ -44,7 +44,7 @@ class sale_order_line(osv.osv):
     }
 
     def product_id_change(self, cr, uid, ids,
-                          pricelist, 
+                          pricelist,
                           product, qty=0,
                           uom=False,
                           qty_uos=0,

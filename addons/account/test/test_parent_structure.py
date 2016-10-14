@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2010 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -42,8 +42,8 @@ for a in account_lists:
         assert a['parent_right'] < accounts[a['parent_id'][0]]['parent_right']
     assert a['parent_left'] < a['parent_right']
     for a2 in account_lists:
-        assert not ((a2['parent_right']>a['parent_left']) and 
-            (a2['parent_left']<a['parent_left']) and 
+        assert not ((a2['parent_right']>a['parent_left']) and
+            (a2['parent_left']<a['parent_left']) and
             (a2['parent_right']<a['parent_right']))
         if a2['parent_id']==a['id']:
             assert (a2['parent_left']>a['parent_left']) and (a2['parent_right']<a['parent_right'])

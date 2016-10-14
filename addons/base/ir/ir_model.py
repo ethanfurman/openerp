@@ -503,7 +503,7 @@ class ir_model_constraint(Model):
     def _module_data_uninstall(self, cr, uid, ids, context=None):
         """
         Delete PostgreSQL foreign keys and constraints tracked by this model.
-        """ 
+        """
 
         if uid != SUPERUSER_ID and not self.pool.get('ir.model.access').check_groups(cr, uid, "base.group_system"):
             raise except_orm(_('Permission Denied'), (_('Administrator access is required to uninstall a module')))
@@ -526,21 +526,22 @@ class ir_model_constraint(Model):
                 # as installed modules have defined this element we must not delete it!
                 continue
 
-            if typ == 'f':
-                # test if FK exists on this table (it could be on a related m2m table, in which case we ignore it)
-                cr.execute("""SELECT 1 from pg_constraint cs JOIN pg_class cl ON (cs.conrelid = cl.oid)
-                              WHERE cs.contype=%s and cs.conname=%s and cl.relname=%s""", ('f', name, model_obj._table))
-                if cr.fetchone():
-                    cr.execute('ALTER TABLE "%s" DROP CONSTRAINT "%s"' % (model_obj._table, name),)
-                    _logger.info('Dropped FK CONSTRAINT %s@%s', name, model)
+            if model_obj is not None:
+                if typ == 'f':
+                    # test if FK exists on this table (it could be on a related m2m table, in which case we ignore it)
+                    cr.execute("""SELECT 1 from pg_constraint cs JOIN pg_class cl ON (cs.conrelid = cl.oid)
+                                  WHERE cs.contype=%s and cs.conname=%s and cl.relname=%s""", ('f', name, model_obj._table))
+                    if cr.fetchone():
+                        cr.execute('ALTER TABLE "%s" DROP CONSTRAINT "%s"' % (model_obj._table, name),)
+                        _logger.info('Dropped FK CONSTRAINT %s@%s', name, model)
 
-            if typ == 'u':
-                # test if constraint exists
-                cr.execute("""SELECT 1 from pg_constraint cs JOIN pg_class cl ON (cs.conrelid = cl.oid)
-                              WHERE cs.contype=%s and cs.conname=%s and cl.relname=%s""", ('u', name, model_obj._table))
-                if cr.fetchone():
-                    cr.execute('ALTER TABLE "%s" DROP CONSTRAINT "%s"' % (model_obj._table, name),)
-                    _logger.info('Dropped CONSTRAINT %s@%s', name, model)
+                if typ == 'u':
+                    # test if constraint exists
+                    cr.execute("""SELECT 1 from pg_constraint cs JOIN pg_class cl ON (cs.conrelid = cl.oid)
+                                  WHERE cs.contype=%s and cs.conname=%s and cl.relname=%s""", ('u', name, model_obj._table))
+                    if cr.fetchone():
+                        cr.execute('ALTER TABLE "%s" DROP CONSTRAINT "%s"' % (model_obj._table, name),)
+                        _logger.info('Dropped CONSTRAINT %s@%s', name, model)
 
         self.unlink(cr, uid, ids, context)
 
@@ -564,7 +565,7 @@ class ir_model_relation(Model):
     def _module_data_uninstall(self, cr, uid, ids, context=None):
         """
         Delete PostgreSQL many2many relations tracked by this model.
-        """ 
+        """
 
         if uid != SUPERUSER_ID and not self.pool.get('ir.model.access').check_groups(cr, uid, "base.group_system"):
             raise except_orm(_('Permission Denied'), (_('Administrator access is required to uninstall a module')))
@@ -905,7 +906,7 @@ class ir_model_data(osv.osv):
 
     def _update(self,cr, uid, model, module, values, xml_id=False, store=True, noupdate=False, mode='init', res_id=False, context=None):
         model_obj = self.pool.get(model)
-        if not context:
+        if context is None:
             context = {}
         # records created during module install should not display the messages of OpenChatter
         context = dict(context, install_mode=True)
@@ -1019,13 +1020,16 @@ class ir_model_data(osv.osv):
         ``ids`` along with their corresponding database backed (including
         dropping tables, columns, FKs, etc, as long as there is no other
         ir.model.data entry holding a reference to them (which indicates that
-        they are still owned by another module). 
+        they are still owned by another module).
         Attempts to perform the deletion in an appropriate order to maximize
         the chance of gracefully deleting all records.
         This step is performed as part of the full uninstallation of a module.
-        """ 
+        """
 
-        ids = self.search(cr, uid, [('module', 'in', modules_to_remove)])
+        # TODO: add ability to remove records maintained via a function field;
+        #       so not a complete table drop, just selective deletion
+
+        module_ids = self.search(cr, uid, [('module', 'in', modules_to_remove)])
 
         if uid != 1 and not self.pool.get('ir.model.access').check_groups(cr, uid, "base.group_system"):
             raise except_orm(_('Permission Denied'), (_('Administrator access is required to uninstall a module')))
@@ -1033,12 +1037,12 @@ class ir_model_data(osv.osv):
         context = dict(context or {})
         context[MODULE_UNINSTALL_FLAG] = True # enable model/field deletion
 
-        ids_set = set(ids)
+        module_ids_set = set(module_ids)
         wkf_todo = []
         to_unlink = []
-        ids.sort()
-        ids.reverse()
-        for data in self.browse(cr, uid, ids, context):
+        module_ids.sort()
+        module_ids.reverse()
+        for data in self.browse(cr, uid, module_ids, context):
             model = data.model
             res_id = data.res_id
 
@@ -1064,7 +1068,7 @@ class ir_model_data(osv.osv):
         def unlink_if_refcount(to_unlink):
             for model, res_id in to_unlink:
                 external_ids = self.search(cr, uid, [('model', '=', model),('res_id', '=', res_id)])
-                if set(external_ids)-ids_set:
+                if set(external_ids)-module_ids_set:
                     # if other modules have defined this record, we must not delete it
                     continue
                 _logger.info('Deleting %s@%s', res_id, model)
@@ -1094,7 +1098,7 @@ class ir_model_data(osv.osv):
 
         cr.commit()
 
-        self.unlink(cr, uid, ids, context)
+        self.unlink(cr, uid, module_ids, context)
 
     def _process_end(self, cr, uid, modules):
         """ Clear records removed from updated module data.
@@ -1119,4 +1123,3 @@ class ir_model_data(osv.osv):
                     _logger.info('Deleting %s@%s', res_id, model)
                     self.pool.get(model).unlink(cr, uid, [res_id])
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

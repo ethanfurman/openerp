@@ -197,7 +197,7 @@ class procurement_order(osv.osv):
                 'location_id': orderpoint.location_id.id,
                 'procure_method': 'make_to_order',
                 'origin': orderpoint.name}
-        
+
     def _product_virtual_get(self, cr, uid, order_point):
         location_obj = self.pool.get('stock.location')
         return location_obj._product_virtual_get(cr, uid,
@@ -223,7 +223,7 @@ class procurement_order(osv.osv):
         if use_new_cursor:
             cr = pooler.get_db(use_new_cursor).cursor()
         orderpoint_obj = self.pool.get('stock.warehouse.orderpoint')
-        
+
         procurement_obj = self.pool.get('procurement.order')
         wf_service = netsvc.LocalService("workflow")
         offset = 0

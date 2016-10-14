@@ -635,7 +635,7 @@ class _rml_flowable(object):
                 if key in ('rml_except', 'rml_loop', 'rml_tag'):
                     del txt_n.attrib[key]
             if not n.tag == 'bullet':
-                if n.tag == 'pageNumber': 
+                if n.tag == 'pageNumber':
                     txt_n.text = self.canvas and str(self.canvas.getPageNumber()) or ''
                 else:
                     txt_n.text = utils.xml2str(self._textual(n))
@@ -953,8 +953,12 @@ class _rml_template(object):
         if self.localcontext.get('company'):
             pageSize = pagesize_map.get(self.localcontext.get('company').paper_format, A4)
         if node.get('pageSize'):
-            ps = map(lambda x:x.strip(), node.get('pageSize').replace(')', '').replace('(', '').split(','))
-            pageSize = ( utils.unit_get(ps[0]),utils.unit_get(ps[1]) )
+            ps = node.get('pageSize')
+            if ps in pagesize_map:
+                pageSize = pagesize_map[ps]
+            else:
+                ps = map(lambda x:x.strip(), node.get('pageSize').replace(')', '').replace('(', '').split(','))
+                pageSize = ( utils.unit_get(ps[0]),utils.unit_get(ps[1]) )
 
         self.doc_tmpl = TinyDocTemplate(out, pagesize=pageSize, **utils.attr_get(node, ['leftMargin','rightMargin','topMargin','bottomMargin'], {'allowSplitting':'int','showBoundary':'bool','rotation':'int','title':'str','author':'str'}))
         self.page_templates = []

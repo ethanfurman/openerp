@@ -62,6 +62,15 @@ def check_ssl():
 
 DEFAULT_LOG_HANDLER = [':INFO']
 
+def _get_logfile_name(option, opt_str, value, parser):
+    """
+    checks next arg to see if it is a filename; if not, stores True to option
+    """
+    value = True
+    if parser.rargs and not parser.rargs[0].startswith('-'):
+        value = parser.rargs.pop(0)
+    setattr(parser.values, option.dest, value)
+
 class configmanager(object):
     def __init__(self, fname=None):
         # Options not exposed on the command line. Command line options will be added
@@ -78,7 +87,7 @@ class configmanager(object):
         # Not exposed in the configuration file.
         self.blacklist_for_save = set(
             ['publisher_warranty_url', 'load_language', 'root_path',
-            'init', 'save', 'config', 'update', 'stop_after_init'])
+            'init', 'save', 'config', 'update', 'stop_after_init', 'logconsole'])
 
         # dictionary mapping option destination (keys in self.options) to MyOptions.
         self.casts = {}
@@ -169,6 +178,8 @@ class configmanager(object):
 
         # Testing Group
         group = optparse.OptionGroup(parser, "Testing Configuration")
+        group.add_option("--test-module", dest="test_module",
+                         help="Run a module's unit tests.")
         group.add_option("--test-file", dest="test_file", my_default=False,
                          help="Launch a YML test file.")
         group.add_option("--test-report-directory", dest="test_report_directory", my_default=False,
@@ -181,7 +192,8 @@ class configmanager(object):
 
         # Logging Group
         group = optparse.OptionGroup(parser, "Logging Configuration")
-        group.add_option("--logfile", dest="logfile", help="file where the server log will be stored")
+        group.add_option("--logfile", dest="logfile", action="callback", callback=_get_logfile_name,  help="file where the server log will be stored")
+        group.add_option("--console", dest="logconsole", action="store_true", my_default=False, help="log to console (can be used with --logfile)")
         group.add_option("--no-logrotate", dest="logrotate", action="store_false", my_default=True, help="do not rotate the logfile")
         group.add_option("--syslog", action="store_true", dest="syslog", my_default=False, help="Send the log to the syslog server")
         group.add_option('--log-handler', action="append", default=DEFAULT_LOG_HANDLER, my_default=DEFAULT_LOG_HANDLER, metavar="PREFIX:LEVEL", help='setup a handler at LEVEL for a given PREFIX. An empty PREFIX indicates the root logger. This option can be repeated. Example: "openerp.orm:DEBUG" or "werkzeug:CRITICAL" (default: ":INFO")')
@@ -308,8 +320,6 @@ class configmanager(object):
                     self.options[option.dest] = option.my_default
                     self.casts[option.dest] = option
 
-        self.parse_config(None, False)
-
     def parse_config(self, args=None, complete=True):
         """ Parse the configuration file (if any) and the command-line
         arguments.
@@ -330,6 +340,7 @@ class configmanager(object):
         """
         if args is None:
             args = []
+
         opt, args = self.parser.parse_args(args)
 
         def die(cond, msg):
@@ -370,7 +381,6 @@ class configmanager(object):
                 or os.environ.get('OPENERP_SERVER') or rcfilepath)
         self.load()
 
-
         # Verify that we want to log or not, if not the output will go to stdout
         if self.options['logfile'] in ('None', 'False'):
             self.options['logfile'] = False
@@ -380,11 +390,11 @@ class configmanager(object):
 
         # if defined dont take the configfile value even if the defined value is None
         keys = ['xmlrpc_interface', 'xmlrpc_port', 'db_name', 'db_user', 'db_password', 'db_host',
-                'db_port', 'db_template', 'logfile', 'pidfile', 'smtp_port',
+                'db_port', 'db_template', 'pidfile', 'smtp_port',
                 'email_from', 'smtp_server', 'smtp_user', 'smtp_password',
                 'netrpc_interface', 'netrpc_port', 'db_maxconn', 'import_partial', 'addons_path',
                 'netrpc', 'xmlrpc', 'syslog', 'without_demo', 'timezone',
-                'xmlrpcs_interface', 'xmlrpcs_port', 'xmlrpcs',
+                'xmlrpcs_interface', 'xmlrpcs_port', 'xmlrpcs', 'logconsole',
                 'static_http_enable', 'static_http_document_root', 'static_http_url_prefix',
                 'secure_cert_file', 'secure_pkey_file', 'dbfilter', 'log_handler', 'log_level'
                 ]
@@ -408,7 +418,7 @@ class configmanager(object):
             'debug_mode', 'smtp_ssl', 'load_language',
             'stop_after_init', 'logrotate', 'without_demo', 'netrpc', 'xmlrpc', 'syslog',
             'list_db', 'xmlrpcs', 'proxy_mode',
-            'test_file', 'test_enable', 'test_commit', 'test_report_directory',
+            'test_module', 'test_file', 'test_enable', 'test_commit', 'test_report_directory',
             'osv_memory_count_limit', 'osv_memory_age_limit', 'max_cron_threads', 'unaccent',
             'workers', 'limit_memory_hard', 'limit_memory_soft', 'limit_time_cpu', 'limit_time_real', 'limit_request'
         ]
@@ -416,6 +426,19 @@ class configmanager(object):
         for arg in keys:
             # Copy the command-line argument...
             if getattr(opt, arg) is not None:
+                self.options[arg] = getattr(opt, arg)
+            # ... or keep, but cast, the config file value.
+            elif isinstance(self.options[arg], basestring) and self.casts[arg].type in optparse.Option.TYPE_CHECKER:
+                self.options[arg] = optparse.Option.TYPE_CHECKER[self.casts[arg].type](self.casts[arg], arg, self.options[arg])
+
+        # if defined but True take the configfile value
+        keys = [
+            'logfile',
+        ]
+
+        for arg in keys:
+            # Copy the command-line argument...
+            if getattr(opt, arg) not in (None, True):
                 self.options[arg] = getattr(opt, arg)
             # ... or keep, but cast, the config file value.
             elif isinstance(self.options[arg], basestring) and self.casts[arg].type in optparse.Option.TYPE_CHECKER:
@@ -434,6 +457,14 @@ class configmanager(object):
         self.options['update'] = opt.update and dict.fromkeys(opt.update.split(','), 1) or {}
         self.options['translate_modules'] = opt.translate_modules and map(lambda m: m.strip(), opt.translate_modules.split(',')) or ['all']
         self.options['translate_modules'].sort()
+
+        # check that parameters requiring '-d' have '-d' specified
+        #if self.options['without_demo']:
+        #    die(not (self.options['init'] and self.options['db_name']), 'without_demo requires both init and a database to be specified')
+        #if self.options['init']:
+        #    die(not self.options['db_name'], 'init requires a database to be specified')
+        #if self.options['update']:
+        #    die(not self.options['db_name'], 'update requires a database to be specified')
 
         # TODO checking the type of the parameters should be done for every
         # parameters, not just the timezone.

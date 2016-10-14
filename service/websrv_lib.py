@@ -130,7 +130,7 @@ def list_http_services(protocol=None):
     for svc in handlers:
         if protocol is None or protocol == 'http' or svc.secure_only:
             ret.append((svc.path, str(svc.handler)))
-    
+
     return ret
 
 def find_http_service(path, secure=False):
@@ -190,7 +190,7 @@ class FixSendError:
         self.end_headers()
         if hasattr(self, '_flush'):
             self._flush()
-        
+
         if self.command != 'HEAD' and code >= 200 and code not in (204, 304):
             self.wfile.write(content)
 
@@ -208,7 +208,7 @@ class HttpOptions:
         self.send_response(200)
         self.send_header("Content-Length", 0)
         if 'Microsoft' in self.headers.get('User-Agent', ''):
-            self.send_header('MS-Author-Via', 'DAV') 
+            self.send_header('MS-Author-Via', 'DAV')
             # Microsoft's webdav lib ass-umes that the server would
             # be a FrontPage(tm) one, unless we send a non-standard
             # header that we are not an elephant.
@@ -223,9 +223,9 @@ class HttpOptions:
 
     def _prep_OPTIONS(self, opts):
         """Prepare the OPTIONS response, if needed
-        
+
         Sometimes, like in special DAV folders, the OPTIONS may contain
-        extra keywords, perhaps also dependant on the request url. 
+        extra keywords, perhaps also dependant on the request url.
         :param opts: MUST be copied before being altered
         :returns: the updated options.
 

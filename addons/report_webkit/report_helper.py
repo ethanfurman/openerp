@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
 #
-# Copyright (c) 2010 Camptocamp SA (http://www.camptocamp.com) 
+# Copyright (c) 2010 Camptocamp SA (http://www.camptocamp.com)
 # All Right Reserved
 #
 # Author : Nicolas Bessi (Camptocamp)
@@ -39,7 +39,7 @@ class WebKitHelper(object):
         self.uid = uid
         self.pool = pooler.get_pool(self.cursor.dbname)
         self.report_id = report_id
-        
+
     def embed_image(self, type, img, width=0, height=0) :
         "Transform a DB image into an embedded HTML image"
 
@@ -54,17 +54,17 @@ class WebKitHelper(object):
         toreturn = '<img %s %s src="data:image/%s;base64,%s" />'%(
             width,
             height,
-            type, 
+            type,
             str(img))
         return toreturn
-            
-            
+
+
     def get_logo_by_name(self, name):
         """Return logo by name"""
         header_obj = self.pool.get('ir.header_img')
         header_img_id = header_obj.search(
-                                            self.cursor, 
-                                            self.uid, 
+                                            self.cursor,
+                                            self.uid,
                                             [('name','=',name)]
                                         )
         if not header_img_id :
@@ -74,11 +74,11 @@ class WebKitHelper(object):
 
         head = header_obj.browse(self.cursor, self.uid, header_img_id)
         return (head.img, head.type)
-            
+
     def embed_logo_by_name(self, name, width=0, height=0):
         """Return HTML embedded logo by name"""
         img, type = self.get_logo_by_name(name)
         return self.embed_image(type, img, width, height)
-        
+
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

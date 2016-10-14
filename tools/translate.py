@@ -201,7 +201,7 @@ class GettextAlias(object):
                 lang = c.get('lang')
         if not lang:
             # Last resort: attempt to guess the language of the user
-            # Pitfall: some operations are performed in sudo mode, and we 
+            # Pitfall: some operations are performed in sudo mode, and we
             #          don't know the originial uid, so the language may
             #          be wrong when the admin language differs.
             pool = getattr(s, 'pool', None)
@@ -806,7 +806,7 @@ def trans_generate(lang, modules, cr):
             constraints = getattr(cls, '_local_' + cons_type, [])
             for constraint in constraints:
                 push_constraint_msg(module, term_type, model._name, constraint[msg_pos])
-            
+
     for (_, model, module) in cr.fetchall():
         model_obj = pool.get(model)
 

@@ -59,9 +59,9 @@ class multi_company_default(osv.osv):
         """
         Add (copy) in the name when duplicate record
         """
-        if not context:
+        if context is None:
             context = {}
-        if not default:
+        if default is None:
             default = {}
         company = self.browse(cr, uid, id, context=context)
         default = default.copy()
@@ -200,7 +200,7 @@ class res_company(osv.osv):
         """
         Check if the object for this company have a default value
         """
-        if not context:
+        if context is None:
             context = {}
         proxy = self.pool.get('multi_company.default')
         args = [

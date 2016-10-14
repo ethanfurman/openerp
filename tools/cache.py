@@ -4,96 +4,98 @@ class ormcache(object):
     """ LRU cache decorator for orm methods,
     """
 
-    def __init__(self, skiparg=2, size=8192, multi=None, timeout=None):
-        self.skiparg = skiparg
-        self.size = size
-        self.method = None
-        self.stat_miss = 0
-        self.stat_hit = 0
-        self.stat_err = 0
+    def __init__(cache, skiparg=2, size=8192, multi=None, timeout=None):
+        cache.skiparg = skiparg
+        cache.size = size
+        cache.method = None
+        cache.stat_miss = 0
+        cache.stat_hit = 0
+        cache.stat_err = 0
 
-    def __call__(self,m):
-        self.method = m
-        def lookup(self2, cr, *args):
-            r = self.lookup(self2, cr, *args)
+    def __call__(cache, m):
+        cache.method = m
+        def lookup(model, cr, *args):
+            r = cache.lookup(model, cr, *args)
             return r
-        lookup.clear_cache = self.clear
+        lookup.clear_cache = cache.clear
         return lookup
 
-    def stat(self):
-        return "lookup-stats hit=%s miss=%s err=%s ratio=%.1f" % (self.stat_hit,self.stat_miss,self.stat_err, (100*float(self.stat_hit))/(self.stat_miss+self.stat_hit) )
+    def stat(cache):
+        return "lookup-stats hit=%s miss=%s err=%s ratio=%.1f" % (
+                cache.stat_hit, cache.stat_miss, cache.stat_err, (100*float(cache.stat_hit))/(cache.stat_miss+cache.stat_hit)
+                )
 
-    def lru(self, self2):
+    def lru(cache, model):
         try:
-            ormcache = getattr(self2, '_ormcache')
+            ormcache = getattr(model, '_ormcache')
         except AttributeError:
-            ormcache = self2._ormcache = {}
+            ormcache = model._ormcache = {}
         try:
-            d = ormcache[self.method]
+            d = ormcache[cache.method]
         except KeyError:
-            d = ormcache[self.method] = lru.LRU(self.size)
+            d = ormcache[cache.method] = lru.LRU(cache.size)
         return d
 
-    def lookup(self, self2, cr, *args):
-        d = self.lru(self2)
-        key = args[self.skiparg-2:]
+    def lookup(cache, model, cr, *args):
+        d = cache.lru(model)
+        key = args[cache.skiparg-2:]
         try:
            r = d[key]
-           self.stat_hit += 1
+           cache.stat_hit += 1
            return r
         except KeyError:
-           self.stat_miss += 1
-           value = d[key] = self.method(self2, cr, *args)
+           cache.stat_miss += 1
+           value = d[key] = cache.method(model, cr, *args)
            return value
         except TypeError:
-           self.stat_err += 1
-           return self.method(self2, cr, *args)
+           cache.stat_err += 1
+           return cache.method(model, cr, *args)
 
-    def clear(self, self2, *args):
-        """ Remove *args entry from the cache or all keys if *args is undefined 
+    def clear(cache, model, *args):
+        """ Remove *args entry from the cache or all keys if *args is undefined
         """
-        d = self.lru(self2)
+        d = cache.lru(model)
         if args:
             try:
-                key = args[self.skiparg-2:]
+                key = args[cache.skiparg-2:]
                 del d[key]
-                self2.pool._any_cache_cleared = True
+                model.pool._any_cache_cleared = True
             except KeyError:
                 pass
         else:
             d.clear()
-            self2.pool._any_cache_cleared = True
+            model.pool._any_cache_cleared = True
 
 class ormcache_multi(ormcache):
-    def __init__(self, skiparg=2, size=8192, multi=3):
-        super(ormcache_multi,self).__init__(skiparg,size)
-        self.multi = multi - 2
+    def __init__(cache, skiparg=2, size=8192, multi=3):
+        super(ormcache_multi, cache).__init__(skiparg, size)
+        cache.multi = multi - 2
 
-    def lookup(self, self2, cr, *args):
-        d = self.lru(self2)
+    def lookup(cache, model, cr, *args):
+        d = cache.lru(model)
         args = list(args)
-        multi = self.multi
+        multi = cache.multi
         ids = args[multi]
         r = {}
         miss = []
 
         for i in ids:
             args[multi] = i
-            key = tuple(args[self.skiparg-2:])
+            key = tuple(args[cache.skiparg-2:])
             try:
                r[i] = d[key]
-               self.stat_hit += 1
+               cache.stat_hit += 1
             except Exception:
-               self.stat_miss += 1
+               cache.stat_miss += 1
                miss.append(i)
 
         if miss:
             args[multi] = miss
-            r.update(self.method(self2, cr, *args))
+            r.update(cache.method(model, cr, *args))
 
         for i in miss:
             args[multi] = i
-            key = tuple(args[self.skiparg-2:])
+            key = tuple(args[cache.skiparg-2:])
             d[key] = r[i]
 
         return r
@@ -111,29 +113,35 @@ class dummy_cache(object):
 
 if __name__ == '__main__':
 
-    class A():
+    class NS(object):
+        pass
+
+    class A(object):
+        def __init__(self):
+            self.pool = NS()
         @ormcache()
-        def m(self,a,b):
-            print  "A::m(", self,a,b
+        def m(self, a, b):
+            print  "A::m(", self, a, b, ")"
             return 1
 
         @ormcache_multi(multi=3)
-        def n(self,cr,uid,ids):
-            print  "m", self,cr,uid,ids
-            return dict([(i,i) for i in ids])
+        def n(self, cr, uid, ids):
+            print  "m", self, cr, uid, ids
+            return dict([(i, i) for i in ids])
 
     a=A()
-    r=a.m(1,2)
-    r=a.m(1,2)
-    r=a.n("cr",1,[1,2,3,4])
-    r=a.n("cr",1,[1,2])
-    print r
+    r = a.m(1, 2)
+    r = a.m(1, 2)
+    print
+    r = a.n("cr", 1, [1 ,2 ,3 ,4])
+    r = a.n("cr", 1, [1, 2])
+    print
     for i in a._ormcache:
         print a._ormcache[i].d
-    a.n.clear_cache(a,1,1)
-    r=a.n("cr",1,[1,2])
+    a.n.clear_cache(a, 1, 1)
+    r = a.n("cr", 1, [1, 2])
     print r
-    r=a.n("cr",1,[1,2])
+    r = a.n("cr", 1, [1 ,2])
 
 # For backward compatibility
 cache = ormcache

@@ -16,7 +16,7 @@ class EDI(openerpweb.Controller):
         js = "\n        ".join('<script type="text/javascript" src="%s"></script>' % i for i in webmain.manifest_list(req, modules_str, 'js'))
         css = "\n        ".join('<link rel="stylesheet" href="%s">' % i for i in webmain.manifest_list(req, modules_str, 'css'))
 
-        # `url` may contain a full URL with a valid query string, we basically want to watch out for XML brackets and double-quotes 
+        # `url` may contain a full URL with a valid query string, we basically want to watch out for XML brackets and double-quotes
         safe_url = urllib.quote_plus(url,':/?&;=')
 
         return webmain.html_template % {

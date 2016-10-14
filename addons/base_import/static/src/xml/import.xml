@@ -1,7 +1,7 @@
 <templates>
     <t t-name="ImportView">
         <t t-set="_id" t-value="_.uniqueId('export')"/>
-        <form action="" method="post" enctype="multipart/form-data" class="oe_import">
+        <form action="" method="post" enctype="multipart/form-data" class="oe_import oe_main_window">
             <div class="oe_view_manager oe_view_manager_current">
                 <div class="oe_view_manager_header oe_padding">
                     <h2>

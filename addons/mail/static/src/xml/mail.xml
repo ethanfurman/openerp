@@ -50,8 +50,8 @@
             <t t-if="!widget.options.view_mailbox">
                 <div class="field_text oe_compact oe_compact_record">
                     <a class="oe_compose_post" t-if="widget.options.compose_placeholder"><t t-raw="widget.options.compose_placeholder"/></a>
-                    <a class="oe_compose_post" t-if="!widget.options.compose_placeholder and !widget.options.view_mailbox">Send a message</a>
-                    <span class="oe_grey oe_sep_word">or</span>
+		    <!-- <a class="oe_compose_post" t-if="!widget.options.compose_placeholder and !widget.options.view_mailbox">Send a message</a>
+		    <span class="oe_grey oe_sep_word">or</span> -->
                     <a class="oe_compose_log">Log a note</a>
                 </div>
             </t>
@@ -157,7 +157,7 @@
         wall main template
         Template used to display the communication history in the wall.
         -->
-    <div t-name="mail.wall" class="oe_view_manager oe_mail_wall oe_view_manager_current">
+    <div t-name="mail.wall" class="oe_view_manager oe_mail_wall oe_view_manager_current oe_main_window">
         <table class="oe_view_manager_header">
           <colgroup>
             <col width="33%"/>
@@ -237,11 +237,11 @@
 
             <div class="oe_msg_center">
                 <div class='oe_msg_icons' t-if="!widget.options.readonly">
-                    <span class='oe_read' t-if="widget.options.show_read"><a title="Done" class="oe_e">W</a></span>
-                    <span class='oe_unread' t-if="widget.is_favorite and widget.options.show_unread"><a title="Set back to Todo" class="oe_e">v</a></span>
-                    <span class='oe_unread' t-if="!widget.is_favorite and widget.options.show_unread"><a title="Move to Inbox" class="oe_e">v</a></span>
+                    <span class='oe_read' t-if="widget.options.show_read"><a title="Done/Move to Prior" class="oe_e">W</a></span>
+                    <span class='oe_unread' t-if="widget.is_favorite and widget.options.show_unread"><a title="Set back to To-do" class="oe_e">v</a></span>
+                    <span class='oe_unread' t-if="!widget.is_favorite and widget.options.show_unread"><a title="Move to New" class="oe_e">v</a></span>
                     <span class='oe_reply' t-if="widget.options.show_reply_button"><a title="Reply" class="oe_e">(</a></span>
-                    <span t-attf-class="oe_star #{widget.is_favorite?'oe_starred':''}"><a title="Mark as Todo" class="oe_e">7</a></span>
+                    <span t-attf-class="oe_star #{widget.is_favorite?'oe_starred':''}"><a title="Mark as To-do" class="oe_e">7</a></span>
                 </div>
                 <!-- message itself -->
                 <div class="oe_msg_content">

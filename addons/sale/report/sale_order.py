@@ -27,13 +27,13 @@ class order(report_sxw.rml_parse):
     def __init__(self, cr, uid, name, context=None):
         super(order, self).__init__(cr, uid, name, context=context)
         self.localcontext.update({
-            'time': time, 
+            'time': time,
             'show_discount':self._show_discount,
         })
 
     def _show_discount(self, uid, context=None):
         cr = self.cr
-        try: 
+        try:
             group_id = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'sale', 'group_discount_per_so_line')[1]
         except:
             return False

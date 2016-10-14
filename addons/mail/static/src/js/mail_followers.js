@@ -223,14 +223,19 @@ openerp_mail_followers = function(session, mail) {
             var nb_subtype = 0;
             subtype_list_ul.empty();
             if (data[id]) {
-                records = data[id].message_subtype_data;
-            }
-            _(records).each(function (record) {nb_subtype++;});
+                records_obj = data[id].message_subtype_data;
+                for(var property in records_obj) {
+                    if (records_obj.hasOwnProperty(property)) {
+                        nb_subtype++;
+                        record = records_obj[property];
+                        record.name = property;
+                        record.followed = record.followed || undefined;
+                        records.push(record);
+            }}}
+            records.sort(function(a, b){return a.seq - b.seq});
             if (nb_subtype > 1) {
                 this.$('hr').show();
                 _(records).each(function (record, record_name) {
-                    record.name = record_name;
-                    record.followed = record.followed || undefined;
                     $(session.web.qweb.render('mail.followers.subtype', {'record': record})).appendTo( self.$('.oe_subtype_list') );
                 });
             } else {

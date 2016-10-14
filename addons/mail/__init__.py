@@ -34,5 +34,6 @@ import res_config
 import mail_group_menu
 import update
 import controllers
+import ir_cron
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

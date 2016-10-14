@@ -34,7 +34,7 @@ def get_journal(self, cr, uid, context=None):
          @param context: A standard dictionary
          @return :Return the list of journal
     """
-    
+
     journal_obj = self.pool.get('account.journal')
     statement_obj = self.pool.get('account.bank.statement')
 
@@ -84,7 +84,7 @@ class pos_box_entries(osv.osv_memory):
 
         #import pdb
         #pdb.set_trace()
-        if not context:
+        if context is None:
             context = {}
         result = context.get('active_id', False) or False
 

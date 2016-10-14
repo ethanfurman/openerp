@@ -31,7 +31,7 @@ class account_journal(osv.osv):
     _inherit = 'account.journal'
 
     def search(self, cr, uid, args, offset=0, limit=None, order=None, context=None, count=False):
-        if not context:
+        if context is None:
             context = {}
         session_id = context.get('pos_session_id', False) or False
 
@@ -97,7 +97,7 @@ class pos_make_payment(osv.osv_memory):
         }
 
     def _default_journal(self, cr, uid, context=None):
-        if not context:
+        if context is None:
             context = {}
         session = False
         order_obj = self.pool.get('pos.order')

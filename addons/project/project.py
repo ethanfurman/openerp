@@ -183,9 +183,10 @@ class project(osv.osv):
             elif proj.alias_id:
                 alias_ids.append(proj.alias_id.id)
         res =  super(project, self).unlink(cr, uid, ids, context=context)
-        mail_alias.unlink(cr, uid, alias_ids, context=context)
+        # if user can delete project, then remove aliases
+        mail_alias.unlink(cr, SUPERUSER_ID, alias_ids, context=context)
         return res
-    
+
     def _get_attached_docs(self, cr, uid, ids, field_name, arg, context):
         res = {}
         attachment = self.pool.get('ir.attachment')
@@ -196,7 +197,7 @@ class project(osv.osv):
             task_attachments = attachment.search(cr, uid, [('res_model', '=', 'project.task'), ('res_id', 'in', task_ids)], context=context, count=True)
             res[id] = (project_attachments or 0) + (task_attachments or 0)
         return res
-        
+
     def _task_count(self, cr, uid, ids, field_name, arg, context=None):
         res = dict.fromkeys(ids, 0)
         task_ids = self.pool.get('project.task').search(cr, uid, [('project_id', 'in', ids)])
@@ -211,10 +212,10 @@ class project(osv.osv):
     def attachment_tree_view(self, cr, uid, ids, context):
         task_ids = self.pool.get('project.task').search(cr, uid, [('project_id', 'in', ids)])
         domain = [
-             '|', 
-             '&', ('res_model', '=', 'project.project'), ('res_id', 'in', ids),
-             '&', ('res_model', '=', 'project.task'), ('res_id', 'in', task_ids)
-		]
+            '|',
+            '&', ('res_model', '=', 'project.project'), ('res_id', 'in', ids),
+            '&', ('res_model', '=', 'project.task'), ('res_id', 'in', task_ids)
+            ]
         res_id = ids and ids[0] or False
         return {
             'name': _('Attachments'),

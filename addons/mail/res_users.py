@@ -37,6 +37,8 @@ class res_users(osv.Model):
         'alias_id': fields.many2one('mail.alias', 'Alias', ondelete="cascade", required=True,
             help="Email address internally associated with this user. Incoming "\
                  "emails will appear in the user's notifications."),
+        # TODO: look at combining proxy email and group mail alias (20151202-eaf)
+        'is_mail_group_proxy': fields.boolean('Mail Group proxy?'),
     }
 
     _defaults = {
@@ -69,17 +71,21 @@ class res_users(osv.Model):
             raise osv.except_osv(_('Invalid Action!'), _('You may not create a user. To create new users, you should use the "Settings > Users" menu.'))
 
         mail_alias = self.pool.get('mail.alias')
-        alias_id = mail_alias.create_unique_alias(cr, uid, {'alias_name': data['login']}, model_name=self._name, context=context)
-        data['alias_id'] = alias_id
+        need_alias_and_welcome = False
+        if not data.get('alias_id'):
+            need_alias_and_welcome = True
+            alias_id = mail_alias.create_unique_alias(cr, uid, {'alias_name': data['login']}, model_name=self._name, context=context)
+            data['alias_id'] = alias_id
         data.pop('alias_name', None)  # prevent errors during copy()
 
         # create user
         user_id = super(res_users, self).create(cr, uid, data, context=context)
         user = self.browse(cr, uid, user_id, context=context)
-        # alias
-        mail_alias.write(cr, SUPERUSER_ID, [alias_id], {"alias_force_thread_id": user_id}, context)
-        # create a welcome message
-        self._create_welcome_message(cr, uid, user, context=context)
+        if need_alias_and_welcome:
+            # alias
+            mail_alias.write(cr, SUPERUSER_ID, [alias_id], {"alias_force_thread_id": user_id}, context)
+            # create a welcome message
+            self._create_welcome_message(cr, uid, user, context=context)
         return user_id
 
     def _create_welcome_message(self, cr, uid, user, context=None):
@@ -99,11 +105,27 @@ class res_users(osv.Model):
 
     def unlink(self, cr, uid, ids, context=None):
         # Cascade-delete mail aliases as well, as they should not exist without the user.
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         alias_pool = self.pool.get('mail.alias')
         alias_ids = [user.alias_id.id for user in self.browse(cr, uid, ids, context=context) if user.alias_id]
         res = super(res_users, self).unlink(cr, uid, ids, context=context)
-        alias_pool.unlink(cr, uid, alias_ids, context=context)
+        alias_pool.unlink(cr, SUPERUSER_ID, alias_ids, context=context)
         return res
+
+    def message_notify(self, cr, uid, ids, context=None, **values):
+        """
+        Send notification to user(s)
+        """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        mail_message = self.pool.get('mail.message')
+        mail_message_subtype = self.pool.get('mail.message.subtype')
+        [discussion_id] = mail_message_subtype.search(cr, SUPERUSER_ID, [('name','=','Discussions')])
+        users = self.browse(cr, uid, ids, context=context)
+        values['subtype_id'] = discussion_id
+        values['partner_ids'] = [(4, u.partner_id.id) for u in users]
+        mail_message.create(cr, uid, values, context=context)
 
     def _message_post_get_pid(self, cr, uid, thread_id, context=None):
         assert thread_id, "res.users does not support posting global messages"
@@ -121,12 +143,16 @@ class res_users(osv.Model):
         return self.pool.get('res.partner').message_post(cr, uid, partner_id, context=context, **kwargs)
 
     def message_update(self, cr, uid, ids, msg_dict, update_vals=None, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         for id in ids:
             partner_id = self.browse(cr, SUPERUSER_ID, id).partner_id.id
             self.pool.get('res.partner').message_update(cr, uid, [partner_id], msg_dict, update_vals=update_vals, context=context)
         return True
 
     def message_subscribe(self, cr, uid, ids, partner_ids, subtype_ids=None, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         for id in ids:
             partner_id = self.browse(cr, SUPERUSER_ID, id).partner_id.id
             self.pool.get('res.partner').message_subscribe(cr, uid, [partner_id], partner_ids, subtype_ids=subtype_ids, context=context)
@@ -136,10 +162,39 @@ class res_users(osv.Model):
         return self.pool.get('res.partner').message_get_partner_info_from_emails(cr, uid, emails, link_mail=link_mail, context=context)
 
     def message_get_suggested_recipients(self, cr, uid, ids, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_ids = []
         for id in ids:
             partner_ids.append(self.browse(cr, SUPERUSER_ID, id).partner_id.id)
         return self.pool.get('res.partner').message_get_suggested_recipients(cr, uid, partner_ids, context=context)
+
+    #------------------------------------------------------
+    # Tools
+    #------------------------------------------------------
+
+    def check_email(self, cr, uid, ids, context=None):
+        """
+        Verify that selected user_ids have an email_address defined.
+        Otherwise throw a warning.
+        """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        user_wo_email_lst = []
+        for user in self.browse(cr, uid, ids, context=context):
+            if not user.email:
+                user_wo_email_lst.append(user)
+        if not user_wo_email_lst:
+            return {}
+        warning_msg = _('The following users have no email address:')
+        for user in user_wo_email_lst:
+            warning_msg += '\n- %s' % (user.name)
+        return {'warning': {
+                    'title': _('Email addresses not found'),
+                    'message': warning_msg,
+                    }
+                }
+
 
     #------------------------------------------------------
     # Compatibility methods: do not use
@@ -167,6 +222,8 @@ class res_users_mail_group(osv.Model):
 
     # FP Note: to improve, post processing may be better ?
     def write(self, cr, uid, ids, vals, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         write_res = super(res_users_mail_group, self).write(cr, uid, ids, vals, context=context)
         if vals.get('groups_id'):
             # form: {'group_ids': [(3, 10), (3, 3), (4, 10), (4, 3)]} or {'group_ids': [(6, 0, [ids]}
@@ -187,6 +244,8 @@ class res_groups_mail_group(osv.Model):
 
     # FP Note: to improve, post processeing, after the super may be better
     def write(self, cr, uid, ids, vals, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         write_res = super(res_groups_mail_group, self).write(cr, uid, ids, vals, context=context)
         if vals.get('users'):
             # form: {'group_ids': [(3, 10), (3, 3), (4, 10), (4, 3)]} or {'group_ids': [(6, 0, [ids]}

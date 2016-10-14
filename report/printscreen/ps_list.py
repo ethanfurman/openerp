@@ -61,9 +61,9 @@ class report_printscreen_list(report_int):
         return self._parse_node(dom)
 
     def create(self, cr, uid, ids, datas, context=None):
-        if not context:
-            context={}
-        self.cr=cr
+        if context is None:
+            context = {}
+        self.cr = cr
         self.context = context
         self.groupby = context.get('group_by',[])
         self.groupby_no_leaf = context.get('group_by_no_leaf',False)

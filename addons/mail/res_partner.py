@@ -20,6 +20,7 @@
 ##############################################################################
 from openerp.tools.translate import _
 from openerp.osv import fields, osv
+from openerp import SUPERUSER_ID
 
 
 class res_partner_mail(osv.Model):
@@ -51,6 +52,26 @@ class res_partner_mail(osv.Model):
         for partner in self.browse(cr, uid, ids, context=context):
             self._message_add_suggested_recipient(cr, uid, recipients, partner, partner=partner, reason=_('Partner Profile'))
         return recipients
+
+    def message_notify(self, cr, uid, ids, subject, body, context=None):
+        """
+        Send notification to user(s)
+        """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        mail_message = self.pool.get('mail.message')
+        mail_message_subtype = self.pool.get('mail.message.subtype')
+        [discussion_id] = mail_message_subtype.search(cr, SUPERUSER_ID, [('name','=','Discussions')], context=context)
+        mail_message.create(
+                cr, uid,
+                values=dict(
+                    type='email',
+                    subtype_id=discussion_id,
+                    partner_ids=[(4, id) for id in ids],
+                    subject=subject,
+                    body=body,
+                    ),
+                context=context)
 
     def message_post(self, cr, uid, thread_id, **kwargs):
         """ Override related to res.partner. In case of email message, set it as

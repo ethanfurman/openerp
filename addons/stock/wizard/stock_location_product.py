@@ -26,10 +26,10 @@ class stock_location_product(osv.osv_memory):
     _name = "stock.location.product"
     _description = "Products by Location"
     _columns = {
-        'from_date': fields.datetime('From'), 
+        'from_date': fields.datetime('From'),
         'to_date': fields.datetime('To'),
         'type': fields.selection([('inventory','Analyse Current Inventory'),
-            ('period','Analyse a Period')], 'Analyse Type', required=True), 
+            ('period','Analyse a Period')], 'Analyse Type', required=True),
     }
 
     def action_open_window(self, cr, uid, ids, context=None):
@@ -38,7 +38,7 @@ class stock_location_product(osv.osv_memory):
          @param cr: A database cursor
          @param uid: ID of the user currently logged in
          @param ids: An ID or list of IDs (but only the first ID will be processed)
-         @param context: A standard dictionary 
+         @param context: A standard dictionary
          @return: Invoice type
         """
         if context is None:

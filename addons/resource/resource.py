@@ -286,7 +286,7 @@ class resource_calendar(osv.osv):
         interval_start = utc_to_local_zone(dt_from)
         interval_end = utc_to_local_zone(dt_to)
         hours_timedelta = timedelta()
-    
+
         # Get leaves for requested resource
         dt_leaves = set([])
         if exclude_leaves and id:
@@ -310,10 +310,10 @@ class resource_calendar(osv.osv):
                 # case 2 & 4: adjust start, end to fit within interval
                 daytime_start = max(daytime_start, interval_start)
                 daytime_end = min(daytime_end, interval_end)
-                
+
                 # case 2+, 4+, 3
                 hours_timedelta += (daytime_end - daytime_start)
-                
+
         # return timedelta converted to hours
         return (hours_timedelta.days * 24.0 + hours_timedelta.seconds / 3600.0)
 

@@ -61,7 +61,7 @@ class hr_recruitment_report(osv.osv):
         'salary_prop' : fields.float("Salary Proposed", digits_compute=dp.get_precision('Account')),
         'salary_prop_avg' : fields.float("Avg. Proposed Salary", group_operator="avg", digits_compute=dp.get_precision('Account')),
         'salary_exp' : fields.float("Salary Expected", digits_compute=dp.get_precision('Account')),
-        'salary_exp_avg' : fields.float("Avg. Expected Salary", group_operator="avg", digits_compute=dp.get_precision('Account')),        
+        'salary_exp_avg' : fields.float("Avg. Expected Salary", group_operator="avg", digits_compute=dp.get_precision('Account')),
         'partner_id': fields.many2one('res.partner', 'Partner',readonly=True),
         'available': fields.float("Availability"),
         'delay_close': fields.float('Avg. Delay to Close', digits=(16,2), readonly=True, group_operator="avg",

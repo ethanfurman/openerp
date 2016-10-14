@@ -104,7 +104,7 @@ class res_partner_category(osv.osv):
     def name_search(self, cr, uid, name, args=None, operator='ilike', context=None, limit=100):
         if not args:
             args = []
-        if not context:
+        if context is None:
             context = {}
         if name:
             # Be sure name_search is symetric to name_get
@@ -413,15 +413,14 @@ class res_partner(osv.osv, format_address):
             context = {}
         if isinstance(ids, (int, long)):
             ids = [ids]
+        combine_company = context.get('combine_company', True)
         res = []
         for record in self.browse(cr, uid, ids, context=context):
             name = record.name
-            if record.parent_id:
+            if record.parent_id and combine_company:
                 name =  "%s (%s)" % (name, record.parent_id.name)
             if context.get('show_address'):
-                name = name + "\n" + self._display_address(cr, uid, record, without_company=True, context=context)
-                name = name.replace('\n\n','\n')
-                name = name.replace('\n\n','\n')
+                name = name + "\n" + self._display_address(cr, uid, record, without_company=combine_company, context=context)
             if context.get('show_email') and record.email:
                 name = "%s <%s>" % (name, record.email)
             res.append((record.id, name))
@@ -583,6 +582,8 @@ class res_partner(osv.osv, format_address):
             args['company_name'] = ''
         elif address.parent_id:
             address_format = '%(company_name)s\n' + address_format
-        return address_format % args
+        address = address_format % args
+        address = '\n'.join([line for line in address.split('\n') if line])
+        return address
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

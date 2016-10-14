@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2009 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -172,7 +172,7 @@ def create_db(uri, dbname, user='admin', pwd='admin', lang='en_US'):
     if dbname in db_list:
         drop_db(uri, dbname)
     id = execute(conn,'create',admin_passwd, dbname, True, lang)
-    wait(id,uri)    
+    wait(id,uri)
     install_module(uri, dbname, ['base_module_quality'],user=user,pwd=pwd)
     return True
 
@@ -187,7 +187,7 @@ def make_links(uri, uid, dbname, source, destination, module, user, pwd):
     if module in ('base','quality_integration_server'):
         return True
     if os.path.islink(destination + '/' + module):
-        os.unlink(destination + '/' + module)                
+        os.unlink(destination + '/' + module)
     for path in source:
         if os.path.isdir(path + '/' + module):
             os.symlink(path + '/' + module, destination + '/' + module)

@@ -93,6 +93,8 @@ class mail_mail(osv.Model):
 
     def unlink(self, cr, uid, ids, context=None):
         # cascade-delete the parent message for all mails that are not created for a notification
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         ids_to_cascade = self.search(cr, uid, [('notification', '=', False), ('id', 'in', ids)])
         parent_msg_ids = [m.mail_message_id.id for m in self.browse(cr, uid, ids_to_cascade, context=context)]
         res = super(mail_mail, self).unlink(cr, uid, ids, context=context)
@@ -270,6 +272,8 @@ class mail_mail(osv.Model):
                 If not specified, one email is sent to mail_mail.email_to.
             :return: True
         """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         ir_mail_server = self.pool.get('ir.mail_server')
         for mail in self.browse(cr, uid, ids, context=context):
             try:

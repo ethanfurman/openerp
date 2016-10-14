@@ -5,7 +5,6 @@
 import ast
 import cgi
 import contextlib
-import functools
 import getpass
 import logging
 import mimetypes
@@ -26,6 +25,7 @@ import simplejson
 import werkzeug.contrib.sessions
 import werkzeug.datastructures
 import werkzeug.exceptions
+import werkzeug.routing
 import werkzeug.utils
 import werkzeug.wrappers
 import werkzeug.wsgi
@@ -103,6 +103,7 @@ class WebRequest(object):
         forwarded = self.httprequest.environ.get('HTTP_X_FORWARDED_FOR', None)
         if forwarded:
             threading.current_thread().clientip = forwarded
+            _logger.info('connection forwarded from %s' % forwarded)
         self.session.__client_address__ = forwarded or self.httprequest.remote_addr
         self.context = self.params.pop('context', {})
         self.context['HTTP_X_FORWARDED_FOR'] = forwarded
@@ -222,7 +223,7 @@ class JsonRequest(WebRequest):
                     'type': 'server_exception',
                     'fault_code': e.faultCode,
                     'debug': "Client %s\nServer %s" % (
-                    "".join(traceback.format_exception("", None, sys.exc_traceback)), e.faultString)
+                    "".join(traceback.format_exception("", None, sys.exc_info()[2])), e.faultString)
                 }
             }
         except Exception:
@@ -299,7 +300,7 @@ class HttpRequest(WebRequest):
             })))
         except Exception:
             logging.getLogger(__name__ + '.HttpRequest.dispatch').exception(
-                    "An error occurred while handling a json request")
+                    "An error occurred while handling a http request")
             r = werkzeug.exceptions.InternalServerError(cgi.escape(simplejson.dumps({
                 'code': 300,
                 'message': "OpenERP WebClient Error",
@@ -340,6 +341,7 @@ class HttpRequest(WebRequest):
         """
         return werkzeug.exceptions.NotFound(description)
 
+
 def httprequest(f):
     """ Decorator marking the decorated method as being a handler for a
     normal HTTP request (the exact request path is specified via the
@@ -354,6 +356,18 @@ def httprequest(f):
     return f
 
 #----------------------------------------------------------
+# Exceptions
+#----------------------------------------------------------
+
+class SeeOtherRedirect(werkzeug.routing.RequestRedirect):
+
+    code = 303
+
+    def get_response(self, environ):
+        return werkzeug.utils.redirect(self.new_url, 303)
+
+
+#----------------------------------------------------------
 # Controller registration with a metaclass
 #----------------------------------------------------------
 addons_module = {}
@@ -366,6 +380,13 @@ class ControllerType(type):
     def __init__(cls, name, bases, attrs):
         super(ControllerType, cls).__init__(name, bases, attrs)
         controllers_class.append(("%s.%s" % (cls.__module__, cls.__name__), cls))
+        if controllers_path:
+            _logger.error('Controller %s will not be active.', cls.__name__)
+            file_path = os.path.split(sys.modules[cls.__module__].__file__)[0]
+            static_path = os.path.join(file_path, 'static')
+            if not os.path.exists(static_path):
+                _logger.error('%s is missing', '/'.join(static_path.split(os.path.sep)[-3:]))
+
 
 class Controller(object):
     __metaclass__ = ControllerType

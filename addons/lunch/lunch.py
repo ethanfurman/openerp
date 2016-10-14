@@ -28,7 +28,7 @@ from openerp import tools
 from openerp.tools.translate import _
 
 class lunch_order(osv.Model):
-    """ 
+    """
     lunch order (contains one or more lunch order line(s))
     """
     _name = 'lunch.order'
@@ -36,7 +36,7 @@ class lunch_order(osv.Model):
     _order = 'date desc'
 
     def _price_get(self, cr, uid, ids, name, arg, context=None):
-        """ 
+        """
         get and sum the order lines' price
         """
         result = dict.fromkeys(ids, 0)
@@ -46,7 +46,7 @@ class lunch_order(osv.Model):
         return result
 
     def _fetch_orders_from_lines(self, cr, uid, ids, name, context=None):
-        """ 
+        """
         return the list of lunch orders to which belong the order lines `ids´
         """
         result = set()
@@ -56,7 +56,7 @@ class lunch_order(osv.Model):
         return list(result)
 
     def add_preference(self, cr, uid, ids, pref_id, context=None):
-        """ 
+        """
         create a new order line based on the preference selected (pref_id)
         """
         assert len(ids) == 1
@@ -76,8 +76,8 @@ class lunch_order(osv.Model):
         return orderline_ref.create(cr, uid, new_order_line, context=context)
 
     def _alerts_get(self, cr, uid, ids, name, arg, context=None):
-        """ 
-        get the alerts to display on the order form 
+        """
+        get the alerts to display on the order form
         """
         result = {}
         alert_msg = self._default_alerts_get(cr, uid, context=context)
@@ -87,10 +87,10 @@ class lunch_order(osv.Model):
         return result
 
     def check_day(self, alert):
-        """ 
+        """
         This method is used by can_display_alert
         to check if the alert day corresponds
-        to the current day 
+        to the current day
         """
         today = datetime.now().isoweekday()
         assert 1 <= today <= 7, "Should be between 1 and 7"
@@ -98,7 +98,7 @@ class lunch_order(osv.Model):
         return alert[mapping[today]]
 
     def can_display_alert(self, alert):
-        """ 
+        """
         This method check if the alert can be displayed today
         """
         if alert.alter_type == 'specific':
@@ -110,7 +110,7 @@ class lunch_order(osv.Model):
         return True # alter_type == 'days' (every day)
 
     def _default_alerts_get(self, cr, uid, context=None):
-        """ 
+        """
         get the alerts to display on the order form
         """
         alert_ref = self.pool.get('lunch.alert')
@@ -149,10 +149,10 @@ class lunch_order(osv.Model):
         return res
 
     def __getattr__(self, attr):
-        """ 
+        """
         this method catch unexisting method call and if it starts with
-        add_preference_'n' we execute the add_preference method with 
-        'n' as parameter 
+        add_preference_'n' we execute the add_preference method with
+        'n' as parameter
         """
         if attr.startswith('add_preference_'):
             pref_id = int(attr[15:])
@@ -162,8 +162,8 @@ class lunch_order(osv.Model):
         return super(lunch_order,self).__getattr__(self,attr)
 
     def fields_view_get(self, cr, uid, view_id=None, view_type=False, context=None, toolbar=False, submenu=False):
-        """ 
-        Add preferences in the form view of order.line 
+        """
+        Add preferences in the form view of order.line
         """
         res = super(lunch_order,self).fields_view_get(cr, uid, view_id=view_id, view_type=view_type, context=context, toolbar=toolbar, submenu=submenu)
         line_ref = self.pool.get("lunch.order.line")
@@ -310,7 +310,7 @@ class lunch_order(osv.Model):
 
 
 class lunch_order_line(osv.Model):
-    """ 
+    """
     lunch order line: one lunch order can have many order lines
     """
     _name = 'lunch.order.line'
@@ -323,7 +323,7 @@ class lunch_order_line(osv.Model):
         return {'value': {'price': 0.0}}
 
     def order(self, cr, uid, ids, context=None):
-        """ 
+        """
         The order_line is ordered to the supplier but isn't received yet
         """
         for order_line in self.browse(cr, uid, ids, context=context):
@@ -331,8 +331,8 @@ class lunch_order_line(osv.Model):
         return self._update_order_lines(cr, uid, ids, context=context)
 
     def confirm(self, cr, uid, ids, context=None):
-        """ 
-        confirm one or more order line, update order status and create new cashmove 
+        """
+        confirm one or more order line, update order status and create new cashmove
         """
         cashmove_ref = self.pool.get('lunch.cashmove')
         for order_line in self.browse(cr, uid, ids, context=context):
@@ -379,7 +379,7 @@ class lunch_order_line(osv.Model):
             cash_ids = [cash.id for cash in order_line.cashmove]
             cashmove_ref.unlink(cr, uid, cash_ids, context=context)
         return self._update_order_lines(cr, uid, ids, context=context)
-    
+
     def _get_line_order_ids(self, cr, uid, ids, context=None):
         """
         return the list of lunch.order.lines ids to which belong the  lunch.order 'ids'
@@ -395,7 +395,7 @@ class lunch_order_line(osv.Model):
         'order_id': fields.many2one('lunch.order', 'Order', ondelete='cascade'),
         'product_id': fields.many2one('lunch.product', 'Product', required=True),
         'date': fields.related('order_id', 'date', type='date', string="Date", readonly=True, store={
-            'lunch.order': (_get_line_order_ids, ['date'], 10), 
+            'lunch.order': (_get_line_order_ids, ['date'], 10),
             'lunch.order.line': (lambda self, cr, uid, ids, ctx: ids, [], 10),
             }),
         'supplier': fields.related('product_id', 'supplier', type='many2one', relation='res.partner', string="Supplier", readonly=True, store=True),
@@ -416,8 +416,8 @@ class lunch_order_line(osv.Model):
 
 
 class lunch_product(osv.Model):
-    """ 
-    lunch product 
+    """
+    lunch product
     """
     _name = 'lunch.product'
     _description = 'lunch product'
@@ -430,8 +430,8 @@ class lunch_product(osv.Model):
     }
 
 class lunch_product_category(osv.Model):
-    """ 
-    lunch product category 
+    """
+    lunch product category
     """
     _name = 'lunch.product.category'
     _description = 'lunch product category'
@@ -440,8 +440,8 @@ class lunch_product_category(osv.Model):
     }
 
 class lunch_cashmove(osv.Model):
-    """ 
-    lunch cashmove => order or payment 
+    """
+    lunch cashmove => order or payment
     """
     _name = 'lunch.cashmove'
     _description = 'lunch cashmove'
@@ -460,8 +460,8 @@ class lunch_cashmove(osv.Model):
     }
 
 class lunch_alert(osv.Model):
-    """ 
-    lunch alert 
+    """
+    lunch alert
     """
     _name = 'lunch.alert'
     _description = 'Lunch Alert'

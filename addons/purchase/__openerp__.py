@@ -38,7 +38,7 @@ OpenERP’s replenishment management rules enable the system to generate draft p
 Dashboard / Reports for Purchase Management will include:
 ---------------------------------------------------------
 * Request for Quotations
-* Purchase Orders Waiting Approval 
+* Purchase Orders Waiting Approval
 * Monthly Purchases by Category
 * Receptions Analysis
 * Purchase Analysis

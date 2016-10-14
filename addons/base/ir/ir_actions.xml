@@ -178,6 +178,7 @@
                                     <field name="auto_refresh"/>
                                     <field name="auto_search"/>
                                     <field name="filter"/>
+                                    <field name="multi"/>
                                 </group>
                             </group>
                             <group string="Help">
@@ -459,7 +460,7 @@
                   <header>
                         <button name="action_launch"
                             states="open" string="Launch"
-                            type="object" icon="gtk-execute" class="oe_highlight" 
+                            type="object" icon="gtk-execute" class="oe_highlight"
                             help="Launch Configuration Wizard"/>
                         <button name="action_open" states="done"
                             string="Set as Todo" type="object"

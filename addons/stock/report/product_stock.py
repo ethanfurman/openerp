@@ -112,7 +112,7 @@ class report_stock(report_int):
                  prod_name = prod_name.decode('utf-8')
                  prod_name = unicodedata.normalize('NFKD',prod_name)
                  prod_name = prod_name.encode('ascii','replace')
-            gt.add(prod_id, prod_name, products[prod_id])   
+            gt.add(prod_id, prod_name, products[prod_id])
         gt.draw()
         gt.close()
         self.obj = external_pdf(io.getvalue())

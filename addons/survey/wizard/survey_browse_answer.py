@@ -31,12 +31,12 @@ class survey_browse_answer(osv.osv_memory):
 
     def action_next(self, cr, uid, ids, context=None):
         """
-        Open Browse Response wizard. if you select only survey_id then this wizard open with all response_ids and 
+        Open Browse Response wizard. if you select only survey_id then this wizard open with all response_ids and
         if you select survey_id and response_id then open the particular response of the survey.
         """
         if context is None: context = {}
         record = self.read(cr, uid, ids, [])
-        record = record and record[0] or {} 
+        record = record and record[0] or {}
         if record['response_id']:
             res_id = [(record.get('response_id') and record['response_id'][0])]
         else:

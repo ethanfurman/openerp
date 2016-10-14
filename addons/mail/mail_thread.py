@@ -122,7 +122,7 @@ class mail_thread(osv.AbstractModel):
         # find current model subtypes, add them to a dictionary
         subtype_obj = self.pool.get('mail.message.subtype')
         subtype_ids = subtype_obj.search(cr, uid, ['|', ('res_model', '=', self._name), ('res_model', '=', False)], context=context)
-        subtype_dict = dict((subtype.name, dict(default=subtype.default, followed=False, id=subtype.id)) for subtype in subtype_obj.browse(cr, uid, subtype_ids, context=context))
+        subtype_dict = dict((subtype.name, dict(default=subtype.default, followed=False, id=subtype.id, seq=subtype.sequence)) for subtype in subtype_obj.browse(cr, uid, subtype_ids, context=context))
         for id in ids:
             res[id]['message_subtype_data'] = subtype_dict.copy()
 
@@ -239,21 +239,42 @@ class mail_thread(osv.AbstractModel):
         """
         if context is None:
             context = {}
+        followers = values.pop('message_follower_ids', [])
+        notify_ids = values.pop('message_notify_ids', [])
         thread_id = super(mail_thread, self).create(cr, uid, values, context=context)
+        initial_values = {thread_id: {'id':thread_id}}
+        track_only = not context.get('mail_track_initial', False)
+        tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context, track_only=track_only)
+        for field_name in tracked_fields:
+            initial_values[thread_id][field_name] = False
 
+        # do not track intermediate writes
+        context['message_track'] = False
         # subscribe uid unless asked not to
-        if not context.get('mail_create_nosubscribe'):
+        # do not subscribe Administrator (ever!)
+        if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
             self.message_subscribe_users(cr, uid, [thread_id], [uid], context=context)
+        if followers:
+            self.message_subscribe(cr, uid, [thread_id], followers, context=context)
         self.message_auto_subscribe(cr, uid, [thread_id], values.keys(), context=context)
+        del context['message_track']
 
         # automatic logging unless asked not to (mainly for various testing purpose)
         if not context.get('mail_create_nolog'):
-            self.message_post(cr, uid, thread_id, body=_('Document created'), context=context)
+            self.message_track(
+                    cr, uid, [thread_id],
+                    tracked_fields, initial_values,
+                    body=_('Document created'), notify_ids=notify_ids, context=context,
+                    track_only=track_only
+                    )
         return thread_id
 
     def write(self, cr, uid, ids, values, context=None):
+        if context is None:
+            context = {}
         if isinstance(ids, (int, long)):
             ids = [ids]
+        notify_ids = values.pop('message_notify_ids', [])
         # Track initial values of tracked fields
         tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context)
         if tracked_fields:
@@ -262,16 +283,24 @@ class mail_thread(osv.AbstractModel):
 
         # Perform write, update followers
         result = super(mail_thread, self).write(cr, uid, ids, values, context=context)
+        if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
+            self.message_subscribe_users(cr, uid, ids, [uid], context=context)
         self.message_auto_subscribe(cr, uid, ids, values.keys(), context=context)
 
         # Perform the tracking
-        if tracked_fields:
-            self.message_track(cr, uid, ids, tracked_fields, initial_values, context=context)
+        if context.get('message_track', True):
+            if tracked_fields:
+                self.message_track(
+                        cr, uid, ids,
+                        tracked_fields, initial_values,
+                        notify_ids=notify_ids, context=context)
         return result
 
     def unlink(self, cr, uid, ids, context=None):
         """ Override unlink to delete messages and followers. This cannot be
             cascaded, because link is done through (res_model, res_id). """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         msg_obj = self.pool.get('mail.message')
         fol_obj = self.pool.get('mail.followers')
         # delete messages and notifications
@@ -291,25 +320,39 @@ class mail_thread(osv.AbstractModel):
         return super(mail_thread, self).copy(cr, uid, id, default=default, context=context)
 
     #------------------------------------------------------
-    # Automatically log tracked fields
+    # Automatically log tracked fields and notify followers
     #------------------------------------------------------
 
-    def _get_tracked_fields(self, cr, uid, updated_fields, context=None):
+    def _get_tracked_fields(self, cr, uid, updated_fields, context=None, track_only=False):
         """ Return a structure of tracked fields for the current model.
             :param list updated_fields: modified field names
-            :return list: a list of (field_name, column_info obj), containing
+            :return dict: a dict of {field_name: column_info_obj), containing
                 always tracked fields and modified on_change fields
         """
         lst = []
         for name, column_info in self._all_columns.items():
             visibility = getattr(column_info.column, 'track_visibility', False)
-            if visibility == 'always' or (visibility == 'onchange' and name in updated_fields) or name in self._track:
+            if track_only:
+                if name in self._track:
+                    lst.append(name)
+            elif (
+                    visibility == 'always'
+                    or (visibility in ('onchange', 'change_only') and name in updated_fields)
+                    or name in self._track
+                    ):
                 lst.append(name)
         if not lst:
-            return lst
+            return {}
         return self.fields_get(cr, uid, lst, context=context)
 
-    def message_track(self, cr, uid, ids, tracked_fields, initial_values, context=None):
+    def message_track(
+            self, cr, uid, ids,
+            tracked_fields, initial_values,
+            context=None,
+            body='',
+            notify_ids=[],
+            track_only=False,
+            ):
 
         def convert_for_display(value, col_info):
             if not value and col_info['type'] == 'boolean':
@@ -333,51 +376,92 @@ class mail_thread(osv.AbstractModel):
                 message += '%s</div>' % change.get('new_value')
             return message
 
-        if not tracked_fields:
+        if context is None:
+            context = {}
+        force_body = context.get('message_force', '')
+        if not tracked_fields and not force_body:
             return True
+
+        if isinstance(ids, (int, long)):
+            ids = [ids]
 
         for record in self.read(cr, uid, ids, tracked_fields.keys(), context=context):
             initial = initial_values[record['id']]
             changes = []
             tracked_values = {}
+            partner_ids = notify_ids
 
             # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
+            #
+            # meanings of 'track_visibility':
+            # - 'always' --> show current and (if possible) old value
+            # - 'on_change' --> show old and new value (only if value changed)
+            # - 'change_only' --> show new value (only if value changed)
+
             for col_name, col_info in tracked_fields.items():
-                if record[col_name] == initial[col_name] and getattr(self._all_columns[col_name].column, 'track_visibility', None) == 'always':
-                    tracked_values[col_name] = dict(col_info=col_info['string'],
-                                                        new_value=convert_for_display(record[col_name], col_info))
+                tracking = getattr(self._all_columns[col_name].column, 'track_visibility', None)
+                if record[col_name] == initial[col_name] and tracking == 'always':
+                    tracked_values[col_name] = dict(
+                            col_info=col_info['string'],
+                            new_value=convert_for_display(record[col_name], col_info),
+                            )
                 elif record[col_name] != initial[col_name]:
-                    if getattr(self._all_columns[col_name].column, 'track_visibility', None) in ['always', 'onchange']:
-                        tracked_values[col_name] = dict(col_info=col_info['string'],
-                                                            old_value=convert_for_display(initial[col_name], col_info),
-                                                            new_value=convert_for_display(record[col_name], col_info))
+                    if tracking: # in ['always', 'onchange', 'change_only']:
+                        tracking_info = {'col_info': col_info['string']}
+                        if tracking in ('always', 'onchange'):
+                            tracking_info['old_value'] = convert_for_display(initial[col_name], col_info)
+                        tracking_info['new_value'] = convert_for_display(record[col_name], col_info)
+                        tracked_values[col_name] = tracking_info
                     if col_name in tracked_fields:
                         changes.append(col_name)
             if not changes:
                 continue
 
             # find subtypes and post messages or log if no subtype found
+            #
+            # notification type  /   field type                       /   sent to users
+            # Discussion        -->  all non-field-tracked items     -->  who follow Discussions
+            # Field-Tracked     -->  toggled-on field-tracked items  -->  who follow that field change
             subtypes = []
-            for field, track_info in self._track.items():
-                if field not in changes:
-                    continue
-                for subtype, method in track_info.items():
-                    if method(self, cr, uid, record, context):
-                        subtypes.append(subtype)
+            if self._track:
+                # we have tracking -- does this change qualify?
+                for field, track_info in self._track.items():
+                    if field not in changes:
+                        continue
+                    for subtype, method in track_info.items():
+                        if method(self, cr, uid, record, context):
+                            subtypes.append(subtype)
 
-            posted = False
+            if subtypes:
+                if track_only:
+                    body = ''
+            else:
+                # no matches found in self._track
+                # use Discussion?
+                if track_only:
+                    # nope, post message and be done
+                    self.message_post(cr, uid, record['id'], body=body, context=context)
+                else:
+                    # yep
+                    subtypes.append('mail.mt_comment')
+                    partner_ids += [partner.id for partner in self.browse(cr, uid, record['id']).message_follower_ids]
+
             for subtype in subtypes:
+                st_model, st_xmlid = subtype.split('.')[:2]
                 try:
-                    subtype_rec = self.pool.get('ir.model.data').get_object(cr, uid, subtype.split('.')[0], subtype.split('.')[1], context=context)
+                    subtype_rec = self.pool.get('ir.model.data').get_object(cr, uid, st_model, st_xmlid, context=context)
                 except ValueError, e:
-                    _logger.debug('subtype %s not found, giving error "%s"' % (subtype, e))
+                    _logger.warning('subtype %s not found, giving error "%s"' % (subtype, e))
                     continue
-                message = format_message(subtype_rec.description if subtype_rec.description else subtype_rec.name, tracked_values)
-                self.message_post(cr, uid, record['id'], body=message, subtype=subtype, context=context)
-                posted = True
-            if not posted:
-                message = format_message('', tracked_values)
-                self.message_post(cr, uid, record['id'], body=message, context=context)
+                description = subtype_rec.description or subtype_rec.name
+                message = force_body + body + '\n' + format_message(description, tracked_values)
+                self.message_post(
+                        cr, uid, record['id'],
+                        body=message,
+                        subtype=subtype,
+                        context=context,
+                        partner_ids=partner_ids,
+                        )
         return True
 
     #------------------------------------------------------
@@ -414,6 +498,8 @@ class mail_thread(osv.AbstractModel):
     #------------------------------------------------------
 
     def message_get_reply_to(self, cr, uid, ids, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         if not self._inherits.get('mail.alias'):
             return [False for id in ids]
         return ["%s@%s" % (record['alias_name'], record['alias_domain'])
@@ -703,8 +789,7 @@ class mail_thread(osv.AbstractModel):
         fields = model_pool.fields_get(cr, uid, context=context)
         if 'name' in fields and not data.get('name'):
             data['name'] = msg_dict.get('subject', '')
-        res_id = model_pool.create(cr, uid, data, context=context)
-        return res_id
+        return model_pool.create(cr, uid, data, context=context)
 
     def message_update(self, cr, uid, ids, msg_dict, update_vals=None, context=None):
         """Called by ``message_process`` when a new message is received
@@ -892,6 +977,8 @@ class mail_thread(osv.AbstractModel):
     def message_get_suggested_recipients(self, cr, uid, ids, context=None):
         """ Returns suggested recipients for ids. Those are a list of
             tuple (partner_id, partner_name, reason), to be managed by Chatter. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         result = dict.fromkeys(ids, list())
         if self._all_columns.get('user_id'):
             for obj in self.browse(cr, SUPERUSER_ID, ids, context=context):  # SUPERUSER because of a read on res.users that would crash otherwise
@@ -1142,6 +1229,8 @@ class mail_thread(osv.AbstractModel):
 
     def message_get_subscription_data(self, cr, uid, ids, context=None):
         """ Wrapper to get subtypes data. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         return self._get_subscription_data(cr, uid, ids, None, None, context=context)
 
     def message_subscribe_users(self, cr, uid, ids, user_ids=None, subtype_ids=None, context=None):
@@ -1149,11 +1238,15 @@ class mail_thread(osv.AbstractModel):
             provided, subscribe uid instead. """
         if user_ids is None:
             user_ids = [uid]
+        if isinstance(user_ids, (int, long)):
+            user_ids = [user_ids]
         partner_ids = [user.partner_id.id for user in self.pool.get('res.users').browse(cr, uid, user_ids, context=context)]
         return self.message_subscribe(cr, uid, ids, partner_ids, subtype_ids=subtype_ids, context=context)
 
     def message_subscribe(self, cr, uid, ids, partner_ids, subtype_ids=None, context=None):
         """ Add partners to the records followers. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         user_pid = self.pool.get('res.users').read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
         if set(partner_ids) == set([user_pid]):
             self.check_access_rights(cr, uid, 'read')
@@ -1176,11 +1269,15 @@ class mail_thread(osv.AbstractModel):
             provided, unsubscribe uid instead. """
         if user_ids is None:
             user_ids = [uid]
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_ids = [user.partner_id.id for user in self.pool.get('res.users').browse(cr, uid, user_ids, context=context)]
         return self.message_unsubscribe(cr, uid, ids, partner_ids, context=context)
 
     def message_unsubscribe(self, cr, uid, ids, partner_ids, context=None):
         """ Remove partners from the records followers. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         user_pid = self.pool.get('res.users').read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
         if set(partner_ids) == set([user_pid]):
             self.check_access_rights(cr, uid, 'read')
@@ -1210,6 +1307,8 @@ class mail_thread(osv.AbstractModel):
             1. fetch project subtype related to task (parent_id.res_model = 'project.task')
             2. for each project subtype: subscribe the follower to the task
         """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         subtype_obj = self.pool.get('mail.message.subtype')
         follower_obj = self.pool.get('mail.followers')
 
@@ -1283,6 +1382,8 @@ class mail_thread(osv.AbstractModel):
 
     def message_mark_as_unread(self, cr, uid, ids, context=None):
         """ Set as unread. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_id = self.pool.get('res.users').browse(cr, uid, uid, context=context).partner_id.id
         cr.execute('''
             UPDATE mail_notification SET
@@ -1295,6 +1396,8 @@ class mail_thread(osv.AbstractModel):
 
     def message_mark_as_read(self, cr, uid, ids, context=None):
         """ Set as read. """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_id = self.pool.get('res.users').browse(cr, uid, uid, context=context).partner_id.id
         cr.execute('''
             UPDATE mail_notification SET
@@ -1305,4 +1408,3 @@ class mail_thread(osv.AbstractModel):
         ''', (ids, self._name, partner_id))
         return True
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

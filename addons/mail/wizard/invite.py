@@ -46,7 +46,7 @@ class invite_wizard(osv.osv_memory):
                         help='Model of the followed resource'),
         'res_id': fields.integer('Related Document ID', select=1,
                         help='Id of the followed resource'),
-        'partner_ids': fields.many2many('res.partner', string='Partners'),
+        'partner_ids': fields.many2many('res.partner', string='Partners', domain=[('user_ids','!=',False)]),
         'message': fields.html('Message'),
     }
 

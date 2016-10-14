@@ -37,8 +37,6 @@ class base_state(object):
         """ Gives id of partner for current user
             :param context: if portal not in context returns False
         """
-        if context is None:
-            context = {}
         if not context or not context.get('portal'):
             return False
         user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
@@ -50,8 +48,6 @@ class base_state(object):
         """ Gives default email address for current user
             :param context: if portal not in context returns False
         """
-        if context is None:
-            context = {}
         if not context or not context.get('portal'):
             return False
         user = self.pool.get('res.users').browse(cr, uid, uid, context=context)
@@ -61,8 +57,6 @@ class base_state(object):
         """ Gives current user id
             :param context: if portal not in context returns False
         """
-        if context is None:
-            context = {}
         if not context or not context.get('portal'):
             return False
         return uid
@@ -153,11 +147,11 @@ class base_state(object):
             update_values = {}
         update_values['state'] = state_name
         return self.write(cr, uid, ids, update_values, context=context)
-    
+
     # ******************************
     # Notifications
     # ******************************
-    
+
     def case_get_note_msg_prefix(self, cr, uid, id, context=None):
         return ''
 

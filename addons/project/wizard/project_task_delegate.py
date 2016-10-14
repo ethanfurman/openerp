@@ -46,7 +46,7 @@ class project_task_delegate(osv.osv_memory):
             return {'value':{'user_id': False}}
         project = project_project.browse(cr, uid, project_id, context=context)
         return {'value': {'user_id': project.user_id and project.user_id.id or False}}
-        
+
 
     def default_get(self, cr, uid, fields, context=None):
         """
@@ -125,11 +125,11 @@ class project_task_delegate(osv.osv_memory):
         action_model, action_id = models_data.get_object_reference(cr, uid, 'project', 'action_view_task')
         view_model, task_view_form_id = models_data.get_object_reference(cr, uid, 'project', 'view_task_form2')
         view_model, task_view_tree_id = models_data.get_object_reference(cr, uid, 'project', 'view_task_tree2')
-        action = self.pool.get(action_model).read(cr, uid, action_id, context=context)         
+        action = self.pool.get(action_model).read(cr, uid, action_id, context=context)
         action['res_id'] = delegated_tasks[task_id]
         action['view_id'] = False
         action['views'] = [(task_view_form_id, 'form'), (task_view_tree_id, 'tree')]
-        action['help'] = False    
+        action['help'] = False
         return action
 
 project_task_delegate()

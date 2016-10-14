@@ -29,6 +29,7 @@ class mail_message_subtype(osv.osv):
         on the Wall. """
     _name = 'mail.message.subtype'
     _description = 'Message subtypes'
+    _order = 'res_model, sequence'
     _columns = {
         'name': fields.char('Message Type', required=True, translate=True,
             help='Message subtype gives a more precise type on the message, '\
@@ -50,6 +51,8 @@ class mail_message_subtype(osv.osv):
             help="Model the subtype applies to. If False, this subtype applies to all models."),
         'default': fields.boolean('Default',
             help="Activated by default when subscribing."),
+        'sequence': fields.integer('Sequence',
+            help="Order of display."),
     }
     _defaults = {
         'default': True,

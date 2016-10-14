@@ -87,7 +87,7 @@ class pad_common(osv.osv_memory):
         for k,v in vals.items():
             field = self._all_columns[k].column
             if hasattr(field,'pad_content_field'):
-                vals[field.pad_content_field] = self.pad_get_content(cr, uid, v, context=context)        
+                vals[field.pad_content_field] = self.pad_get_content(cr, uid, v, context=context)
 
     def copy(self, cr, uid, id, default=None, context=None):
         if not default:

@@ -29,7 +29,7 @@
     "depends" : ["account", "base_iban", "base_vat", "account_chart", "account_cancel"],
     "description" : "Kontni načrt za gospodarske družbe",
     "data" : [
-        "data/account.account.type.csv", 
+        "data/account.account.type.csv",
         "data/account.account.template.csv",
         "data/account.tax.code.template.csv",
         "data/account.chart.template.csv",

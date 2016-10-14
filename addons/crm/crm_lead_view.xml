@@ -47,7 +47,7 @@
             <field name="res_model">crm.case.categ</field>
             <field name="view_type">form</field>
             <field name="view_id" ref="crm_case_categ_tree-view"/>
-            <field name="context" eval="{'object_id': ref('model_crm_lead')}"/>
+            <field name="context" eval="{'object_id': ref('model_crm_lead'), 'default_section_id': ref('section_sales_department')}"/>
             <field name="domain">[('object_id.model', '=', 'crm.lead')]</field>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
@@ -63,7 +63,7 @@
 
         <menuitem action="crm_lead_categ_action"
             id="menu_crm_lead_categ" name="Sales Tags"
-            parent="base.menu_crm_config_lead" sequence="1" groups="base.group_no_one"/>
+            parent="base.menu_crm_config_lead" sequence="1" groups="base.group_sale_manager,base.group_no_one"/>
 
         <!--
             LEADS
@@ -92,6 +92,7 @@
         <field name="model">crm.lead</field>
         <field name="arch" type="xml">
             <form string="Leads Form" version="7.0">
+                <field name="id" invisible="1"/>
                 <header>
                     <button name="%(crm.action_crm_lead2opportunity_partner)d" string="Convert to Opportunity" type="action"
                             states="draft,open,pending" help="Convert to Opportunity" class="oe_highlight"/>
@@ -105,7 +106,7 @@
                 </header>
                 <sheet>
                     <div class="oe_right oe_button_box" name="buttons">
-                        <button string="Schedule/Log Call" 
+                        <button string="Schedule/Log Call"
                                 name="%(opportunity2phonecall_act)d"
                                 type="action"/>
                     </div>
@@ -120,7 +121,8 @@
                             <field name="partner_id" string="Customer"
                                 on_change="on_change_partner(partner_id)"
                                 options='{"create_name_field": "name"}'
-                                context="{'default_name': contact_name, 'default_street': street, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_function': function, 'default_phone': phone, 'default_mobile': mobile, 'default_fax': fax, 'default_email': email_from, 'default_user_id': user_id, 'default_section_id': section_id}"/>
+                                context="{'default_name': contact_name, 'default_street': street, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_function': function, 'default_phone': phone, 'default_mobile': mobile, 'default_fax': fax, 'default_email': email_from, 'default_user_id': user_id, 'default_section_id': section_id}"
+                                attrs="{'invisible':[('id','=',False)]}"/>
                             <label for="street" string="Address"/>
                             <div>
                                 <field name="street" placeholder="Street..."/>

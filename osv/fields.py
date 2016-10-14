@@ -50,6 +50,7 @@ from openerp.tools import float_round, float_repr
 from openerp.tools import html_sanitize
 import simplejson
 from openerp import SUPERUSER_ID
+import osv
 
 _logger = logging.getLogger(__name__)
 
@@ -86,7 +87,11 @@ class _column(object):
     # used to hide a certain field type in the list of field types
     _deprecated = False
 
-    def __init__(self, string='unknown', required=False, readonly=False, domain=None, context=None, states=None, priority=0, change_default=False, size=None, ondelete=None, translate=False, select=False, manual=False, **args):
+    def __init__(
+            self, string='unknown', required=False, readonly=False, domain=None,
+            context=None, states=None, priority=0, change_default=False, size=None,
+            ondelete=None, translate=False, select=False, manual=False, **args
+            ):
         """
 
         The 'manual' keyword argument specifies if the field is a custom one.
@@ -121,7 +126,7 @@ class _column(object):
         for a in args:
             if args[a]:
                 setattr(self, a, args[a])
- 
+
     def restart(self):
         pass
 
@@ -140,12 +145,12 @@ class _column(object):
         """Converts a field value to a suitable string representation for a record,
            e.g. when this field is used as ``rec_name``.
 
-           :param obj: the ``BaseModel`` instance this column belongs to 
+           :param obj: the ``BaseModel`` instance this column belongs to
            :param value: a proper value as returned by :py:meth:`~openerp.orm.osv.BaseModel.read`
                          for this column
         """
         # delegated to class method, so a column type A can delegate
-        # to a column type B. 
+        # to a column type B.
         return self._as_display_name(self, cr, uid, obj, value, context=None)
 
     @classmethod
@@ -163,8 +168,9 @@ class boolean(_column):
     _symbol_f = lambda x: x and 'True' or 'False'
     _symbol_set = (_symbol_c, _symbol_f)
 
-    def __init__(self, string='unknown', required=False, **args):
+    def __init__(self, string='unknown', required=False, choice=(u'No', u'Yes'), **args):
         super(boolean, self).__init__(string=string, required=required, **args)
+        self.choice = choice
         if required:
             _logger.debug(
                 "required=True is deprecated: making a boolean field"
@@ -243,7 +249,7 @@ class html(text):
         if x is None or x == False:
             return None
         return html_sanitize(x)
-        
+
     _symbol_set = (_symbol_c, _symbol_f)
 
 import __builtin__
@@ -300,12 +306,12 @@ class date(_column):
            :param dict context: the 'tz' key in the context should give the
                                 name of the User/Client timezone (otherwise
                                 UTC is used)
-           :rtype: str 
+           :rtype: str
         """
         today = timestamp or DT.datetime.now()
         context_today = None
         if context and context.get('tz'):
-            tz_name = context['tz']  
+            tz_name = context['tz']
         else:
             tz_name = model.pool.get('res.users').read(cr, SUPERUSER_ID, uid, ['tz'])['tz']
         if tz_name:
@@ -314,7 +320,7 @@ class date(_column):
                 utc_today = UTC.localize(today, is_dst=False) # UTC = no DST
                 context_today = utc_today.astimezone(context_tz)
             except Exception:
-                _logger.debug("failed to compute context/client-specific today date, "
+                _logger.warning("failed to compute context/client-specific today date, "
                               "using the UTC value for `today`",
                               exc_info=True)
         return (context_today or today).strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
@@ -347,7 +353,7 @@ class datetime(_column):
             tools.DEFAULT_SERVER_DATETIME_FORMAT)
 
     @staticmethod
-    def context_timestamp(cr, uid, timestamp, context=None):
+    def context_timestamp(cr, uid, timestamp=None, context=None):
         """Returns the given timestamp converted to the client's timezone.
            This method is *not* meant for use as a _defaults initializer,
            because datetime fields are automatically converted upon
@@ -363,9 +369,12 @@ class datetime(_column):
            :return: timestamp converted to timezone-aware datetime in context
                     timezone
         """
+        timestamp = timestamp or DT.datetime.now()
+        if isinstance(timestamp, basestring):
+            timestamp = DT.datetime.strptime(timestamp, tools.DEFAULT_SERVER_DATETIME_FORMAT)
         assert isinstance(timestamp, DT.datetime), 'Datetime instance expected'
         if context and context.get('tz'):
-            tz_name = context['tz']  
+            tz_name = context['tz']
         else:
             registry = openerp.modules.registry.RegistryManager.get(cr.dbname)
             tz_name = registry.get('res.users').read(cr, SUPERUSER_ID, uid, ['tz'])['tz']
@@ -375,7 +384,7 @@ class datetime(_column):
                 utc_timestamp = UTC.localize(timestamp, is_dst=False) # UTC = no DST
                 return utc_timestamp.astimezone(context_tz)
             except Exception:
-                _logger.debug("failed to compute context/client-specific timestamp, "
+                _logger.warning("failed to compute context/client-specific timestamp, "
                               "using the UTC value",
                               exc_info=True)
         return timestamp
@@ -403,7 +412,7 @@ class binary(_column):
         self.filters = filters
 
     def get(self, cr, obj, ids, name, user=None, context=None, values=None):
-        if not context:
+        if context is None:
             context = {}
         if not values:
             values = []
@@ -429,12 +438,22 @@ class binary(_column):
         return res
 
 
+class binaryname(char):
+    _type = 'binaryname'
+
+
 class selection(_column):
     _type = 'selection'
 
-    def __init__(self, selection, string='unknown', **args):
+    def __init__(self, selection, string='unknown', sort_order=None, **args):
+        # selection -> [('internal_name', ('User Presentable Name')]
         _column.__init__(self, string=string, **args)
         self.selection = selection
+        # _sort_order allows different sorting of this field; default is
+        # alphabetical by internal_name; other options are:
+        # - definition (definition order); and
+        # - user_name (alpha by User Presentable Name)
+        self._sort_order = sort_order
 
 # ---------------------------------------------------------
 # Relationals fields
@@ -489,7 +508,7 @@ class many2one(_column):
         return res
 
     def set(self, cr, obj_src, id, field, values, user=None, context=None):
-        if not context:
+        if context is None:
             context = {}
         obj = obj_src.pool.get(self._obj)
         self._table = obj_src.pool.get(self._obj)._table
@@ -515,10 +534,11 @@ class many2one(_column):
     def search(self, cr, obj, args, name, value, offset=0, limit=None, uid=None, context=None):
         return obj.pool.get(self._obj).search(cr, uid, args+self._domain+[('name', 'like', value)], offset, limit, context=context)
 
-    
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
-        return value[1] if isinstance(value, tuple) else tools.ustr(value) 
+        if not isinstance(value, tuple):
+            [value] = obj.pool.get(field._obj).name_get(cr, SUPERUSER_ID, value, context=context)
+        return value[1]
 
 
 class one2many(_column):
@@ -527,12 +547,13 @@ class one2many(_column):
     _prefetch = False
     _type = 'one2many'
 
-    def __init__(self, obj, fields_id, string='unknown', limit=None, auto_join=False, **args):
+    def __init__(self, obj, fields_id, string='unknown', limit=None, auto_join=False, order=None, **args):
         _column.__init__(self, string=string, **args)
         self._obj = obj
         self._fields_id = fields_id
         self._limit = limit
         self._auto_join = auto_join
+        self._order = order
         #one2many can't be used as condition for defaults
         assert(self.change_default != True)
 
@@ -550,15 +571,16 @@ class one2many(_column):
             res[id] = []
 
         domain = self._domain(obj) if callable(self._domain) else self._domain
-        ids2 = obj.pool.get(self._obj).search(cr, user, domain + [(self._fields_id, 'in', ids)], limit=self._limit, context=context)
-        for r in obj.pool.get(self._obj)._read_flat(cr, user, ids2, [self._fields_id], context=context, load='_classic_write'):
+        order = context.get('order', self._order)
+        ids2 = obj.pool.get(self._obj).search(cr, user, domain + [(self._fields_id, 'in', ids)], limit=self._limit, order=order, context=context)
+        for r in obj.pool.get(self._obj)._read_flat(cr, user, ids2, [self._fields_id], order=order, context=context, load='_classic_write'):
             if r[self._fields_id] in res:
                 res[r[self._fields_id]].append(r['id'])
         return res
 
     def set(self, cr, obj, id, field, values, user=None, context=None):
         result = []
-        if not context:
+        if context is None:
             context = {}
         if self._context:
             context = context.copy()
@@ -614,10 +636,9 @@ class one2many(_column):
         domain = self._domain(obj) if callable(self._domain) else self._domain
         return obj.pool.get(self._obj).name_search(cr, uid, value, domain, operator, context=context,limit=limit)
 
-    
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
-        raise NotImplementedError('One2Many columns should not be used as record name (_rec_name)') 
+        raise NotImplementedError('One2Many columns should not be used as record name (_rec_name)')
 
 #
 # Values: (0, 0,  { fields })    create
@@ -711,7 +732,7 @@ class many2many(_column):
         return query, where_params
 
     def get(self, cr, model, ids, name, user=None, offset=0, context=None, values=None):
-        if not context:
+        if context is None:
             context = {}
         if not values:
             values = {}
@@ -761,7 +782,7 @@ class many2many(_column):
         return res
 
     def set(self, cr, model, id, name, values, user=None, context=None):
-        if not context:
+        if context is None:
             context = {}
         if not values:
             return
@@ -806,7 +827,7 @@ class many2many(_column):
 
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
-        raise NotImplementedError('Many2Many columns should not be used as record name (_rec_name)') 
+        raise NotImplementedError('Many2Many columns should not be used as record name (_rec_name)')
 
 
 def get_nice_size(value):
@@ -932,7 +953,7 @@ class function(_column):
             return result
         _columns['name'] = fields.function(compute_person_data, type='char',\
                                            size=50, multi='person_data')
-        _columns[''age'] = fields.function(compute_person_data, type='integer',\
+        _columns['age'] = fields.function(compute_person_data, type='integer',\
                                            multi='person_data')
 
         # when called with ``ids=[1,2,3]``, ``compute_person_data`` could return:
@@ -1054,7 +1075,10 @@ class function(_column):
 #
 # multi: compute several fields in one call
 #
-    def __init__(self, fnct, arg=None, fnct_inv=None, fnct_inv_arg=None, type='float', fnct_search=None, obj=None, store=False, multi=False, **args):
+    def __init__(
+            self, fnct, arg=None, fnct_inv=None, fnct_inv_arg=None, type='float',
+            fnct_search=None, obj=None, store=False, multi=False, **args
+            ):
         _column.__init__(self, **args)
         self._obj = obj
         self._fnct = fnct
@@ -1094,6 +1118,7 @@ class function(_column):
             self._symbol_c = boolean._symbol_c
             self._symbol_f = boolean._symbol_f
             self._symbol_set = boolean._symbol_set
+            self.choice = args.pop('choice', (u'No', u'Yes'))
 
         if type == 'integer':
             self._symbol_c = integer._symbol_c
@@ -1104,6 +1129,17 @@ class function(_column):
             self._symbol_c = datetime._symbol_c
             self._symbol_f = datetime._symbol_f
             self._symbol_set = datetime._symbol_set
+
+        if type == 'char':
+            self._symbol_c = char._symbol_c
+            self._symbol_f = char._symbol_f
+            self._symbol_set = char._symbol_set
+
+        if type in ('many2one', 'many2many', 'one2many'):
+            if self._obj is None:
+                _logger.error('%s field %r does not have target model defined', type, args.get('string', 'unknown'))
+            if type is 'one2many' and 'fields_id' not in args:
+                _logger.warning('%s field %r does not have the target field defined', type, args.get('string', 'unknown'))
 
     def digits_change(self, cr):
         if self._type == 'float':
@@ -1151,6 +1187,8 @@ class function(_column):
 
     def get(self, cr, obj, ids, name, uid=False, context=None, values=None):
         result = self._fnct(obj, cr, uid, ids, name, self._arg, context)
+        if result is None and ids:
+            raise osv.except_osv('Programming Error', 'Possibly no return for a functional field?')
         for id in ids:
             if self._multi and id in result:
                 for field, value in result[id].iteritems():
@@ -1161,7 +1199,7 @@ class function(_column):
         return result
 
     def set(self, cr, obj, id, name, value, user=None, context=None):
-        if not context:
+        if context is None:
             context = {}
         if self._fnct_inv:
             self._fnct_inv(obj, cr, user, id, name, value, self._fnct_inv_arg, context)
@@ -1244,9 +1282,9 @@ class related(function):
             pass
 
 
-class sparse(function):   
+class sparse(function):
 
-    def convert_value(self, obj, cr, uid, record, value, read_value, context=None):        
+    def convert_value(self, obj, cr, uid, record, value, read_value, context=None):
         """
             + For a many2many field, a list of tuples is expected.
               Here is the list of tuple that are accepted, with the corresponding semantics ::
@@ -1293,7 +1331,6 @@ class sparse(function):
             return read_value
         return value
 
-
     def _fnct_write(self,obj,cr, uid, ids, field_name, value, args, context=None):
         if not type(ids) == list:
             ids = [ids]
@@ -1304,7 +1341,7 @@ class sparse(function):
             if value is None:
                 # simply delete the key to unset it.
                 serialized.pop(field_name, None)
-            else: 
+            else:
                 serialized[field_name] = self.convert_value(obj, cr, uid, record, value, serialized.get(field_name), context=context)
             obj.write(cr, uid, ids, {self.serialization_field: serialized}, context=context)
         return True
@@ -1336,7 +1373,7 @@ class sparse(function):
     def __init__(self, serialization_field, **kwargs):
         self.serialization_field = serialization_field
         super(sparse, self).__init__(self._fnct_read, fnct_inv=self._fnct_write, multi='__sparse_multi', **kwargs)
-     
+
 
 
 # ---------------------------------------------------------
@@ -1364,16 +1401,16 @@ class dummy(function):
 
 class serialized(_column):
     """ A field able to store an arbitrary python data structure.
-    
+
         Note: only plain components allowed.
     """
-    
+
     def _symbol_set_struct(val):
         return simplejson.dumps(val)
 
     def _symbol_get_struct(self, val):
         return simplejson.loads(val or '{}')
-    
+
     _prefetch = False
     _type = 'serialized'
 
@@ -1527,6 +1564,8 @@ def field_to_dict(model, cr, user, field, context=None):
         res['fnct_search'] = field._fnct_search and field._fnct_search.func_name or False
         res['fnct_inv'] = field._fnct_inv and field._fnct_inv.func_name or False
         res['fnct_inv_arg'] = field._fnct_inv_arg or False
+    if isinstance(field, one2many):
+        res['o2m_order'] = field._order or False
     if isinstance(field, many2many):
         (table, col1, col2) = field._sql_names(model)
         res['m2m_join_columns'] = [col1, col2]
@@ -1594,5 +1633,5 @@ class column_info(object):
             self.__class__.__name__, self.name, self.column,
             self.parent_model, self.parent_column, self.original_parent)
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
+# vim:expandtab:tabstop=4:softtabstop=4:shiftwidth=4:
 

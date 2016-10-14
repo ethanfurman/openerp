@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2009 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -98,17 +98,17 @@ class document(object):
             return value
 
     def eval(self, record, expr):
-#TODO: support remote variables (eg address.title) in expr
-# how to do that: parse the string, find dots, replace those dotted variables by temporary
-# "simple ones", fetch the value of those variables and add them (temporarily) to the _data
-# dictionary passed to eval
+        #TODO: support remote variables (eg address.title) in expr
+        # how to do that: parse the string, find dots, replace those dotted variables by temporary
+        # "simple ones", fetch the value of those variables and add them (temporarily) to the _data
+        # dictionary passed to eval
 
-#FIXME: it wont work if the data hasn't been fetched yet... this could
-# happen if the eval node is the first one using this browse_record
-# the next line is a workaround for the problem: it causes the resource to be loaded
-#Pinky: Why not this ? eval(expr, browser) ?
-#       name = browser.name
-#       data_dict = browser._data[self.get_value(browser, 'id')]
+        #FIXME: it wont work if the data hasn't been fetched yet... this could
+        # happen if the eval node is the first one using this browse_record
+        # the next line is a workaround for the problem: it causes the resource to be loaded
+        #Pinky: Why not this ? eval(expr, browser) ?
+        #       name = browser.name
+        #       data_dict = browser._data[self.get_value(browser, 'id')]
         return safe_eval(expr, {}, {'obj': record})
 
     def parse_node(self, node, parent, browser, datas=None):
@@ -116,12 +116,12 @@ class document(object):
             if 'type' in attrs:
                 if attrs['type']=='field':
                     value = self.get_value(browser, attrs['name'])
-#TODO: test this
+                    #TODO: test this
                     if value == '' and 'default' in attrs:
                         value = attrs['default']
                     el = etree.SubElement(parent, node.tag)
                     el.text = tounicode(value)
-#TODO: test this
+                    #TODO: test this
                     for key, value in attrs.iteritems():
                         if key not in ('type', 'name', 'default'):
                             el.set(key, value)
@@ -154,7 +154,7 @@ class document(object):
                             el.text = i
 
                 elif attrs['type']=='data':
-#TODO: test this
+                    #TODO: test this
                     txt = self.datas.get('form', {}).get(attrs['name'], '')
                     el = etree.SubElement(parent, node.tag)
                     el.text = txt
@@ -194,7 +194,7 @@ class document(object):
 
                 elif attrs['type']=='call':
                     if len(attrs['args']):
-#TODO: test this
+                        #TODO: test this
                         # fetches the values of the variables which names where passed in the args attribute
                         args = [self.eval(browser, arg) for arg in attrs['args'].split(',')]
                     else:
@@ -262,22 +262,22 @@ class document(object):
         return etree.tostring(self.doc,encoding="utf-8",xml_declaration=True,pretty_print=True)
 
     def parse_tree(self, ids, model, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         browser = self.pool.get(model).browse(self.cr, self.uid, ids, context)
         self.parse_node(self.dom, self.doc, browser)
 
     def parse_string(self, xml, ids, model, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         # parses the xml template to memory
         self.dom = etree.XML(xml)
         # create the xml data from the xml template
         self.parse_tree(ids, model, context)
 
     def parse(self, filename, ids, model, context=None):
-        if not context:
-            context={}
+        if context is None:
+            context = {}
         # parses the xml template to memory
         src_file = tools.file_open(filename)
         try:

@@ -1003,6 +1003,9 @@
   display: none;
 }
 .openerp .oe_topbar {
+  position: fixed;
+  z-index: 1;
+  top: 0;
   width: 100%;
   height: 32px;
   background-color: #414141;
@@ -1191,11 +1194,17 @@
 }
 .openerp .oe_leftbar {
   display: none;
+  position: fixed;
+  top: 32px;
+  left: 0;
   width: 220px;
+  height: calc(100% - 32px);
+  z-index: 2;
   background: #f0eeee;
-  border-right: 1px solid #afafb6;
+  border-right: 0px solid #afafb6;
   text-shadow: 0 1px 1px white;
   padding-bottom: 16px;
+  overflow: scroll;
 }
 .openerp a.oe_logo {
   position: relative;
@@ -1421,9 +1430,14 @@
   display: inline-block;
   overflow: hidden;
 }
+.openerp .oe_main_window {
+  position: relative;
+  top: 32px;
+  left: 220px;
+  width: calc(100% - 220px) !important;
+}
 .openerp .oe_view_manager {
   display: table;
-  height: inherit;
   width: 100%;
 }
 .openerp .oe_view_manager .oe_view_manager_body {
@@ -2106,6 +2120,9 @@
 .openerp .oe_form_invisible {
   display: none !important;
 }
+.openerp .oe_form_editable .oe_edit_hide {
+  display: none !important;
+}
 .openerp .oe_form_readonly .oe_edit_only, .openerp .oe_form_readonly .oe_form_field:empty {
   display: none !important;
 }
@@ -2377,7 +2394,7 @@
   -ms-box-sizing: border-box;
   box-sizing: border-box;
   background: white;
-  min-width: 60px;
+  min-width: 100%;
   color: #1f1f1f;
 }
 .openerp .oe_form input[readonly], .openerp .oe_form select[readonly], .openerp .oe_form textarea[readonly], .openerp .oe_form input[disabled], .openerp .oe_form select[disabled] {
@@ -2900,12 +2917,15 @@
 .openerp .oe_list_content td:first-child:after, .openerp .oe_list_content th:first-child:after {
   border-width: 0;
 }
-.openerp .oe_list_content td.oe_number {
+.openerp .oe_list_content th.oe_list_header_date, .openerp .oe_list_content th.oe_list_header_datetime, .openerp .oe_list_content th.oe_list_header_float, .openerp .oe_list_content th.oe_list_header_float_time, .openerp .oe_list_content th.oe_list_header_integer, .openerp .oe_list_content th.oe_list_header_monetary, .openerp .oe_list_content td.oe_number {
   text-align: right !important;
+  min-width: 6em;
   max-width: 100px;
 }
-.openerp .oe_list_content td.oe_list_field_date, .openerp .oe_list_content th.oe_list_header_date {
+.openerp .oe_list_content td.oe_list_field_date, .openerp .oe_list_content td.oe_list_field_datetime {
+  text-align: center !important;
   min-width: 6em;
+  max-width: 100px;
 }
 .openerp .oe_list_content > thead {
   border-bottom: 2px solid #cacaca;
@@ -2932,15 +2952,57 @@
   border-color: black transparent;
   visibility: hidden;
 }
+.openerp .oe_list_content th.oe_list_header_float.oe_sortable div:after, .openerp .oe_list_content th.oe_list_header_integer.oe_sortable div:after {
+  float: left;
+  margin-left: 6px;
+  margin-right: 0px;
+}
+.openerp .oe_list_content th.oe_list_header_date.oe_sortable div:before, .openerp .oe_list_content th.oe_list_header_float_time.oe_sortable div:before, .openerp .oe_list_content th.oe_list_header_datetime.oe_sortable div:before {
+  float: left;
+  margin-left: 6px;
+  content: "";
+  margin-top: 7px;
+  border-width: 0 4px 4px;
+  border-style: solid;
+  border-color: black transparent;
+  visibility: hidden;
+}
 .openerp .oe_list_content th.sortup div:after {
+  float: left;
   visibility: visible;
   filter: alpha(opacity=60);
   opacity: 0.6;
 }
+.openerp .oe_list_content th.oe_list_header_float.sortup div:after, .openerp .oe_list_content th.oe_list_header_integer.sortup div:after {
+  float: right;
+} 
+.openerp .oe_list_content th.oe_list_header_date.sortup div:before, .openerp .oe_list_content th.oe_list_header_float_time.sortup div:before, .openerp .oe_list_content th.oe_list_header_datetime.sortup div:before {
+  float: right;
+  visibility: visible;
+  filter: alpha(opacity=60);
+  opacity: 0.6;
+} 
 .openerp .oe_list_content .oe_list_header_many2many_tags {
   min-width: 70px;
 }
 .openerp .oe_list_content th.sortdown div:after {
+  float: left;
+  border-bottom: none;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid black;
+  visibility: visible;
+  -moz-box-shadow: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  filter: alpha(opacity=60);
+  opacity: 0.6;
+}
+.openerp .oe_list_content th.oe_list_header_float.sortdown div:after, .openerp .oe_list_content th.oe_list_header_integer.sortdown div:after {
+  float: right;
+} 
+.openerp .oe_list_content th.oe_list_header_date.sortdown div:before, .openerp .oe_list_content th.oe_list_header_float_time.sortdown div:before, .openerp .oe_list_content th.oe_list_header_datetime.sortdown div:before {
+  float: right;
   border-bottom: none;
   border-left: 4px solid transparent;
   border-right: 4px solid transparent;
@@ -3360,6 +3422,12 @@ div.ui-widget-overlay {
   }
   .openerp .openerp div.oe_mail_wall {
     overflow: hidden !important;
+  }
+  .openerp .oe_main_window {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100% !important;
   }
 }
 .blockUI.blockOverlay {

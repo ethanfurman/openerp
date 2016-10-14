@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
-#    
+#
 #    OpenERP, Open Source Management Solution
 #    Copyright (C) 2004-2009 Tiny SPRL (<http://tiny.be>).
 #
@@ -15,7 +15,7 @@
 #    GNU Affero General Public License for more details.
 #
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.     
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
 
@@ -35,7 +35,7 @@ class Myexception(Exception):
     * faulestring
     * args
     """
-    
+
     def __init__(self, faultCode, faultString):
         self.faultCode = faultCode
         self.faultString = faultString
@@ -52,20 +52,20 @@ class mysocket:
         # prepare this socket for long operations: it may block for infinite
         # time, but should exit as soon as the net is down
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        
+
     def connect(self, host, port=False):
         if not port:
             protocol, buf = host.split('//')
             host, port = buf.split(':')
         self.sock.connect((host, int(port)))
-        
+
     def disconnect(self):
         netsvc.close_socket(self.sock)
-        
+
     def mysend(self, msg, exception=False, traceback=None):
         msg = cPickle.dumps([msg, traceback], PICKLE_PROTOCOL)
         self.sock.sendall('%8d%d%s' % (len(msg), bool(exception), msg))
-            
+
     def myreceive(self):
         buf=''
         while len(buf) < 9:

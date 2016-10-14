@@ -36,6 +36,8 @@ from openerp.tools.translate import _
 from .. import http
 openerpweb = http
 
+_logger = logging.getLogger()
+
 #----------------------------------------------------------
 # OpenERP Web helpers
 #----------------------------------------------------------
@@ -99,6 +101,9 @@ def db_monodb_redirect(req):
 
     # 1 try the db in the url
     db_url = req.params.get('db')
+    if db_url and db_url == 'Sunridge_Farms':
+        _logger.error('bad request for Sunridge_Farms from %s', req.httpsession[req.session_id].__client_address__)
+        db_url = 'sunridgefarms'
     if db_url:
         return (db_url, False)
 
@@ -970,7 +975,7 @@ class Menu(openerpweb.Controller):
                                                  req.context)[0]['menu_id']
 
         menu_domain = [('parent_id', '=', False)]
-        if user_menu_id:
+        if user_menu_id and s._uid != openerp.SUPERUSER_ID:
             domain_string = s.model('ir.actions.act_window').read(
                 [user_menu_id[0]], ['domain'],req.context)[0]['domain']
             if domain_string:

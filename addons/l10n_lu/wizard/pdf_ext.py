@@ -83,8 +83,8 @@ def write_field(out, key, value):
 def write_fields(out, fields):
     out.write(HEAD)
     for key in fields:
-	    value = fields[key]
-	    write_field(out, key, value)
+        value = fields[key]
+        write_field(out, key, value)
     out.write(TAIL)
 
 def extract_keys_from_pdf(filename):

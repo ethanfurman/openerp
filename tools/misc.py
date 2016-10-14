@@ -37,8 +37,10 @@ import sys
 import threading
 import time
 import zipfile
+from aenum import Enum, NoAlias
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
+from dbf import Date, DateTime, IsoDay, IsoMonth, RelativeDay, RelativeMonth
 from itertools import islice, izip
 from lxml import etree
 from which import which
@@ -117,7 +119,7 @@ def file_open(name, mode="r", subdir='addons', pathinfo=False):
     """Open a file from the OpenERP root, using a subdir folder.
 
     Example::
-    
+
     >>> file_open('hr/report/timesheer.xsl')
     >>> file_open('addons/hr/report/timesheet.xsl')
     >>> file_open('../../base/report/rml_template.xsl', subdir='addons/hr/report', pathinfo=True)
@@ -181,7 +183,7 @@ def _fileopen(path, mode, basedir, pathinfo, basename=None):
         basename = name
     # Give higher priority to module directories, which is
     # a more common case than zipped modules.
-    if os.path.isfile(name):
+    if os.path.isfile(name) or 'w' in mode:
         fo = open(name, mode)
         if pathinfo:
             return fo, name
@@ -257,7 +259,7 @@ def flatten(list):
 
 def reverse_enumerate(l):
     """Like enumerate but in the other sens
-    
+
     Usage::
     >>> a = ['a', 'b', 'c']
     >>> it = reverse_enumerate(a)
@@ -405,9 +407,9 @@ class UpdateableDict(local):
 
 class currency(float):
     """ Deprecate
-    
+
     .. warning::
-    
+
     Don't use ! Use res.currency.round()
     """
 
@@ -995,7 +997,7 @@ class unquote(str):
         return self
 
 class UnquoteEvalContext(defaultdict):
-    """Defaultdict-based evaluation context that returns 
+    """Defaultdict-based evaluation context that returns
        an ``unquote`` string for any missing name used during
        the evaluation.
        Mostly useful for evaluating OpenERP domains/contexts that
@@ -1087,5 +1089,72 @@ class CountingStream(object):
             self.stopped = True
             raise StopIteration()
         return val
+
+# periods for domain searches
+class Period(Enum):
+    '''
+    different lengths of time
+    '''
+    _init_ = 'value period'
+    _settings_ = NoAlias
+    _ignore_ = 'Period i'
+    Period = vars()
+    for i in range(367):
+        Period['Day%d' % i] = timedelta(days=i), 'day'
+    for i in range(53):
+        Period['Week%d' % i] = timedelta(days=i*7), 'week'
+    for i in range(13):
+        Period['Month%d' % i] = i, 'month'
+    OneDay = Day1
+    OneWeek = Week1
+
+    def future_period(self, day):
+        '''
+        return start and stop dates of matching future period
+        '''
+        today = Date.strptime(day, DEFAULT_SERVER_DATE_FORMAT)
+        this_day = IsoDay(today.isoweekday())
+        if this_day is IsoDay.MONDAY:
+            week_start = today
+        else:
+            week_start = today.replace(day=RelativeDay.LAST_MONDAY)
+        month_start = today.replace(day=1)
+        if self.period == 'day':
+            start = today + self.value
+            stop = start + self.OneDay.value
+        elif self.period == 'week':
+            start = start + self.value
+            stop = week_start + self.OneWeek.value
+        elif self.period == 'month':
+            start = month_start.replace(delta_month=+self.value)
+            stop = start.replace(delta_month=+1)
+        else:
+            raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
+        return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
+
+    def past_period(self, day):
+        '''
+        return start and stop dates of matching past period
+        '''
+        today = Date.strptime(day, DEFAULT_SERVER_DATE_FORMAT)
+        this_day = IsoDay(today.isoweekday())
+        if this_day is IsoDay.MONDAY:
+            week_start = today
+        else:
+            week_start = today.replace(day=RelativeDay.LAST_MONDAY)
+        month_start = today.replace(day=1)
+        if self.period == 'day':
+            start = today - self.value
+            stop = start + self.OneDay.value
+        elif self.period == 'week':
+            start = week_start - self.value
+            stop = start + self.OneWeek.value
+        elif self.period == 'month':
+            start = month_start.replace(delta_month=-self.value)
+            stop = start.replace(delta_month=+1)
+        else:
+            raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
+        return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
+
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
