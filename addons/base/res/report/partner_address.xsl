@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fo="http://www.w3.org/1999/XSL/Format">
-	<xsl:variable name="initial_bottom_pos">20.5</xsl:variable>
+	<xsl:variable name="initial_bottom_pos">23</xsl:variable>
 	<xsl:variable name="initial_left_pos">1</xsl:variable>
-	<xsl:variable name="height_increment">6.5</xsl:variable>
+	<xsl:variable name="height_increment">4.0</xsl:variable>
 	<xsl:variable name="width_increment">10</xsl:variable>
 	<xsl:variable name="frame_height">5.5cm</xsl:variable>
 	<xsl:variable name="frame_width">10cm</xsl:variable>
 	<xsl:variable name="number_columns">2</xsl:variable>
-	<xsl:variable name="max_frames">8</xsl:variable>
+	<xsl:variable name="max_frames">14</xsl:variable>
 
 	<xsl:template match="/">
 		<xsl:apply-templates select="addresses"/>
@@ -60,9 +60,8 @@
 		<para style="nospace"><xsl:value-of select="company-name"/><xsl:text> </xsl:text><xsl:value-of select="company-title"/></para>
 		<para style="nospace"><xsl:value-of select="street"/></para>
 		<para style="nospace"><xsl:value-of select="street2"/></para>
-		<para style="nospace"><xsl:value-of select="zip"/><xsl:text> </xsl:text><xsl:value-of select="city"/></para>
-		<para style="nospace"><xsl:value-of select="state"/></para>
-		<para style="nospace"><xsl:value-of select="country"/></para>
+		<para style="nospace"><xsl:value-of select="city"/><xsl:text>, </xsl:text><xsl:value-of select="state"/><xsl:text>  </xsl:text><xsl:value-of select="zip"/></para>
+        <!-- <para style="nospace"><xsl:value-of select="country"/></para> -->
 		<xsl:if test="position() &lt; last()">
 			<nextFrame/>
 		</xsl:if>
