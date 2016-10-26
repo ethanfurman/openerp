@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <addresses>
     <address type="fields" name="id">
-        <company-title type="field" name="title.name"/>
-        <company-name type="field" name="name"/>
+        <name type="field" name="name"/>
+        <company type="field" name="parent_id.name"/>
         <type type="field" name="type"/>
         <street type="field" name="street"/>
         <street2 type="field" name="street2"/>

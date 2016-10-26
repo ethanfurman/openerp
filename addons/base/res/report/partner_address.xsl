@@ -29,7 +29,7 @@
 				<xsl:apply-templates select="address" mode="story">
 					<xsl:sort select="contact/country"/>
 					<xsl:sort select="contact/zip"/>
-					<xsl:sort select="company-name"/>
+					<xsl:sort select="company"/>
 				</xsl:apply-templates>
 			</story>
 		</document>
@@ -57,7 +57,8 @@
 	</xsl:template>
 
 	<xsl:template match="address" mode="story">
-		<para style="nospace"><xsl:value-of select="company-name"/><xsl:text> </xsl:text><xsl:value-of select="company-title"/></para>
+		<para style="nospace"><xsl:value-of select="name"/></para>
+		<para style="nospace"><xsl:value-of select="company"/></para>
 		<para style="nospace"><xsl:value-of select="street"/></para>
 		<para style="nospace"><xsl:value-of select="street2"/></para>
 		<para style="nospace"><xsl:value-of select="city"/><xsl:text>, </xsl:text><xsl:value-of select="state"/><xsl:text>  </xsl:text><xsl:value-of select="zip"/></para>
