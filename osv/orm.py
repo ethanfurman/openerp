@@ -4727,7 +4727,7 @@ class BaseModel(object):
         cache = {}
         # need to accepts ints and longs because ids coming from a method
         # launched by button in the interface have a type long...
-        if isinstance(select, (int, long)):
+        if not isinstance(select, bool) and isinstance(select, (int, long)):
             return browse_record(cr, uid, select, self, cache, context=context, list_class=self._list_class, fields_process=fields_process)
         elif isinstance(select, list):
             # either a list of integers, or a domain selection list
