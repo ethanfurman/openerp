@@ -5033,7 +5033,7 @@ class BaseModel(object):
                     if order_column._classic_read:
                         order = None
                         if order_column._type == 'selection':
-                            sort_order = getattr(order_column, '_sort_order', None)
+                            sort_order = getattr(order_column, 'sort_order', None)
                             if sort_order == 'definition':
                                 order = [s[0] for s in order_column.selection]
                             elif sort_order == 'user_name':

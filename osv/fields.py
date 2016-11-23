@@ -449,11 +449,11 @@ class selection(_column):
         # selection -> [('internal_name', ('User Presentable Name')]
         _column.__init__(self, string=string, **args)
         self.selection = selection
-        # _sort_order allows different sorting of this field; default is
+        # sort_order allows different sorting of this field; default is
         # alphabetical by internal_name; other options are:
         # - definition (definition order); and
         # - user_name (alpha by User Presentable Name)
-        self._sort_order = sort_order
+        self.sort_order = sort_order
 
 # ---------------------------------------------------------
 # Relationals fields
