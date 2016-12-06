@@ -37,7 +37,6 @@ class hr_employee(osv.Model):
         return res
 
     _columns = {
-        'driver_employee_num': fields.char('Employee #', size=12),
         'driver_license_state': fields.many2one('res.country.state', 'State of License'),
         'driver_license_num': fields.char('License #', size=24),
         'driver_license_class': fields.selection([('A','A'),('B','B'),('C','C'),('M','M')], 'License Class'),
@@ -78,7 +77,6 @@ class res_partner(osv.Model):
         if context is None:
             context = {}
         if not context.get('show_driver') or not self.user_has_groups(cr, uid, 'fleet.group_fleet_manager', context=context):
-            func = super(res_partner, self).name_get
             return super(res_partner, self).name_get(cr, uid, ids, context=context)
         res = []
         for record in self.browse(cr, uid, ids, context=context):
@@ -88,7 +86,7 @@ class res_partner(osv.Model):
             if is_employee and employee:
                 name = '%s (%s)\nLicense: %s %s %s\nLicense Exp: %s\nMedical Exp: %s' % (
                         name,
-                        employee.driver_employee_num or '',
+                        employee.identification_id or '',
                         employee.driver_license_state and employee.driver_license_state.code or '',
                         employee.driver_license_num or '',
                         employee.driver_license_class or '',
