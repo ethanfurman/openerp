@@ -1,0 +1,52 @@
+!!! xml1.0
+~openerp
+    ~data
+        ~record model='ir.ui.view' #fleet_hr_driver_form
+            @name: hr.employee.form
+            @model: hr.employee
+            @inherit_id ref='hr.view_employee_form'
+            @priority eval='10'
+            @arch type='xml'
+                @category_ids position='after'
+                    ~label .oe_edit_only for='driver_employee_num' groups='base.group_hr_user'
+                    @driver_employee_num string='Employee #'
+                ~page @Personal position='after'
+                    ~page @Fleet $Fleet_Information groups='base.group_hr_user,fleet.group_fleet_manager'
+                        ~group colspan='2'
+                            @driver_license_state
+                            @driver_license_num
+                            @driver_license_class
+                            @driver_license_exp
+                            @driver_medical_exp
+        ~record model='ir.ui.view' #fleet_hr_driver_tree
+            @name: hr.employee.tree
+            @model: hr.employee
+            @inherit_id ref='hr.view_employee_tree'
+            @priority eval='10'
+            @arch type='xml'
+                ~xpath expr="//tree[@string='Employees']" position='attributes'
+                    ~attribute @colors
+                        orange:driver_license_renewal_due_soon or driver_medical_renewal_due_soon; red:driver_license_renewal_overdue or driver_medical_renewal_overdue
+                ~xpath expr="//field[@name='job_id']" position='after'
+                    @driver_license_exp
+                    @driver_medical_exp
+                    @driver_license_renewal_due_soon invisible='1'
+                    @driver_license_renewal_overdue invisible='1'
+                    @driver_medical_renewal_due_soon invisible='1'
+                    @driver_medical_renewal_overdue invisible='1'
+        ~record model='ir.actions.act_window' #fleet.fleet_vehicle_act
+            @context: {'show_driver':1}
+        ~record model='ir.ui.view' #fleet_vehicle_driver_tree
+            @name: fleet.vehicle.tree
+            @model: fleet.vehicle
+            @inherit_id ref='fleet.fleet_vehicle_tree'
+            @priority eval='10'
+            @arch type='xml'
+                ~xpath expr="//tree[@string='Vehicle']" position='attributes'
+                    ~attribute @colors
+                        orange:contract_renewal_due_soon or driver_license_renewal_due_soon or driver_medical_renewal_due_soon or dmv_reg_warning=='warning'; red:contract_renewal_overdue or driver_license_renewal_overdue or driver_medical_renewal_overdue or dmv_reg_warning=='expired'
+                ~xpath expr="//field[@name='location']" position='after'
+                    @driver_license_renewal_due_soon invisible='1'
+                    @driver_license_renewal_overdue invisible='1'
+                    @driver_medical_renewal_due_soon invisible='1'
+                    @driver_medical_renewal_overdue invisible='1'

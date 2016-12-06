@@ -39,7 +39,7 @@ and expiration dates.
         'fnx',
         ],
     'update_xml' : [
-        'fleet_hr_view.xml',
+        'fleet_hr_view.xaml',
         ],
 
     'installable' : True,
