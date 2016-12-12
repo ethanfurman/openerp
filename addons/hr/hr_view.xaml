@@ -1,10 +1,14 @@
 !!! xml1.0
 ~openerp
     ~data
+
+        // menu items
         ~menuitem name='Human Resources' #menu_hr_root groups='base.group_hr_manager,base.group_hr_user,base.group_user' sequence='90'
         ~menuitem name='Human Resources' #menu_hr_main parent='menu_hr_root' sequence='0'
         ~menuitem @Configuration #menu_hr_configuration groups='base.group_hr_manager' parent='hr.menu_hr_root' sequence='50'
         ~menuitem @Reports #menu_hr_reporting_timesheet parent='menu_hr_reporting' sequence='6'
+
+        // employee form view
         ~record model='ir.ui.view' #view_employee_form
             @name: hr.employee.form
             @model: hr.employee
@@ -17,10 +21,10 @@
                             ~h1
                                 @name
                             ~label .oe_edit_only for='category_ids' groups='base.group_hr_user'
-                            @category_ids groups='base.group_hr_user' placeholder='e.g. Part Time' widget='many2many_tags'
+                            @category_ids groups='base.group_hr_user' placeholder='e.g. Part Time' widget='many2many_tags' nolabel='1'
                         ~div @button_box class='oe_right oe_button_box'
                         ~notebook
-                            ~page @Public $Public_Information
+                            ~page @Public $Public
                                 ~group
                                     ~group $Contact_Information
                                         @partner_id context="{'show_address':1, 'default_customer':0, 'default_employee':1}" on_change='onchange_partner_id(partner_id, name)' options='{"always_reload": True, "highlight_first_line": True}'
@@ -34,22 +38,21 @@
                                         @parent_id
                                         @coach_id
                                         ~label $Employee_No for='identification_id'
-                                        @identification_id groups='base.group_hr_user'
+                                        @identification_id groups='base.group_hr_user' nolabel='1'
                                     ~group
                                         @company_id groups='base.group_multi_company'
                                         @user_id $User_Record invisible='1'
                                 @notes colspan='4' placeholder='Other Information ...'
-                            ~page @Personal $Personal_Information groups='base.group_hr_user'
+                            ~page @Personal $Confidential groups='base.group_hr_user'
                                 ~group
                                     ~group string='Citizenship & Other Info'
-                                        @country_id options='{"no_open": True}'
                                         @passport_id groups='base.group_hr_user'
+                                        @country_id options='{"no_open": True}'
+                                        @birthday
+                                        @gender
                                         @otherid groups='base.group_hr_user'
                                         ~separator $Status colspan='2'
-                                        @gender
                                         @marital
-                                        ~separator $Birth colspan='2'
-                                        @birthday
                                     ~group $Contact_Information
                                         @home_phone
                                         @home_email
@@ -320,8 +323,9 @@
         ~menuitem @Recruitment #base.menu_crm_case_job_req_main groups='base.group_hr_user' parent='menu_hr_root'
         ~menuitem #menu_hr_job action='action_hr_job' parent='hr.menu_hr_configuration' sequence='6'
         ~record model='ir.actions.act_window' #base.action_partner_form
-            @domain: ['|',('customer','=',1),('employee','!=',1)]
+            @name: res.partner records
+            @domain: []
+        ~record model='ir.actions.act_window' #base.action_partner_customer_form
+            @domain: [('customer','=',1)]
         ~record model='ir.actions.act_window' #base.action_partner_supplier_form
-            @domain: ['|',('supplier','=',1),('employee','!=',1)]
-        ~record model='ir.actions.act_window' #base.action_partner_supplier_form
-            @domain: [('customer','!=',1),('supplier','!=',1),('employee','!=',1)]
+            @domain: [('supplier','=',1)]
