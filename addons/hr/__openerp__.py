@@ -53,7 +53,7 @@ You can manage:
         'security/hr_security.xml',
         'security/ir.model.access.csv',
         'board_hr_view.xml',
-        'hr_view.xml',
+        'hr_view.xaml',
         'hr_department_view.xml',
         'process/hr_process.xml',
         'hr_installer.xml',
