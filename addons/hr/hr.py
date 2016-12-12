@@ -222,6 +222,10 @@ class hr_employee(osv.osv):
     _order='name_related'
 
     def create(self, cr, uid, data, context=None):
+        # work around view not using default image
+        if 'image' not in data and not data.get('image_medium'):
+            data.pop('image_medium', None)
+            data['image'] = self._get_default_image(cr, uid, context=context)
         employee_id = super(hr_employee, self).create(cr, uid, data, context=context)
         try:
             if (context or {}).get('hr_welcome', True):
