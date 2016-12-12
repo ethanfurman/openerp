@@ -2486,7 +2486,7 @@ class BaseModel(object):
                     field == 'id' or
                     field not in self._columns or
                     self._columns[field]._type not in ('date', 'datetime') or
-                    not hasattr(Period, 'period')
+                    not hasattr(Period, period)
                     ):
                 new_args.append(arg)
                 continue
