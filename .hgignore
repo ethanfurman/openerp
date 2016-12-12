@@ -19,6 +19,7 @@ filestore/
 addons/automated_clearing_house
 addons/cmms
 addons/fis_integration
+addons/fleet_hr/fleet_hr_view.xml
 addons/fnx
 addons/personal_address_book
 addons/salesinq
