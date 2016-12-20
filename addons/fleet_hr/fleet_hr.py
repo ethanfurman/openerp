@@ -1,6 +1,6 @@
 import logging
 from osv import osv, fields
-from fnx import Date
+from dbf import Date
 
 _logger = logging.getLogger(__name__)
 
