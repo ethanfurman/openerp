@@ -72,6 +72,7 @@
                                 ~group
                                     ~group @active_group $Active
                                         @active
+
         ~record model='ir.ui.view' #view_employee_tree
             @name: hr.employee.tree
             @model: hr.employee
@@ -85,6 +86,7 @@
                     @job_id
                     @parent_id
                     @coach_id invisible='1'
+
         ~record model='ir.ui.view' #view_employee_filter
             @name: Employees
             @model: hr.employee
@@ -99,6 +101,7 @@
                         ~filter $Department context="{'group_by':'department_id'}" domain='[]' icon='terp-personal+'
                         ~filter $Job context="{'group_by':'job_id'}" domain='[]' icon='terp-gtk-select-all'
                         ~filter $Company context="{'group_by':'company_id'}" domain='[]' groups='base.group_multi_company' icon='terp-go-home'
+
         ~record model='ir.ui.view' #hr_kanban_view_employees
             @name: HR - Employess Kanban
             @model: hr.employee
@@ -134,6 +137,7 @@
                                             ~a t-attf-href='mailto:#{record.work_email.value}'
                                                 @work_email
                             ~script: $('.oe_employee_picture').load(function() { if($(this).width() > $(this).height()) { $(this).addClass('oe_employee_picture_wide') } });
+
         ~record model='ir.actions.act_window' #open_view_employee_tree
             @name: Employees Structure
             @res_model: hr.employee
@@ -142,6 +146,7 @@
             @view_id ref='view_employee_tree'
             @domain: [('parent_id','=',False)]
             @search_view_id ref='view_employee_filter'
+
         ~record model='ir.actions.act_window' #open_view_employee_list
             @name: Employees
             @res_model: hr.employee
@@ -149,6 +154,7 @@
             @view_mode: form,tree
             @view_id eval='False'
             @search_view_id ref='view_employee_filter'
+
         ~record model='ir.actions.act_window' #open_view_employee_list_my
             @name: Employees
             @res_model: hr.employee
@@ -163,12 +169,15 @@
                     Click to add a new employee.
                 ~p
                     With just a quick glance on the OpenERP employee screen, you can easily find all the information you need for each person; contact data, job position, availability, etc.
+
         ~menuitem #menu_open_view_employee_list_my action='open_view_employee_list_my' parent='menu_hr_main' sequence='3'
+
         ~record model='ir.ui.view_sc' #ir_ui_view_sc_employee
             @name: Employees
             @resource: ir.ui.menu
             @user_id ref='base.user_root'
             @res_id ref='hr.menu_open_view_employee_list_my'
+
         ~record model='ir.ui.view' #view_partner_tree2
             @name: hr.employee.tree
             @model: hr.employee
@@ -184,6 +193,7 @@
                     @job_id
                     @coach_id invisible='1'
                     @parent_id invisible='1'
+
         ~record model='ir.actions.act_window' #action2
             @name: Subordinate Hierarchy
             @type: ir.actions.act_window
@@ -199,6 +209,7 @@
             @value eval="'ir.actions.act_window,'+str(action2)"
             @isobject eval='True'
             @replace eval='True'
+
         ~record model='ir.ui.view' #view_employee_category_form
             @name: hr.employee.category.form
             @model: hr.employee.category
@@ -207,6 +218,7 @@
                     ~group
                         @name
                         @parent_id
+
         ~record model='ir.ui.view' #view_employee_category_list
             @name: hr.employee.category.list
             @model: hr.employee.category
@@ -214,6 +226,7 @@
             @arch type='xml'
                 ~tree $Employees_Categories
                     @complete_name
+
         ~record model='ir.ui.view' #view_employee_category_tree
             @name: hr.employee.category.tree
             @model: hr.employee.category
@@ -221,12 +234,15 @@
             @arch type='xml'
                 ~tree $Employees_Categories
                     @name
+
         ~record model='ir.actions.act_window' #open_view_categ_form
             @name: Employee Tags
             @res_model: hr.employee.category
             @view_type: form
             @view_mode: tree,form
+
         ~menuitem #menu_view_employee_category_form action='open_view_categ_form' groups='base.group_no_one' parent='hr.menu_hr_configuration' sequence='1'
+
         ~record model='ir.actions.act_window' #hr_employee_normal_action_tree
             @name: Employees
             @type: ir.actions.act_window
@@ -234,11 +250,13 @@
             @view_type: form
             @view_mode: tree,form
             @domain: [('category_ids','=', active_ids)]
+
         ~record model='ir.values' #hr_employee_category_open
             @key2 eval="'tree_but_open'"
             @model eval="'hr.employee.category'"
             @name: Employees by Categories
             @value eval="'ir.actions.act_window,%d'%hr_employee_normal_action_tree"
+
         ~record model='ir.ui.view' #view_hr_job_form
             @name: hr.job.form
             @model: hr.job
@@ -270,6 +288,7 @@
                     ~div .oe_chatter
                         @message_follower_ids widget='mail_followers'
                         @message_ids widget='mail_thread'
+
         ~record model='ir.ui.view' #view_hr_job_tree
             @name: hr.job.tree
             @model: hr.job
@@ -282,6 +301,7 @@
                     @no_of_employee
                     @no_of_recruitment
                     @state
+
         ~record model='ir.ui.view' #view_job_filter
             @name: Job
             @model: hr.job
@@ -295,6 +315,7 @@
                         ~filter $Department context="{'group_by':'department_id'}" domain='[]' icon='terp-personal+'
                         ~filter $Status context="{'group_by':'state'}" domain='[]' icon='terp-stock_effects-object-colorize'
                         ~filter $Company context="{'group_by':'company_id'}" domain='[]' groups='base.group_multi_company' icon='terp-go-home'
+
         ~record model='ir.ui.view' #view_hr_job_employee_form
             @name: hr.job.employee.form
             @model: hr.job
@@ -306,6 +327,7 @@
                         @department_id
                     ~label for='description'
                     @description
+
         ~record model='ir.actions.act_window' #action_hr_job
             @name: Job Positions
             @res_model: hr.job
@@ -320,12 +342,16 @@
                     Job Positions are used to define jobs and their requirements. You can keep track of the number of employees you have per job position and follow the evolution according to what you planned for the future.
                 ~p
                     You can attach a survey to a job position. It will be used in the recruitment process to evaluate the applicants for this job position.
+
         ~menuitem @Recruitment #base.menu_crm_case_job_req_main groups='base.group_hr_user' parent='menu_hr_root'
         ~menuitem #menu_hr_job action='action_hr_job' parent='hr.menu_hr_configuration' sequence='6'
+
         ~record model='ir.actions.act_window' #base.action_partner_form
             @name: Partners
             @domain: []
+
         ~record model='ir.actions.act_window' #base.action_partner_customer_form
             @domain: [('customer','=',1)]
+
         ~record model='ir.actions.act_window' #base.action_partner_supplier_form
             @domain: [('supplier','=',1)]
