@@ -19,8 +19,8 @@
 #
 ##############################################################################
 
-import sys
-import logging
+import sys as _sys
+import logging as _logging
 
 LOG_NOTSET = 'notset'
 LOG_DEBUG = 'debug'
@@ -30,10 +30,10 @@ LOG_WARNING = 'warn'
 LOG_ERROR = 'error'
 LOG_CRITICAL = 'critical'
 
-logging.TEST = logging.INFO - 5
-logging.addLevelName(logging.TEST, 'TEST')
+_logging.TEST = _logging.INFO - 5
+_logging.addLevelName(_logging.TEST, 'TEST')
 
-_logger = logging.getLogger(__name__)
+_logger = _logging.getLogger(__name__)
 
 class Logger(object):
     def __init__(self):
@@ -48,10 +48,10 @@ class Logger(object):
             "the standard `logging` module instead.")
         from service.web_services import common
 
-        log = logging.getLogger(__name__ + '.deprecated.' + ustr(name))
+        log = _logging.getLogger(__name__ + '.deprecated.' + ustr(name))
 
         if level in [LOG_TEST] and not hasattr(log, level):
-            fct = lambda msg, *args, **kwargs: log.log(getattr(logging, level.upper()), msg, *args, **kwargs)
+            fct = lambda msg, *args, **kwargs: log.log(getattr(_logging, level.upper()), msg, *args, **kwargs)
             setattr(log, level, fct)
 
 
@@ -84,15 +84,15 @@ class Logger(object):
 
     def set_loglevel(self, level, logger=None):
         if logger is not None:
-            log = logging.getLogger(str(logger))
+            log = _logging.getLogger(str(logger))
         else:
-            log = logging.getLogger()
-        log.setLevel(logging.INFO) # make sure next msg is printed
-        log.info("Log level changed to %s" % logging.getLevelName(level))
+            log = _logging.getLogger()
+        log.setLevel(_logging.INFO) # make sure next msg is printed
+        log.info("Log level changed to %s" % _logging.getLevelName(level))
         log.setLevel(level)
 
     def shutdown(self):
-        logging.shutdown()
+        _logging.shutdown()
 
 # TODO get_encodings, ustr and exception_to_unicode were originally from tools.misc.
 # There are here until we refactor tools so that this module doesn't depends on tools.
@@ -160,7 +160,7 @@ def ustr(value, hint_encoding='utf-8', errors='strict'):
 
 
 def exception_to_unicode(e):
-    if (sys.version_info[:2] < (2,6)) and hasattr(e, 'message'):
+    if (_sys.version_info[:2] < (2,6)) and hasattr(e, 'message'):
         return ustr(e.message)
     if hasattr(e, 'args'):
         return "\n".join((ustr(a) for a in e.args))
