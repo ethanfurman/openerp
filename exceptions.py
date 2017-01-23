@@ -53,4 +53,15 @@ class DeferredException(Exception):
         self.message = msg
         self.traceback = tb
 
+class ERPError(Exception):
+    """ Errors that will be displayed in web browser.
+
+    name: error title
+    value: error message
+    """
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+        self.args = (name, value)
+
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

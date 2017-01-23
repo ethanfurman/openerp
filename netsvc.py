@@ -44,7 +44,8 @@ except ImportError:
 # TODO modules that import netsvc only for things from loglevels must be changed to use loglevels.
 from loglevels import *
 import tools
-import openerp
+from openerp.exceptions import AccessDenied, AccessError, DeferredException, ERPError, Warning
+from openerp.osv import osv
 
 _logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def close_socket(sock):
 
 def abort_response(dummy_1, description, dummy_2, details):
     # TODO Replace except_{osv,orm} with these directly.
-    raise openerp.osv.osv.except_osv(description, details)
+    raise ERPError(description, details)
 
 class Service(object):
     """ Base class for Local services
@@ -94,7 +95,7 @@ def LocalService(name):
     # Special case for addons support, will be removed in a few days when addons
     # are updated to directly use openerp.osv.osv.service.
     if name == 'object_proxy':
-        return openerp.osv.osv.service
+        return osv.service
 
     return Service._services[name]
 
@@ -317,13 +318,13 @@ def dispatch_rpc(service_name, method, params):
                 log(rpc_request,logging.DEBUG, logline, replace_request_password(params), depth=1)
 
         return result
-    except openerp.exceptions.AccessError:
+    except AccessError:
         raise
-    except openerp.exceptions.AccessDenied:
+    except AccessDenied:
         raise
-    except openerp.exceptions.Warning:
+    except Warning:
         raise
-    except openerp.exceptions.DeferredException, e:
+    except DeferredException, e:
         _logger.exception(tools.exception_to_unicode(e))
         post_mortem(e.traceback)
         raise

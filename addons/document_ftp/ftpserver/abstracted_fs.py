@@ -11,7 +11,7 @@ import fnmatch
 
 from openerp import pooler, netsvc, sql_db
 from openerp.service import security
-from openerp.osv import osv
+from openerp.exceptions import ERPError
 
 from document.document import get_node_context
 
@@ -353,7 +353,7 @@ class abstracted_fs(object):
             for db in self.db_list():
                 try:
                     result.append(false_node(db))
-                except osv.except_osv:
+                except ERPError:
                     pass
             return result
         cr, node, rem = datacr

@@ -8,7 +8,9 @@ import traceback
 import sys
 import xmlrpclib
 
-import openerp
+from openerp import netsvc
+from openerp.exceptions import AccessDenied, AccessError, DeferredException, ERPError, Warning
+from openerp.tools import ustr
 
 _logger = logging.getLogger(__name__)
 
@@ -87,21 +89,21 @@ class OpenERPSession(object):
     def send(self, service_name, method, *args):
         code_string = u"warning -- %s\n\n%s"
         try:
-            return openerp.netsvc.dispatch_rpc(service_name, method, args)
-        except openerp.osv.osv.except_osv, e:
+            return netsvc.dispatch_rpc(service_name, method, args)
+        except ERPError, e:
             raise xmlrpclib.Fault(code_string % (e.name, e.value), '')
-        except openerp.exceptions.Warning, e:
+        except Warning, e:
             raise xmlrpclib.Fault(code_string % ("Warning", e), '')
-        except openerp.exceptions.AccessError, e:
+        except AccessError, e:
             raise xmlrpclib.Fault(code_string % ("AccessError", e), '')
-        except openerp.exceptions.AccessDenied, e:
-            raise xmlrpclib.Fault('AccessDenied', openerp.tools.ustr(e))
-        except openerp.exceptions.DeferredException, e:
+        except AccessDenied, e:
+            raise xmlrpclib.Fault('AccessDenied', ustr(e))
+        except DeferredException, e:
             formatted_info = "".join(traceback.format_exception(*e.traceback))
-            raise xmlrpclib.Fault(openerp.tools.ustr(e), formatted_info)
+            raise xmlrpclib.Fault(ustr(e), formatted_info)
         except Exception, e:
             formatted_info = "".join(traceback.format_exception(*(sys.exc_info())))
-            raise xmlrpclib.Fault(openerp.tools.ustr(e), formatted_info)
+            raise xmlrpclib.Fault(ustr(e), formatted_info)
 
     def proxy(self, service):
         return Service(self, service)

@@ -20,7 +20,8 @@
 ##############################################################################
 import logging
 
-from openerp.osv import osv
+from openerp.exceptions import ERPError
+from openerp.osv.osv import Model
 from edi import EDIMixin
 from openerp import SUPERUSER_ID
 _logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ RES_PARTNER_EDI_STRUCT = {
     'mobile': True,
 }
 
-class res_partner(osv.osv, EDIMixin):
+class res_partner(Model, EDIMixin):
     _inherit = "res.partner"
 
     def edi_export(self, cr, uid, records, edi_struct=None, context=None):
@@ -82,7 +83,7 @@ class res_partner(osv.osv, EDIMixin):
                 try:
                     self.edi_import_relation(cr, uid, 'res.partner.bank',
                                              bank_name, ext_bank_id, context=import_ctx)
-                except osv.except_osv:
+                except ERPError:
                     # failed to import it, try again with unrestricted default type
                     _logger.warning('Failed to import bank account using'
                                                                  'bank type: %s, ignoring', import_ctx['default_state'],

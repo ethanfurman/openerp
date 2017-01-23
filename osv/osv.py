@@ -23,18 +23,18 @@
 
 from functools import wraps
 import logging
-import threading
+# import threading
 
 from psycopg2 import IntegrityError, OperationalError, errorcodes
 
 import orm
-import openerp
+# import openerp
 import openerp.netsvc as netsvc
 import openerp.pooler as pooler
 import openerp.sql_db as sql_db
 from openerp.tools.translate import translate
-from openerp.osv.orm import MetaModel, Model, TransientModel, AbstractModel
-import openerp.exceptions
+from openerp.osv.orm import Model, TransientModel, AbstractModel
+from openerp.exceptions import ERPError
 
 import time
 import random
@@ -43,13 +43,6 @@ _logger = logging.getLogger(__name__)
 
 PG_CONCURRENCY_ERRORS_TO_RETRY = (errorcodes.LOCK_NOT_AVAILABLE, errorcodes.SERIALIZATION_FAILURE, errorcodes.DEADLOCK_DETECTED)
 MAX_TRIES_ON_CONCURRENCY_FAILURE = 5
-
-# Deprecated.
-class except_osv(Exception):
-    def __init__(self, name, value):
-        self.name = name
-        self.value = value
-        self.args = (name, value)
 
 service = None
 
@@ -127,7 +120,7 @@ class object_proxy(object):
             while True:
                 try:
                     if pooler.get_pool(dbname)._init:
-                        raise except_osv('Database not ready', 'Currently, this database is not fully loaded and can not be used.')
+                        raise ERPError('Database not ready', 'The database is reloading, please try your request again in a few moments.')
                     return f(self, dbname, *args, **kwargs)
                 except OperationalError, e:
                     # Automatically retry the typical transaction serialization errors
@@ -141,8 +134,8 @@ class object_proxy(object):
                     _logger.info("%s, retry %d/%d in %.04f sec..." % (errorcodes.lookup(e.pgcode), tries, MAX_TRIES_ON_CONCURRENCY_FAILURE, wait_time))
                     time.sleep(wait_time)
                 except orm.except_orm, inst:
-                    raise except_osv(inst.name, inst.value)
-                except except_osv:
+                    raise ERPError(inst.name, inst.value)
+                except ERPError:
                     raise
                 except IntegrityError, inst:
                     osv_pool = pooler.get_pool(dbname)
@@ -181,7 +174,7 @@ class object_proxy(object):
     def execute_cr(self, cr, uid, obj, method, *args, **kw):
         object = pooler.get_pool(cr.dbname).get(obj)
         if not object:
-            raise except_osv('Object Error', 'Object %s doesn\'t exist' % str(obj))
+            raise ERPError('Object Error', 'Object %s doesn\'t exist' % str(obj))
         return getattr(object, method)(cr, uid, *args, **kw)
 
     def execute_kw(self, db, uid, obj, method, args, kw=None):
@@ -193,7 +186,7 @@ class object_proxy(object):
         try:
             try:
                 if method.startswith('_'):
-                    raise except_osv('Access Denied', 'Private methods (such as %s) cannot be called remotely.' % (method,))
+                    raise ERPError('Access Denied', 'Private methods (such as %s) cannot be called remotely.' % (method,))
                 res = self.execute_cr(cr, uid, obj, method, *args, **kw)
                 if res is None:
                     _logger.warning('The method %s of the object %s can not return `None` !', method, obj)
@@ -208,7 +201,7 @@ class object_proxy(object):
     def exec_workflow_cr(self, cr, uid, obj, signal, *args):
         object = pooler.get_pool(cr.dbname).get(obj)
         if not object:
-            raise except_osv('Object Error', 'Object %s doesn\'t exist' % str(obj))
+            raise ERPError('Object Error', 'Object %s doesn\'t exist' % str(obj))
         res_id = args[0]
         return object._workflow_signal(cr, uid, [res_id], signal)[res_id]
 
