@@ -45,7 +45,6 @@ except ImportError:
 from loglevels import *
 import tools
 from openerp.exceptions import AccessDenied, AccessError, DeferredException, ERPError, Warning
-from openerp.osv import osv
 
 _logger = logging.getLogger(__name__)
 
@@ -92,6 +91,7 @@ class Service(object):
             cls._services.pop(name)
 
 def LocalService(name):
+    from openerp.osv import osv
     # Special case for addons support, will be removed in a few days when addons
     # are updated to directly use openerp.osv.osv.service.
     if name == 'object_proxy':

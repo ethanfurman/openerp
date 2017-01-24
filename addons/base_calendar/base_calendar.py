@@ -25,7 +25,7 @@ from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from openerp import SUPERUSER_ID
 from openerp.osv import fields, osv
-from openerp.osv.osv import except_osv as ERPError
+from openerp.osv.osv import except_osv
 from openerp.service import web_services
 from openerp.tools.translate import _
 import pytz
@@ -579,7 +579,7 @@ class calendar_attendee(osv.osv):
                 not attendee.user_id or
                 attendee.user_id and attendee.user_id.id == uid
                 ):
-                    raise ERPError('Error', 'You can only change your own status.')
+                    raise except_osv('Error', 'You can only change your own status.')
 
     def do_tentative(self, cr, uid, ids, context=None, *args):
         """
@@ -1275,10 +1275,9 @@ class calendar_event(osv.osv):
                 idval = real_id2base_calendar_id(data['id'], r_date.strftime("%Y-%m-%d %H:%M:%S"))
                 result.append(idval)
 
+        ids = list(set(result))
         if isinstance(select, (str, int, long)):
             return ids and ids[0] or False
-        else:
-            ids = list(set(result))
         return ids
 
     def compute_rule_string(self, data):
@@ -1447,10 +1446,10 @@ class calendar_event(osv.osv):
                     if self.default_organizer(cr, uid) == record['organizer']:
                         ids[i] = record['master_event_id']
                     else:
-                        raise ERPError('Permission Denied', 'You can only change your own events.')
+                        raise except_osv('Permission Denied', 'You can only change your own events.')
                 # check if event is a slave and protected fields are being updated
                 elif record['master_event_id'] and protected_keys:
-                    raise ERPError('Permission Denied', 'Only the alarm and show-as fields can be modified on invited events')
+                    raise except_osv('Permission Denied', 'Only the alarm and show-as fields can be modified on invited events')
         def _only_changes_to_apply_on_real_ids(field_names):
             ''' return True if changes are only to be made on the real ids'''
             for field in field_names:
@@ -1518,7 +1517,7 @@ class calendar_event(osv.osv):
                             cr, SUPERUSER_ID, [('master_event_id','=',record['id'])]
                             )
                 if slave_ids and not super(calendar_event, self).write(cr, SUPERUSER_ID, slave_ids, slave_vals, context):
-                    raise ERPError('Error', 'Unable to update slave events')
+                    raise except_osv('Error', 'Unable to update slave events')
         if vals.get('partner_ids'):
             copy_ctx = context.copy()
             copy_ctx['strict_copy'] = True
@@ -1527,7 +1526,7 @@ class calendar_event(osv.osv):
                 attendee_ids = self.create_attendees(cr, uid, [event.id], context)[event.id]
                 # link attendees to old slaves
                 if not super(calendar_event, self).write(cr, SUPERUSER_ID, master_slave_ids[event.id], context):
-                    raise ERPError('Error', 'Unable to update slave events')
+                    raise except_osv('Error', 'Unable to update slave events')
                 # and create new slaves
                 user_ids = [
                         att['user_id'][0]
@@ -1633,7 +1632,7 @@ class calendar_event(osv.osv):
         if uid != SUPERUSER_ID:
             for record in records:
                 if uid != record['user_id'][0]:
-                    raise ERPError('Error', 'You can only delete your own events.')
+                    raise except_osv('Error', 'You can only delete your own events.')
         res = False
         attendee_obj=self.pool.get('calendar.attendee')
         for event_id in ids[:]:

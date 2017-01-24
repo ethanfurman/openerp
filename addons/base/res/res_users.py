@@ -30,7 +30,7 @@ from openerp import pooler, tools
 import openerp.exceptions
 from openerp.osv import fields,osv
 from openerp.osv.orm import browse_record
-from openerp.osv.osv import except_osv as ERPError
+from openerp.osv.osv import except_osv
 from openerp.tools.translate import _
 
 _logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ class groups(osv.osv):
     def write(self, cr, uid, ids, vals, context=None):
         if 'name' in vals:
             if vals['name'].startswith('-'):
-                raise ERPError(_('Error'),
+                raise except_osv(_('Error'),
                         _('The name of the group can not start with "-"'))
         res = super(groups, self).write(cr, uid, ids, vals, context=context)
         self.pool.get('ir.model.access').call_cache_clearing_methods(cr)
@@ -128,7 +128,7 @@ class res_users(osv.osv):
             # To change their own password users must use the client-specific change password wizard,
             # so that the new password is immediately used for further RPC requests, otherwise the user
             # will face unexpected 'Access Denied' exceptions.
-            raise ERPError(_('Operation Canceled'), _('Please use the change password wizard (in User Preferences or User menu) to change your own password.'))
+            raise except_osv(_('Operation Canceled'), _('Please use the change password wizard (in User Preferences or User menu) to change your own password.'))
         self.write(cr, uid, id, {'password': value})
 
     def _get_password(self, cr, uid, ids, arg, karg, context=None):
@@ -325,7 +325,7 @@ class res_users(osv.osv):
 
     def unlink(self, cr, uid, ids, context=None):
         if 1 in ids:
-            raise ERPError(_('Can not remove root user!'), _('You can not remove the admin user as it is used internally for resources created by OpenERP (updates, module installation, ...)'))
+            raise except_osv(_('Can not remove root user!'), _('You can not remove the admin user as it is used internally for resources created by OpenERP (updates, module installation, ...)'))
         db = cr.dbname
         if db in self._uid_cache:
             for id in ids:
@@ -488,7 +488,7 @@ class res_users(osv.osv):
         self.check(cr.dbname, uid, old_passwd)
         if new_passwd:
             return self.write(cr, uid, uid, {'password': new_passwd})
-        raise ERPError(_('Warning!'), _("Setting empty passwords is not allowed for security reasons!"))
+        raise except_osv(_('Warning!'), _("Setting empty passwords is not allowed for security reasons!"))
 
     def preference_save(self, cr, uid, ids, context=None):
         return {
@@ -518,12 +518,12 @@ class res_users(osv.osv):
         """
         if isinstance(ids, basestring):
             if group_ext_id is not None:
-                raise ERPError(_('Error'), _('group_ext_id cannot be a string if ids is'))
+                raise except_osv(_('Error'), _('group_ext_id cannot be a string if ids is'))
             ids, group_ext_id = [uid], ids
         if isinstance(ids, (int, long)):
             ids = [ids]
         if not isinstance(group_ext_id, basestring) or group_ext_id.count('.') != 1:
-            raise ERPError(_('Error'), _('External ID must be fully qualified ("module.ext_id", not %r)' % group_ext_id))
+            raise except_osv(_('Error'), _('External ID must be fully qualified ("module.ext_id", not %r)' % group_ext_id))
         module, ext_id = group_ext_id.split('.')
         for uid in ids:
             cr.execute("""SELECT 1 FROM res_groups_users_rel WHERE uid=%s AND gid IN

@@ -22,7 +22,7 @@
 from openerp import addons
 import logging
 from openerp.osv import fields, osv
-from openerp.osv.osv import except_osv as ERPError
+from openerp.osv.osv import except_osv
 from openerp import tools
 _logger = logging.getLogger(__name__)
 
@@ -247,7 +247,7 @@ class hr_employee(osv.osv):
         partner_id = values.get('partner_id')
         if partner_id:
             if len(ids) > 1:
-                ERPError('Error', 'Only one partner per employee.')
+                except_osv('Error', 'Only one partner per employee.')
             employee_id = ids[0]
             self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id, 'employee':True}, context=context)
         else:
