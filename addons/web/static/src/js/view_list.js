@@ -348,6 +348,12 @@ instance.web.ListView = instance.web.View.extend( /** @lends instance.web.ListVi
             this.sidebar.add_toolbar(this.fields_view.toolbar);
             this.sidebar.$el.hide();
         }
+        // Default Sort (taken from odoo 10)
+        var default_order = this.fields_view.arch.attrs.default_order;
+        var unsorted = !this.dataset._sort.length;
+        if (unsorted && default_order && !this.grouped) {
+            this.dataset.set_sort(default_order.split(','));
+        }
         //Sort
         if(this.dataset._sort.length){
             if(this.dataset._sort[0].indexOf('-') == -1){
