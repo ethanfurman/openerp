@@ -1,11 +1,12 @@
 !!! xml1.0
 ~openerp
     ~data
+
         ~record model='ir.ui.view' #fleet_hr_driver_form
             @name: hr.employee.form
             @model: hr.employee
             @inherit_id ref='hr.view_employee_form'
-            @priority eval='10'
+            @priority eval='16'
             @arch type='xml'
                 ~page @Personal position='after'
                     ~page @Fleet $Fleet_Information groups='base.group_hr_user,fleet.group_fleet_manager'
@@ -15,11 +16,12 @@
                             @driver_license_class
                             @driver_license_exp
                             @driver_medical_exp
+
         ~record model='ir.ui.view' #fleet_hr_driver_tree
             @name: hr.employee.tree
             @model: hr.employee
             @inherit_id ref='hr.view_employee_tree'
-            @priority eval='10'
+            @priority eval='16'
             @arch type='xml'
                 ~xpath expr="//tree[@string='Employees']" position='attributes'
                     ~attribute @colors
@@ -31,8 +33,10 @@
                     @driver_license_renewal_overdue invisible='1'
                     @driver_medical_renewal_due_soon invisible='1'
                     @driver_medical_renewal_overdue invisible='1'
+
         ~record model='ir.actions.act_window' #fleet.fleet_vehicle_act
             @context: {'show_driver':1}
+
         ~record model='ir.ui.view' #fleet_vehicle_driver_tree
             @name: fleet.vehicle.tree
             @model: fleet.vehicle
