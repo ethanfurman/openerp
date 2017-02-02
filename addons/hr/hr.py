@@ -48,7 +48,14 @@ class hr_employee_category(osv.osv):
     _description = "Employee Category"
     _columns = {
         'name': fields.char("Category", size=64, required=True),
-        'complete_name': fields.function(_name_get_fnc, type="char", string='Name'),
+        'complete_name': fields.function(
+            _name_get_fnc,
+            type="char",
+            string='Name',
+            store={
+                'hr.employee.category': (lambda kt, cr, uid, ids, ctx=None: ids, ['name', 'parent_id'], 10),
+                },
+            ),
         'parent_id': fields.many2one('hr.employee.category', 'Parent Category', select=True),
         'child_ids': fields.one2many('hr.employee.category', 'parent_id', 'Child Categories'),
         'employee_ids': fields.many2many('hr.employee', 'employee_category_rel', 'category_id', 'emp_id', 'Employees'),
@@ -68,7 +75,6 @@ class hr_employee_category(osv.osv):
         (_check_recursion, 'Error! You cannot create recursive Categories.', ['parent_id'])
     ]
 
-hr_employee_category()
 
 class hr_job(osv.osv):
 
@@ -141,7 +147,6 @@ class hr_job(osv.osv):
         self.write(cr, uid, ids, {'state': 'open', 'no_of_recruitment': 0})
         return True
 
-hr_job()
 
 class hr_employee(osv.osv):
     _name = "hr.employee"
@@ -330,7 +335,6 @@ class hr_employee(osv.osv):
         (_check_recursion, 'Error! You cannot create recursive hierarchy of Employee(s).', ['parent_id']),
     ]
 
-hr_employee()
 
 class hr_department(osv.osv):
     _description = "Department"
@@ -346,7 +350,6 @@ class hr_department(osv.osv):
         default = default.copy()
         default['member_ids'] = []
         return super(hr_department, self).copy(cr, uid, ids, default, context=context)
-hr_department()
 
 class res_partner(osv.Model):
     _name = 'res.partner'
@@ -355,6 +358,5 @@ class res_partner(osv.Model):
     _columns = {
         'employee_id': fields.many2one('hr.employee', 'Employee Record'),
         }
-res_partner()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
