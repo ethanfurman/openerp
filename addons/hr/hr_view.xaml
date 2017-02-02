@@ -77,7 +77,7 @@
             @name: hr.employee.tree
             @model: hr.employee
             @arch type='xml'
-                ~tree $Employees
+                ~tree $Employees default_order='name'
                     @name
                     @work_phone
                     @work_email
@@ -106,7 +106,7 @@
             @name: HR - Employess Kanban
             @model: hr.employee
             @arch type='xml'
-                ~kanban
+                ~kanban default_order='name'
                     @last_login
                     ~templates
                         ~t t-name='kanban-box'
@@ -184,7 +184,7 @@
             @field_parent: child_ids
             @priority eval='20'
             @arch type='xml'
-                ~tree $Employees
+                ~tree $Employees default_order='name'
                     @name
                     @work_phone
                     @work_email
@@ -224,7 +224,7 @@
             @model: hr.employee.category
             @priority eval='8'
             @arch type='xml'
-                ~tree $Employees_Categories
+                ~tree $Employees_Categories default_order='complete_name'
                     @complete_name
 
         ~record model='ir.ui.view' #view_employee_category_tree
@@ -232,7 +232,7 @@
             @model: hr.employee.category
             @field_parent: child_ids
             @arch type='xml'
-                ~tree $Employees_Categories
+                ~tree $Employees_Categories default_order='name'
                     @name
 
         ~record model='ir.actions.act_window' #open_view_categ_form
@@ -293,7 +293,7 @@
             @name: hr.job.tree
             @model: hr.job
             @arch type='xml'
-                ~tree $Job
+                ~tree $Job default_order='name'
                     @name
                     @department_id
                     @company_id groups='base.group_multi_company'
