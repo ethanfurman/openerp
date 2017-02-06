@@ -38,19 +38,19 @@
                                         @parent_id
                                         @coach_id
                                         ~label $Employee_No for='identification_id'
-                                        @identification_id groups='base.group_hr_user' nolabel='1'
+                                        @identification_id groups='' nolabel='1'
                                     ~group
                                         @company_id groups='base.group_multi_company'
                                         @user_id $User_Record invisible='1'
                                 @notes colspan='4' placeholder='Other Information ...'
-                            ~page @Personal $Confidential groups='base.group_hr_user'
+                            ~page @Personal $Confidential groups='base.group_hr_manager'
                                 ~group
                                     ~group string='Citizenship & Other Info'
-                                        @passport_id groups='base.group_hr_user'
+                                        @passport_id groups=''
                                         @country_id options='{"no_open": True}'
                                         @birthday
                                         @gender
-                                        @otherid groups='base.group_hr_user'
+                                        @otherid groups=''
                                         ~separator $Status colspan='2'
                                         @marital
                                     ~group $Contact_Information
@@ -68,6 +68,8 @@
                                         ~separator $Emergency_Contact colspan='2'
                                         @emergency_contact $Name
                                         @emergency_number $Phone
+                            // Claims will become visible when extended by other HR modules
+                            ~page @Claims $Claims groups='base.group_hr_manager' invisible='1'
                             ~page @Settings $HR_Settings groups='base.group_hr_user'
                                 ~group
                                     ~group @active_group $Active
