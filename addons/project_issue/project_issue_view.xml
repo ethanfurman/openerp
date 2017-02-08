@@ -115,7 +115,7 @@
             <field name="name">Project Issue Tracker Tree</field>
             <field name="model">project.issue</field>
             <field name="arch" type="xml">
-                <tree string="Issue Tracker Tree" fonts="bold:message_unread==True" colors="black:state=='open';blue:state=='pending';grey:state in ('cancel', 'done')">
+                <tree string="Issue Tracker Tree" fonts="bold:message_unread==True" colors="black:state=='open';blue:state=='pending';grey:state in ('cancel', 'done')" default_order="name">
                     <field name="message_unread" invisible="1"/>
                     <field name="id"/>
                     <field name="name"/>

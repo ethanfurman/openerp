@@ -197,7 +197,7 @@
             <field name="model">project.project</field>
             <field name="field_parent">child_ids</field>
             <field name="arch" type="xml">
-                <tree fonts="bold:message_unread==True" colors="red:date and (date&lt;current_date) and (state == 'open');blue:state in ('draft','pending');grey: state in ('close','cancelled')" string="Projects">
+                <tree fonts="bold:message_unread==True" colors="red:date and (date&lt;current_date) and (state == 'open');blue:state in ('draft','pending');grey: state in ('close','cancelled')" string="Projects" default_order="name">
                     <field name="sequence" widget="handle"/>
                     <field name="message_unread" invisible="1"/>
                     <field name="date" invisible="1"/>
@@ -246,7 +246,7 @@
 
                                     <h4><field name="name"/></h4>
                                     <div class="oe_kanban_project_list">
-                                        <a t-if="record.use_tasks.raw_value" name="%(act_project_project_2_project_task_all)d" type="action" style="margin-right: 10px"> 
+                                        <a t-if="record.use_tasks.raw_value" name="%(act_project_project_2_project_task_all)d" type="action" style="margin-right: 10px">
                                             <span t-if="record.task_count.raw_value gt 1"><field name="task_count"/> Tasks</span>
                                             <span t-if="record.task_count.raw_value lt 2"><field name="task_count"/> Task</span>
                                         </a>
@@ -539,7 +539,7 @@
             <field name="model">project.task</field>
             <field eval="2" name="priority"/>
             <field name="arch" type="xml">
-                <tree fonts="bold:message_unread==True" colors="grey:state in ('cancelled','done');blue:state == 'pending';red:date_deadline and (date_deadline&lt;current_date) and (state in ('draft','pending','open'))" string="Tasks">
+                <tree fonts="bold:message_unread==True" colors="grey:state in ('cancelled','done');blue:state == 'pending';red:date_deadline and (date_deadline&lt;current_date) and (state in ('draft','pending','open'))" string="Tasks" default_order="name">
                     <field name="message_unread" invisible="1"/>
                     <field name="sequence" invisible="not context.get('seq_visible', False)"/>
                     <field name="name"/>
