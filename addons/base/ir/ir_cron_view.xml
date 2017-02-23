@@ -22,6 +22,7 @@
                             <field name="nextcall"/>
                             <field name="numbercall"/>
                             <field name="doall"/>
+                            <field name="partial"/>
                         </group>
                     </page>
                     <page string="Technical Data" groups="base.group_no_one">
@@ -33,7 +34,7 @@
                         <field name="args"/>
                     </page>
                     </notebook>
-                   </sheet> 
+                   </sheet>
                 </form>
             </field>
         </record>

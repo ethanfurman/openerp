@@ -70,7 +70,8 @@ class ir_cron(osv.osv):
         'model': fields.char('Object', size=64, help="Model name on which the method to be called is located, e.g. 'res.partner'."),
         'function': fields.char('Method', size=64, help="Name of the method to be called when this job is processed."),
         'args': fields.text('Arguments', help="Arguments to be passed to the method, e.g. (uid,)."),
-        'priority': fields.integer('Priority', help='The priority of the job, as an integer: 0 means higher priority, 10 means lower priority.')
+        'priority': fields.integer('Priority', help='The priority of the job, as an integer: 0 means higher priority, 10 means lower priority.'),
+        'partial': fields.boolean('Allow partial updates', help='Keep changes from failed jobs? (helps prevent update deadlocks)'),
     }
 
     _defaults = {
@@ -217,6 +218,7 @@ class ir_cron(osv.osv):
                 # Got the lock on the job row, run its code
                 _logger.debug('Starting job `%s`.', job['name'])
                 job_cr = db.cursor()
+                job_cr.autocommit(job['partial']==True)
                 try:
                     openerp.modules.registry.RegistryManager.check_registry_signaling(db_name)
                     registry = openerp.pooler.get_pool(db_name)
