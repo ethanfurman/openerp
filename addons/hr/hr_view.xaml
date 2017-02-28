@@ -102,6 +102,9 @@
                     ~filter string='Current/Past_Employees' @type_all_employees domain="['|',('active','=',True),('active','=',False)]"
                     ~group $Group_By... expand='0'
                         ~filter $Department context="{'group_by':'department_id'}" domain='[]' icon='terp-personal+'
+                        ~filter $Manager context="{'group_by':'parent_id'}" domain='[]' icon='terp-personal'
+                        ~filter $Coach context="{'group_by':'coach_id'}" domain='[]' icon='terp-personal'
+                        ~filter $Job context="{'group_by':'job_id'}" domain='[]' icon='terp-gtk-select-all'
 
         ~record model='ir.ui.view' #hr_kanban_view_employees
             @name: HR - Employess Kanban
