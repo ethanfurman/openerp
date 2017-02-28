@@ -99,6 +99,9 @@
                     @category_ids groups='base.group_hr_user'
                     @active
                     ~separator
+                    ~filter $Female @type_female domain="[('gender','=','female')]"
+                    ~filter $Male @type_male domain="[('gender','=','male')]"
+                    ~separator
                     ~filter string='Current/Past_Employees' @type_all_employees domain="['|',('active','=',True),('active','=',False)]"
                     ~group $Group_By... expand='0'
                         ~filter $Department context="{'group_by':'department_id'}" domain='[]' icon='terp-personal+'
