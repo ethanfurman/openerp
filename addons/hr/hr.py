@@ -255,7 +255,8 @@ class hr_employee(osv.osv):
                 except_osv('Error', 'Only one partner per employee.')
             employee_id = ids[0]
             self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id, 'employee':True}, context=context)
-        else:
+        elif partner_id is not None:
+            # partner_id is False or some other falsey value
             # clear already linked parter_ids
             res_partner = self.pool.get('res.partner')
             for employee in self.browse(cr, uid, ids, context=context):
@@ -359,4 +360,3 @@ class res_partner(osv.Model):
         'employee_id': fields.many2one('hr.employee', 'Employee Record'),
         }
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
