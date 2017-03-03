@@ -259,9 +259,12 @@ class hr_employee(osv.osv):
             # partner_id is False or some other falsey value
             # clear already linked parter_ids
             res_partner = self.pool.get('res.partner')
+            partner_ids = []
             for employee in self.browse(cr, uid, ids, context=context):
                 if employee.partner_id:
-                    res_partner.write(cr, uid, employee.partner_id.id, {'employee_id':False, 'employee':False}, context=context)
+                    partner_ids.append(employee.partner_id.id)
+            if partner_ids:
+                res_partner.write(cr, uid, partner_ids, {'employee_id':False, 'employee':False}, context=context)
         return super(hr_employee, self).write(cr, uid, ids, values, context=context)
 
     def unlink(self, cr, uid, ids, context=None):
