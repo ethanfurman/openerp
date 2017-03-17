@@ -6,7 +6,12 @@
             <field name="model">ir.cron</field>
             <field name="arch" type="xml">
                 <form string="Scheduled Actions" version="7.0">
-                   <sheet>
+                    <header>
+                        <button name="button_submit" string="Submit to Background" class="oe_edit_hide" type="object" context="{'wait': False}" />
+                        <button name="button_submit" string="Run &amp; Wait" class="oe_edit_hide" type="object" context="{'wait': True}" />
+                        <field name="state" widget="statusbar" statusbar_visible='waiting,running'/>
+                    </header>
+                    <sheet>
                     <group col="4">
                         <field name="name"/>
                         <field name="active"/>
@@ -33,6 +38,9 @@
                         <label for="args"/>
                         <field name="args"/>
                     </page>
+                    <page string="Last Results" groups="base.group_no_one">
+                        <field name="results"/>
+                    </page>
                     </notebook>
                    </sheet>
                 </form>
@@ -41,7 +49,8 @@
         <record id="ir_cron_view_tree" model="ir.ui.view">
             <field name="model">ir.cron</field>
             <field name="arch" type="xml">
-                <tree string="Scheduled Actions" colors="grey:(not active)">
+                <tree string="Scheduled Actions" colors="grey:(not active);blue:state=='waiting';red:state=='running'">
+                    <field name="active" invisible="1"/>
                     <field name="priority" string="Sequence"/>
                     <field name="name"/>
                     <field name="nextcall"/>
@@ -49,7 +58,7 @@
                     <field name="interval_type"/>
                     <field name="numbercall"/>
                     <field name="user_id" invisible="1"/>
-                    <field name="active"/>
+                    <field name="state"/>
                 </tree>
             </field>
         </record>

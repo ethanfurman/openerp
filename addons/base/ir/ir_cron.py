@@ -19,8 +19,10 @@
 #
 ##############################################################################
 import logging
+import sys
 import threading
 import time
+import traceback
 import psycopg2
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -45,6 +47,8 @@ _intervalTypes = {
     'months': lambda interval: relativedelta(months=interval),
     'minutes': lambda interval: relativedelta(minutes=interval),
 }
+
+_ir_cron_inited = False
 
 class ir_cron(osv.osv):
     """ Model describing cron jobs (also called actions or tasks).
@@ -72,6 +76,15 @@ class ir_cron(osv.osv):
         'args': fields.text('Arguments', help="Arguments to be passed to the method, e.g. (uid,)."),
         'priority': fields.integer('Priority', help='The priority of the job, as an integer: 0 means higher priority, 10 means lower priority.'),
         'partial': fields.boolean('Allow partial updates', help='Keep changes from failed jobs? (helps prevent update deadlocks)'),
+        'state': fields.selection((
+            ('inactive', 'Inactive'),
+            ('waiting', 'Waiting'),
+            ('running', 'Running'),
+            ),
+            'state',
+            sort_order='definition',
+            ),
+        'results': fields.text('Results'),
     }
 
     _defaults = {
@@ -82,8 +95,19 @@ class ir_cron(osv.osv):
         'interval_type' : 'months',
         'numbercall' : 1,
         'active' : 1,
-        'doall' : 1
+        'doall' : 1,
+        'partial' : False,
+        'state' : 'waiting',
     }
+
+    def __init__(self, pool, cr):
+        "make sure state is set approppiately"
+        global _ir_cron_inited
+        super(ir_cron, self).__init__(pool, cr)
+        if not _ir_cron_inited:
+            cr.execute("UPDATE ir_cron SET state='inactive' WHERE active=false")
+            cr.execute("UPDATE ir_cron SET state='waiting' WHERE active=true")
+            _ir_cron_inited = True
 
     def _check_args(self, cr, uid, ids, context=None):
         try:
@@ -136,9 +160,11 @@ class ir_cron(osv.osv):
                     end_time = time.time()
                     _logger.debug('%.3fs (%s, %s)' % (end_time - start_time, model_name, method_name))
             except Exception, e:
+                cls, exc, tb = sys.exc_info()
                 self._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, job_name, e)
+                return '\n'.join(traceback.format_exception(cls, exc,tb))
 
-    def _process_job(self, job_cr, job, cron_cr):
+    def _process_job(self, job_cr, job, cron_cr, force=False):
         """ Run a given job taking care of the repetition.
 
         :param job_cr: cursor to use to execute the job, safe to commit/rollback
@@ -152,26 +178,68 @@ class ir_cron(osv.osv):
             numbercall = job['numbercall']
 
             ok = False
-            while nextcall < now and numbercall:
+            while nextcall < now and numbercall or force:
+                if not ok or job['doall']:
+                    result = self._callback(job_cr, job['user_id'], job['model'], job['function'], job['args'], job['id'], job['name'])
+                if force:
+                    break
                 if numbercall > 0:
                     numbercall -= 1
-                if not ok or job['doall']:
-                    self._callback(job_cr, job['user_id'], job['model'], job['function'], job['args'], job['id'], job['name'])
                 if numbercall:
                     nextcall += _intervalTypes[job['interval_type']](job['interval_number'])
                 ok = True
             addsql = ''
             if not numbercall:
                 addsql = ', active=False'
-            cron_cr.execute("UPDATE ir_cron SET nextcall=%s, numbercall=%s"+addsql+" WHERE id=%s",
-                       (nextcall.strftime(DEFAULT_SERVER_DATETIME_FORMAT), numbercall, job['id']))
-
+            cron_cr.execute(
+                    "UPDATE ir_cron SET state='waiting', results=%s, nextcall=%s, numbercall=%s"+addsql+" WHERE id=%s",
+                    (result, nextcall.strftime(DEFAULT_SERVER_DATETIME_FORMAT), numbercall, job['id']),
+                    )
         finally:
             job_cr.commit()
             cron_cr.commit()
 
+    def button_submit(self, cr, uid, ids, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        db_name = threading.current_thread().dbname
+        if context.get('wait', False):
+            # run the job in this thread (ties up the client as well)
+            for id in ids:
+                self._acquire_job(db_name, id)
+            threading.current_thread().dbname = db_name
+            time.sleep(0.1)
+            return {'type': 'ir.actions.client', 'tag': 'reload'}
+        else:
+            # set the next scheduled event to the last one
+            # but use our own cursor
+            db = openerp.sql_db.db_connect(db_name)
+            button_cr = db.cursor()
+            try:
+                for id in ids:
+                    button_cr.execute(
+                            "SELECT id, nextcall, interval_type, interval_number"
+                            " FROM ir_cron"
+                            " WHERE id=%s",
+                            (id, ),
+                            )
+                    [cron_job] = button_cr.dictfetchall()
+                    nextcall = datetime.strptime(cron_job['nextcall'], DEFAULT_SERVER_DATETIME_FORMAT)
+                    while nextcall > datetime.now():
+                        nextcall -= _intervalTypes[cron_job['interval_type']](cron_job['interval_number'])
+                    button_cr.execute(
+                            "UPDATE ir_cron"
+                            " SET nextcall=%s"
+                            " WHERE id=%s",
+                            (nextcall.strftime(DEFAULT_SERVER_DATETIME_FORMAT), id),
+                            )
+                    button_cr.commit()
+            finally:
+                button_cr.close()
+            return True
+
     @classmethod
-    def _acquire_job(cls, db_name):
+    def _acquire_job(cls, db_name, job_id=None):
         # TODO remove 'check' argument from addons/base_action_rule/base_action_rule.py
         """ Try to process one cron job.
 
@@ -186,12 +254,16 @@ class ir_cron(osv.osv):
         threading.current_thread().dbname = db_name
         cr = db.cursor()
         jobs = []
+        run_any = False
         try:
-            # Careful to compare timestamps with 'UTC' - everything is UTC as of v6.1.
-            cr.execute("""SELECT * FROM ir_cron
-                          WHERE numbercall != 0
-                              AND active AND nextcall <= (now() at time zone 'UTC')
-                          ORDER BY priority""")
+            if job_id is not None:
+                cr.execute("SELECT * FROM ir_cron WHERE id=%s", (job_id, ))
+            else:
+                # Careful to compare timestamps with 'UTC' - everything is UTC as of v6.1.
+                cr.execute("""SELECT * FROM ir_cron
+                              WHERE numbercall != 0
+                                  AND active AND nextcall <= (now() at time zone 'UTC')
+                              ORDER BY priority""")
             jobs = cr.dictfetchall()
         except psycopg2.ProgrammingError, e:
             if e.pgcode == '42P01':
@@ -214,7 +286,16 @@ class ir_cron(osv.osv):
                                    WHERE id=%s
                                    FOR UPDATE NOWAIT""",
                                (job['id'],), log_exceptions=False)
-
+                # pause so other cron threads bypass this row
+                time.sleep(0.1)
+            	# update and relock row
+                lock_cr.execute("UPDATE ir_cron SET state='running', results='' WHERE id=%s", (job['id'], ))
+                lock_cr.commit()
+                lock_cr.execute("""SELECT *
+                                   FROM ir_cron
+                                   WHERE id=%s
+                                   FOR UPDATE NOWAIT""",
+                               (job['id'],), log_exceptions=False)
                 # Got the lock on the job row, run its code
                 _logger.debug('Starting job `%s`.', job['name'])
                 job_cr = db.cursor()
@@ -222,8 +303,9 @@ class ir_cron(osv.osv):
                 try:
                     openerp.modules.registry.RegistryManager.check_registry_signaling(db_name)
                     registry = openerp.pooler.get_pool(db_name)
-                    registry[cls._name]._process_job(job_cr, job, lock_cr)
+                    registry[cls._name]._process_job(job_cr, job, lock_cr, force=bool(job_id))
                     openerp.modules.registry.RegistryManager.signal_caches_change(db_name)
+                    run_any = True
                 except Exception:
                     _logger.exception('Unexpected exception while processing cron job %r', job)
                 finally:
@@ -244,6 +326,8 @@ class ir_cron(osv.osv):
         if hasattr(threading.current_thread(), 'dbname'): # cron job could have removed it as side-effect
             del threading.current_thread().dbname
 
+        return run_any
+
     def _try_lock(self, cr, uid, ids, context=None):
         """Try to grab a dummy exclusive write-lock to the rows with the given ids,
            to make sure a following write() or unlink() will not block due
@@ -258,11 +342,18 @@ class ir_cron(osv.osv):
                                   "please try again in a few minutes"))
 
     def create(self, cr, uid, vals, context=None):
+        if 'active' in vals and not vals['active']:
+            vals['state'] = 'inactive'
         res = super(ir_cron, self).create(cr, uid, vals, context=context)
         return res
 
     def write(self, cr, uid, ids, vals, context=None):
         self._try_lock(cr, uid, ids, context)
+        if 'active' in vals:
+            if vals['active']:
+                vals['state'] = 'waiting'
+            else:
+                vals['state'] = 'inactive'
         res = super(ir_cron, self).write(cr, uid, ids, vals, context=context)
         return res
 
@@ -271,4 +362,3 @@ class ir_cron(osv.osv):
         res = super(ir_cron, self).unlink(cr, uid, ids, context=context)
         return res
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
