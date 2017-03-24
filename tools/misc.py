@@ -37,10 +37,11 @@ import sys
 import threading
 import time
 import zipfile
-from aenum import Enum, NoAlias
+from aenum import Enum, NoAlias as EnumNoAlias, Unique as EnumUnique, MultiValue as EnumMultiValue
+from aenum import AutoNumber as EnumAutoNumber, AutoValue as EnumAutoValue
 from collections import defaultdict
 from datetime import datetime, timedelta
-from dbf import Date, DateTime, IsoDay, IsoMonth, RelativeDay, RelativeMonth
+from dbf import Date, IsoDay, RelativeDay
 from itertools import islice, izip
 from lxml import etree
 from which import which
@@ -57,6 +58,8 @@ from cache import *
 # get_encodings, ustr and exception_to_unicode were originally from tools.misc.
 # There are moved to loglevels until we refactor tools.
 from openerp.loglevels import get_encodings, ustr, exception_to_unicode
+# stupid pyflakes
+get_encodings, ustr, exception_to_unicode, EnumNoAlias, EnumUnique, EnumMultiValue, EnumAutoNumber, EnumAutoValue
 
 _logger = logging.getLogger(__name__)
 
@@ -108,6 +111,21 @@ def exec_command_pipe(name, *args):
           stdin=subprocess.PIPE, stdout=subprocess.PIPE,
           close_fds=(os.name=="posix"))
     return pop.stdin, pop.stdout
+
+#----------------------------------------------------------
+# python stdlib replacements
+#----------------------------------------------------------
+
+from __builtin__ import issubclass as stdlib_issubclass
+
+def issubclass(target, allowed):
+    if not isinstance(allowed, tuple):
+        allowed = (allowed, )
+    try:
+        return stdlib_issubclass(target, allowed)
+    except TypeError:
+        return False
+
 
 #----------------------------------------------------------
 # File paths
@@ -590,6 +608,35 @@ def logged(f):
         return res
 
     return wrapper
+
+class tracker(object):
+    from pprint import pformat
+    pformat = staticmethod(pformat)
+    indent = 0
+    def __call__(self, func):
+        def wrapper(model, cr, *args, **kwds):
+            indent = '   ' * self.indent
+            print(
+                '\n{indent}{cls}.{func}(\n'
+                '{indent}    cr,\n'
+                '{indent}    {args},\n'
+                '{indent}    {kwds},\n'
+                '{indent}    )\n'.format(
+                indent=indent,
+                cls=model.__class__.__name__,
+                func=func.__name__,
+                model=model._name,
+                args=(',\n%s    '%indent).join([repr(a) for a in args]),
+                kwds=(',\n%s    '%indent).join(['%s=%r' % (k, v) for k, v in kwds.items()]),
+                ))
+            self.__class__.indent += 1
+            result = func(model, cr, *args, **kwds)
+            formatted_result = self.pformat(result, indent=2, depth=2).replace('\n','\n%*s' % (self.indent*3, ' '))
+            print('%s<-- %s\n' % (indent, formatted_result))
+            self.__class__.indent -= 1
+            return result
+        return wrapper
+tracker = tracker()
 
 class profile(object):
     def __init__(self, fname=None):
@@ -1090,13 +1137,26 @@ class CountingStream(object):
             raise StopIteration()
         return val
 
+class Sentinel(object):
+    "provides better help for sentinels"
+
+    def __init__(self, text):
+        self.text = text
+
+    def __repr__(self):
+        return '<%s>' % self.text
+
+    def __str__(self):
+        return "Sentinel: <%s>" % self.text
+
+
 # periods for domain searches
 class Period(Enum):
     '''
     different lengths of time
     '''
     _init_ = 'value period'
-    _settings_ = NoAlias
+    _settings_ = EnumNoAlias
     _ignore_ = 'Period i'
     Period = vars()
     for i in range(367):
@@ -1105,8 +1165,8 @@ class Period(Enum):
         Period['Week%d' % i] = timedelta(days=i*7), 'week'
     for i in range(13):
         Period['Month%d' % i] = i, 'month'
-    OneDay = Day1
-    OneWeek = Week1
+    OneDay = Period['Day1']
+    OneWeek = Period['Week1']
 
     def future_period(self, day):
         '''
@@ -1129,7 +1189,7 @@ class Period(Enum):
             start = month_start.replace(delta_month=+self.value)
             stop = start.replace(delta_month=+1)
         else:
-            raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
+            raise ValueError("forgot to update something! (period is %r)" % (self.period,))
         return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
 
     def past_period(self, day):
@@ -1153,7 +1213,7 @@ class Period(Enum):
             start = month_start.replace(delta_month=-self.value)
             stop = start.replace(delta_month=+1)
         else:
-            raise ValueError("forgot to update something! (period is %r)" % (arg[2],))
+            raise ValueError("forgot to update something! (period is %r)" % (self.period,))
         return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
 
 

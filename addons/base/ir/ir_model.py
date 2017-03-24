@@ -269,6 +269,7 @@ class ir_model_fields(osv.osv):
     _order = "name"
 
     def _check_selection(self, cr, uid, selection, context=None):
+        # TODO: possible upgrade to support fields.SelectionEnum
         try:
             selection_list = eval(selection)
         except Exception:
@@ -575,7 +576,7 @@ class ir_model_relation(Model):
         ids.sort()
         ids.reverse()
         for data in self.browse(cr, uid, ids, context):
-            model = data.model
+            # model = data.model
             name = openerp.tools.ustr(data.name)
 
             # double-check we are really going to delete all the owners of this schema element

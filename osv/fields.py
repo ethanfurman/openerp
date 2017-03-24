@@ -46,6 +46,7 @@ from psycopg2 import Binary
 import openerp
 import openerp.tools as tools
 from openerp.tools.translate import _
+from openerp.tools import Enum, issubclass, Sentinel, EnumAutoValue
 from openerp.tools import float_round, float_repr
 from openerp.tools import html_sanitize
 import simplejson
@@ -446,14 +447,17 @@ class selection(_column):
     _type = 'selection'
 
     def __init__(self, selection, string='unknown', sort_order=None, **args):
-        # selection -> [('internal_name', ('User Presentable Name')]
+        # selection -> [('internal_name', 'User Presentable Name') [, ...]]
         _column.__init__(self, string=string, **args)
         self.selection = selection
         # sort_order allows different sorting of this field; default is
         # alphabetical by internal_name; other options are:
         # - definition (definition order); and
         # - user_name (alpha by User Presentable Name)
-        self.sort_order = sort_order
+        if sort_order is None and issubclass(selection, SelectionEnum):
+            self.sort_order = 'definition'
+        else:
+            self.sort_order = sort_order
 
 # ---------------------------------------------------------
 # Relationals fields
@@ -1072,9 +1076,9 @@ class function(_column):
     _type = 'function'
     _properties = True
 
-#
-# multi: compute several fields in one call
-#
+    #
+    # multi: compute several fields in one call
+    #
     def __init__(
             self, fnct, arg=None, fnct_inv=None, fnct_inv_arg=None, type='float',
             fnct_search=None, obj=None, store=False, multi=False, **args
@@ -1577,8 +1581,8 @@ def field_to_dict(model, cr, user, field, context=None):
             res[arg] = getattr(field, arg)
 
     if hasattr(field, 'selection'):
-        if isinstance(field.selection, (tuple, list)):
-            res['selection'] = field.selection
+        if isinstance(field.selection, (tuple, list)) or issubclass(field.selection, SelectionEnum):
+            res['selection'] = [(s[0], s[1]) for s in field.selection]
         else:
             # call the 'dynamic selection' function
             res['selection'] = field.selection(model, cr, user, context)
@@ -1633,5 +1637,74 @@ class column_info(object):
             self.__class__.__name__, self.name, self.column,
             self.parent_model, self.parent_column, self.original_parent)
 
-# vim:expandtab:tabstop=4:softtabstop=4:shiftwidth=4:
 
+_raise_lookup = Sentinel('raise LookupError')
+
+class SelectionEnum(Enum):
+
+    _settings_ = EnumAutoValue
+    _init_ = 'db user'
+
+    def __new__(cls, *args, **kwds):
+        count = len(cls.__members__)
+        obj = object.__new__(cls)
+        obj._count = count
+        obj._value_ = args
+        return obj
+
+    def __ge__(self, other):
+        if self.__class__ is other.__class__:
+            return self._count >= other._count
+        else:
+            return NotImplemented
+
+    def __gt__(self, other):
+        if self.__class__ is other.__class__:
+            return self._count > other._count
+        else:
+            return NotImplemented
+
+    def __le__(self, other):
+        if self.__class__ is other.__class__:
+            return self._count <= other._count
+        else:
+            return NotImplemented
+
+    def __lt__(self, other):
+        if self.__class__ is other.__class__:
+            return self._count < other._count
+        else:
+            return NotImplemented
+
+    def __getitem__(self, index):
+        return list(self)[index]
+
+    def __iter__(self):
+        "return db value, user value"
+        return iter(self.value)
+
+    def __nonzero__(self):
+        return bool(self.db)
+
+    @staticmethod
+    def _generate_next_value_(name, start, count, values, *args, **kwds):
+        return (name, ) + args
+
+    @classmethod
+    def _missing_name_(cls, index):
+        "supports list-type indexing"
+        return list(cls)[index]
+
+    @classmethod
+    def get_member(cls, text, default=_raise_lookup):
+        for member in cls:
+            if member.db == text:
+                return member
+            elif member.db == default:
+                default = member
+        else:
+            if default is not _raise_lookup:
+                return default
+        raise LookupError('%r not found in %s' % (text, cls.__name__))
+
+# vim:expandtab:tabstop=4:softtabstop=4:shiftwidth=4:

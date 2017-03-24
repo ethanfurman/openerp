@@ -63,11 +63,12 @@ from lxml import etree
 from lxml.etree import XPathEvalError
 
 import fields
+from fields import SelectionEnum
 import openerp
 import openerp.netsvc as netsvc
 import openerp.tools as tools
 from openerp.tools.config import config
-from openerp.tools.misc import CountingStream
+from openerp.tools.misc import CountingStream, issubclass
 from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
 from openerp import SUPERUSER_ID
@@ -1074,7 +1075,7 @@ class BaseModel(object):
                 self.pool._store_function[object].append((self._name, store_field, fnct, tuple(fields2) if fields2 else None, order, length))
                 self.pool._store_function[object].sort(lambda x, y: cmp(x[4], y[4]))
 
-        for (key, _, msg) in self._sql_constraints:
+        for (key, __, msg) in self._sql_constraints:
             self.pool._sql_error[self._table+'_'+key] = msg
 
         # Load manual fields
@@ -1217,9 +1218,10 @@ class BaseModel(object):
                             cols = selection_field(self._inherits)
                         if cols and cols._type == 'selection':
                             sel_list = cols.selection
-                            if r and type(sel_list) == type([]):
-                                r = [x[1] for x in sel_list if r==x[0]]
-                                r = r and r[0] or False
+                            if r:
+                                if isinstance(sel_list, (tuple, list)) or issubclass(sel_list, SelectionEnum):
+                                    r = [x[1] for x in sel_list if r==x[0]]
+                                    r = r and r[0] or False
                     if not r:
                         if f[i] in self._columns:
                             r = check_type(self._columns[f[i]]._type)
@@ -2978,10 +2980,11 @@ class BaseModel(object):
             val = val_model
         else:
             val = value
-        if isinstance(self._columns[field].selection, (tuple, list)):
-            if val in dict(self._columns[field].selection):
+        selection = self._columns[field].selection
+        if isinstance(selection, (tuple, list)) or issubclass(selection, SelectionEnum):
+            if val in dict(selection):
                 return
-        elif val in dict(self._columns[field].selection(self, cr, uid, context=context)):
+        elif val in dict(selection(self, cr, uid, context=context)):
             return
         raise except_orm(_('ValidateError'),
                          _('The value "%s" for the field "%s.%s" is not in the selection') % (value, self._table, field))
@@ -3700,8 +3703,8 @@ class BaseModel(object):
                     if help_trans:
                         res[f]['help'] = help_trans
                 if 'selection' in res[f]:
-                    if isinstance(field.selection, (tuple, list)):
-                        sel = field.selection
+                    sel = fields.selection
+                    if isinstance(sel, (tuple, list)) or issubclass(sel, SelectionEnum):
                         sel2 = []
                         for key, val in sel:
                             val2 = None
@@ -4214,13 +4217,13 @@ class BaseModel(object):
             if ir_value_ids:
                 ir_values_obj.unlink(cr, uid, ir_value_ids, context=context)
 
-        for order, object, store_ids, fields in result_store:
+        for order, object, store_ids, vfields in result_store:
             if object != self._name:
                 obj = self.pool.get(object)
                 cr.execute('select id from '+obj._table+' where id IN %s', (tuple(store_ids),))
                 rids = map(lambda x: x[0], cr.fetchall())
                 if rids:
-                    obj._store_set_values(cr, uid, rids, fields, context)
+                    obj._store_set_values(cr, uid, rids, vfields, context)
 
         return True
 

@@ -9,6 +9,7 @@ import psycopg2
 import pytz
 
 from openerp.osv import orm
+from openerp.osv.fields import SelectionEnum
 from openerp.tools.translate import _
 from openerp.tools.misc import DEFAULT_SERVER_DATE_FORMAT,\
                                DEFAULT_SERVER_DATETIME_FORMAT
@@ -250,7 +251,7 @@ class ir_fields_converter(orm.Model):
     def _str_to_selection(self, cr, uid, model, column, value, context=None):
 
         selection = column.selection
-        if not isinstance(selection, (tuple, list)):
+        if not isinstance(selection, (tuple, list, SelectionEnum)):
             # FIXME: Don't pass context to avoid translations?
             #        Or just copy context & remove lang?
             selection = selection(model, cr, uid)
