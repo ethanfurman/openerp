@@ -39,6 +39,7 @@ class groups(osv.osv):
     _name = "res.groups"
     _description = "Access Groups"
     _rec_name = 'full_name'
+    _order = 'full_name'
 
     def _get_full_name(self, cr, uid, ids, field, arg, context=None):
         res = {}
@@ -70,7 +71,15 @@ class groups(osv.osv):
         'view_access': fields.many2many('ir.ui.view', 'ir_ui_view_group_rel', 'group_id', 'view_id', 'Views'),
         'comment' : fields.text('Comment', size=250, translate=True),
         'category_id': fields.many2one('ir.module.category', 'Application', select=True),
-        'full_name': fields.function(_get_full_name, type='char', string='Group Name', fnct_search=_search_group),
+        'full_name': fields.function(
+            _get_full_name,
+            type='char',
+            string='Group Name',
+            fnct_search=_search_group,
+            store={
+                'res.groups': (lambda t, c,i, ids, ctx: ids, ['name', 'category_id'], 10),
+                },
+            ),
     }
 
     _sql_constraints = [
