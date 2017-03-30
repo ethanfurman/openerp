@@ -25,9 +25,10 @@
                     <filter name="open" string="In Progress" domain="[('state','=','open')]" help="In Progress Tasks" icon="terp-camera_test"/>
                     <filter string="Pending" domain="[('state','=','pending')]" context="{'show_delegated':False}" help="Pending Tasks" icon="terp-gtk-media-pause"/>
                     <separator/>
-                    <filter name="My project" string="Project" domain="[('project_id.user_id','=',uid)]" help="My Projects" icon="terp-check"/>
+                    <filter name="my_project" string="My Projects" domain="[('project_id.user_id','=',uid)]" help="Projects assigned to me." icon="terp-check"/>
+                    <filter name="my_task" string="My Tasks" domain="[('user_id','=',uid)]"  help="Tasks assigned to me." icon="terp-personal"/>
+                    <filter icon="terp-personal+" string="Following" name="Follower" domain="[('message_follower_user_ids','=',uid)]" help="Tasks which I am following."/>
                     <separator/>
-                    <filter string="My Tasks" domain="[('user_id','=',uid)]"  help="My Tasks" icon="terp-personal"/>
                     <filter string="Unassigned Tasks" domain="[('user_id','=',False)]"  help="Unassigned Tasks" icon="terp-personal-"/>
                     <separator/>
                     <filter string="Deadlines" context="{'deadline_visible': False}" domain="[('date_deadline','&lt;&gt;',False)]"
@@ -179,6 +180,7 @@
                     <filter icon="gtk-media-pause" string="Template" name="Template" domain="[('state', '=','template')]" help="Templates of Projects"/>
                     <separator/>
                     <filter icon="terp-personal+" string="Member" name="Member" domain="['|',('user_id', '=', uid),('members', '=', uid)]" help="Projects in which I am a member."/>
+                    <filter icon="terp-personal+" string="Follower" name="Follower" domain="[('message_follower_user_ids', '=', uid)]" help="Projects which I am following."/>
                     <separator/>
                     <filter string="Project(s) Manager" domain="[('user_id','=',uid)]" help="Projects in which I am a manager" icon="terp-personal"/>
                     <field name="user_id" string="Project Manager"/>
