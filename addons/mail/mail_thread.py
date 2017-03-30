@@ -147,12 +147,22 @@ class mail_thread(osv.AbstractModel):
     def _get_followers(self, cr, uid, ids, name, arg, context=None):
         fol_obj = self.pool.get('mail.followers')
         fol_ids = fol_obj.search(cr, SUPERUSER_ID, [('res_model', '=', self._name), ('res_id', 'in', ids)])
-        res = dict((id, dict(message_follower_ids=[], message_is_follower=False)) for id in ids)
+        res = dict(
+                (id, dict(message_follower_ids=[], message_is_follower=False, message_follower_user_ids=[]))
+                for id in ids
+                )
         user_pid = self.pool.get('res.users').read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
         for fol in fol_obj.browse(cr, SUPERUSER_ID, fol_ids):
             res[fol.res_id]['message_follower_ids'].append(fol.partner_id.id)
             if fol.partner_id.id == user_pid:
                 res[fol.res_id]['message_is_follower'] = True
+        res_partner = self.pool.get('res.partner')
+        for fol in res.values():
+            datoms = res_partner.read(cr, uid, fol['message_follower_ids'], fields=['user_ids'])
+            for datom in datoms:
+                user_ids = datom['user_ids']
+                if user_ids:
+                    fol['message_follower_user_ids'].extend(user_ids)
         return res
 
     def _set_followers(self, cr, uid, id, name, value, arg, context=None):
@@ -205,12 +215,37 @@ class mail_thread(osv.AbstractModel):
             res.append(('id', 'in', res_ids))
         return res
 
+    def _search_user_followers(self, cr, uid, obj, name, args, context):
+        res_users = self.pool.get('res.users')
+        new_args = []
+        for field, operator, value in args:
+            assert field == name
+            if isinstance(value, (str, unicode)):
+                new_args.append(('message_follower_ids', operator, value))
+                continue
+            new_value = [
+                    u['partner_id'][0]
+                    for u in res_users.read(
+                        cr, uid,
+                        [('id', operator, value)],
+                        fields=['partner_id'],
+                        context=context,
+                        )
+                    ]
+            if isinstance(value, (int, long)):
+                [new_value] = new_value
+            new_args.append(['message_follower_ids', operator, new_value])
+        return self._search_followers(cr, uid, obj, 'message_follower_ids', new_args, context=context)
+
     _columns = {
         'message_is_follower': fields.function(_get_followers,
             type='boolean', string='Is a Follower', multi='_get_followers,'),
         'message_follower_ids': fields.function(_get_followers, fnct_inv=_set_followers,
                 fnct_search=_search_followers, type='many2many',
                 obj='res.partner', string='Followers', multi='_get_followers'),
+        'message_follower_user_ids': fields.function(_get_followers,
+                fnct_search=_search_user_followers, type='many2many',
+                obj='res.users', string='Followers as users', multi='_get_followers'),
         'message_ids': fields.one2many('mail.message', 'res_id',
             domain=lambda self: [('model', '=', self._name)],
             auto_join=True,
@@ -1008,9 +1043,9 @@ class mail_thread(osv.AbstractModel):
             obj = self.browse(cr, SUPERUSER_ID, id, context=context)
         else:
             obj = None
-        for email in emails:
-            partner_info = {'full_name': email, 'partner_id': False}
-            m = re.search(r"((.+?)\s*<)?([^<>]+@[^<>]+)>?", email, re.IGNORECASE | re.DOTALL)
+        for possible_email in emails:
+            partner_info = {'full_name': possible_email, 'partner_id': False}
+            m = re.search(r"((.+?)\s*<)?([^<>]+@[^<>]+)>?", possible_email, re.IGNORECASE | re.DOTALL)
             if not m:
                 continue
             email_address = m.group(3)
@@ -1032,8 +1067,8 @@ class mail_thread(osv.AbstractModel):
             if link_mail and partner_info['partner_id']:
                 message_ids = mail_message_obj.search(cr, SUPERUSER_ID, [
                                     '|',
-                                    ('email_from', '=', email),
-                                    ('email_from', 'ilike', '<%s>' % email),
+                                    ('email_from', '=', possible_email),
+                                    ('email_from', 'ilike', '<%s>' % possible_email),
                                     ('author_id', '=', False)
                                 ], context=context)
                 if message_ids:
