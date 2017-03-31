@@ -23,7 +23,7 @@
                     <separator/>
                     <filter name="draft" string="New" domain="[('state','=','draft')]" help="New Tasks" icon="terp-check"/>
                     <filter name="open" string="In Progress" domain="[('state','=','open')]" help="In Progress Tasks" icon="terp-camera_test"/>
-                    <filter string="Pending" domain="[('state','=','pending')]" context="{'show_delegated':False}" help="Pending Tasks" icon="terp-gtk-media-pause"/>
+                    <filter name="pending" string="Pending" domain="[('state','=','pending')]" context="{'show_delegated':False}" help="Pending Tasks" icon="terp-gtk-media-pause"/>
                     <separator/>
                     <filter name="my_project" string="My Projects" domain="[('project_id.user_id','=',uid)]" help="Projects assigned to me." icon="terp-check"/>
                     <filter name="my_task" string="My Tasks" domain="[('user_id','=',uid)]"  help="Tasks assigned to me." icon="terp-personal"/>
@@ -51,7 +51,7 @@
             <field name="name">Tasks</field>
             <field name="res_model">project.task</field>
             <field name="view_mode">kanban,tree,form,calendar,gantt,graph</field>
-            <field name="context">{'search_default_project_id': [active_id], 'default_project_id': active_id}</field>
+            <field name="context">{'search_default_project_id': [active_id], 'default_project_id': active_id, 'search_default_draft': 1, 'search_default_open': 1, 'search_default_pending': 1}</field>
             <field name="search_view_id" ref="view_task_search_form"/>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
