@@ -1086,7 +1086,10 @@ class function(_column):
         _column.__init__(self, **args)
         self._obj = obj
         self._fnct = fnct
-        self._fnct_inv = fnct_inv
+        if fnct_inv is True:
+            self._fnct_inv = self._simple_store
+        else:
+            self._fnct_inv = fnct_inv
         self._arg = arg
         self._multi = multi
         if 'relation' in args:
@@ -1207,6 +1210,19 @@ class function(_column):
             context = {}
         if self._fnct_inv:
             self._fnct_inv(obj, cr, user, id, name, value, self._fnct_inv_arg, context)
+
+    @staticmethod
+    def _simple_store(model, cr, uid, ids, field_name, field_value, inv_arg=None, context=None):
+        """
+        stores `field_value` into `field_name` for matching `ids`
+
+        select with `fnct_inv=True`
+        """
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        for id in ids:
+            cr.execute('UPDATE %s SET %s=%%s where id=%%s' % (model._table, field_name), (field_value, id))
+        return True
 
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
