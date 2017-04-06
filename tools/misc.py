@@ -25,6 +25,7 @@
 """
 Miscellaneous tools used by OpenERP.
 """
+from __future__ import print_function
 
 from functools import wraps
 import cProfile
@@ -1151,7 +1152,7 @@ class Sentinel(object):
 
 
 # periods for domain searches
-class Period(Enum):
+class Period(timedelta, Enum):
     '''
     different lengths of time
     '''
@@ -1160,13 +1161,49 @@ class Period(Enum):
     _ignore_ = 'Period i'
     Period = vars()
     for i in range(367):
-        Period['Day%d' % i] = timedelta(days=i), 'day'
+        Period['Day%d' % i] = i, 'day'
     for i in range(53):
-        Period['Week%d' % i] = timedelta(days=i*7), 'week'
-    for i in range(13):
+        Period['Week%d' % i] = i*7, 'week'
+    for i in (31, 61, 91, 122, 152, 182, 213, 243, 273, 304, 334, 365, 396):
         Period['Month%d' % i] = i, 'month'
     OneDay = Period['Day1']
     OneWeek = Period['Week1']
+
+    def __ge__(self, other):
+        cls = self.__class__
+        if isinstance(other, (cls, timedelta)):
+            return self._value_ >= other
+        elif isinstance(other, (int, long)):
+            return self.days >= other
+        else:
+            raise NotImplementedError('cannot compare %s with %s' % (cls.__name__, other.__class__.__name__))
+
+    def __gt__(self, other):
+        cls = self.__class__
+        if isinstance(other, (cls, timedelta)):
+            return self._value_ > other
+        elif isinstance(other, (int, long)):
+            return self.days > other
+        else:
+            raise NotImplementedError('cannot compare %s with %s' % (cls.__name__, other.__class__.__name__))
+
+    def __le__(self, other):
+        cls = self.__class__
+        if isinstance(other, (cls, timedelta)):
+            return self._value_ <= other
+        elif isinstance(other, (int, long)):
+            return self.days <= other
+        else:
+            raise NotImplementedError('cannot compare %s with %s' % (cls.__name__, other.__class__.__name__))
+
+    def __lt__(self, other):
+        cls = self.__class__
+        if isinstance(other, (cls, timedelta)):
+            return self._value_ < other
+        elif isinstance(other, (int, long)):
+            return self.days < other
+        else:
+            raise NotImplementedError('cannot compare %s with %s' % (cls.__name__, other.__class__.__name__))
 
     def future_period(self, day):
         '''
