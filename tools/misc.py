@@ -1156,16 +1156,16 @@ class Period(timedelta, Enum):
     '''
     different lengths of time
     '''
-    _init_ = 'value period'
+    _init_ = 'value ordinal period'
     _settings_ = EnumNoAlias
-    _ignore_ = 'Period i'
+    _ignore_ = 'Period i days'
     Period = vars()
     for i in range(367):
-        Period['Day%d' % i] = i, 'day'
+        Period['Day%d' % i] = i, i, 'day'
     for i in range(53):
-        Period['Week%d' % i] = i*7, 'week'
-    for i in (31, 61, 91, 122, 152, 182, 213, 243, 273, 304, 334, 365, 396):
-        Period['Month%d' % i] = i, 'month'
+        Period['Week%d' % i] = i*7, i, 'week'
+    for i, days in enumerate((31, 61, 91, 122, 152, 182, 213, 243, 273, 304, 334, 365, 396), start=1):
+        Period['Month%d' % i] = days, i, 'month'
     OneDay = Period['Day1']
     OneWeek = Period['Week1']
 
@@ -1218,12 +1218,12 @@ class Period(timedelta, Enum):
         month_start = today.replace(day=1)
         if self.period == 'day':
             start = today + self.value
-            stop = start + self.OneDay.value
+            stop = start + self.OneDay.days
         elif self.period == 'week':
             start = start + self.value
-            stop = week_start + self.OneWeek.value
+            stop = week_start + self.OneWeek.days
         elif self.period == 'month':
-            start = month_start.replace(delta_month=+self.value)
+            start = month_start.replace(delta_month=+self.ordinal)
             stop = start.replace(delta_month=+1)
         else:
             raise ValueError("forgot to update something! (period is %r)" % (self.period,))
@@ -1242,12 +1242,12 @@ class Period(timedelta, Enum):
         month_start = today.replace(day=1)
         if self.period == 'day':
             start = today - self.value
-            stop = start + self.OneDay.value
+            stop = start + self.OneDay.days
         elif self.period == 'week':
             start = week_start - self.value
-            stop = start + self.OneWeek.value
+            stop = start + self.OneWeek.days
         elif self.period == 'month':
-            start = month_start.replace(delta_month=-self.value)
+            start = month_start.replace(delta_month=-self.ordinal)
             stop = start.replace(delta_month=+1)
         else:
             raise ValueError("forgot to update something! (period is %r)" % (self.period,))
