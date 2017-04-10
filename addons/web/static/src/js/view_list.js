@@ -2212,8 +2212,7 @@ instance.web.list.Boolean = instance.web.list.Column.extend({
      * @private
      */
     _format: function (row_data, options) {
-        return _.str.sprintf('<input type="checkbox" %s readonly="readonly"/>',
-                 row_data[this.id].value ? 'checked="checked"' : '');
+        return row_data[this.id].value ? '<span style="font-size: 150%">\u2611</span>' : '<span style="font-size: 150%">\u2610</span>';
     }
 });
 instance.web.list.Binary = instance.web.list.Column.extend({

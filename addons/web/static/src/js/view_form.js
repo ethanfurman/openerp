@@ -503,9 +503,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
         var self = this;
         var mock_widget = $.extend({}, {
             node: {attrs: {on_change: this.fields_view.arch.attrs.setup}},
-            build_context: function() {
-                debugger;
-            },
+            build_context: function() {},
             field: {change_default: false},
         });
         this.on_change_list = [{widget: mock_widget, processed: []}].concat(this.on_change_list);
@@ -2780,24 +2778,34 @@ instance.web.form.FieldTextHtml = instance.web.form.AbstractField.extend(instanc
     },
 });
 
-instance.web.form.FieldBoolean = instance.web.form.AbstractField.extend({
+instance.web.form.FieldBoolean = instance.web.form.AbstractField.extend(instance.web.form.ReinitializeFieldMixin, {
     template: 'FieldBoolean',
-    start: function() {
-        var self = this;
-        this.$checkbox = $("input", this.$el);
-        this.setupFocus(this.$checkbox);
-        this.$el.click(_.bind(function() {
-            this.internal_set_value(this.$checkbox.is(':checked'));
-        }, this));
-        var check_readonly = function() {
-            self.$checkbox.prop('disabled', self.get("effective_readonly"));
+    destroy_content: function() {
+        if (this.$checkbox[0]) {
+            delete this.$checkbox[0];
         };
-        this.on("change:effective_readonly", this, check_readonly);
-        check_readonly.call(this);
-        this._super.apply(this, arguments);
+        delete this.$checkbox;
+    },
+    initialize_content: function() {
+        var self = this;
+        if (!this.get("effective_roadonly")) {
+            this.$checkbox = $("input", this.$el);
+            this.setupFocus(this.$checkbox);
+            this.$el.click(_.bind(function() {
+                this.internal_set_value(this.$checkbox.is(':checked'));
+            }, this));
+        } else {
+            this.$checkbox = $("span", this.$el);
+        };
+        this.on("change:effective_readonly", this, this.render_value);
     },
     render_value: function() {
-        this.$checkbox[0].checked = this.get('value');
+        var value = this.get('value');
+        if (!this.get("effective_readonly")) {
+            this.$checkbox[0].checked = value;
+        } else {
+            this.$("span").text(value ? "\u2715" : "");
+        };
     },
     focus: function() {
         var input = this.$checkbox && this.$checkbox[0];
