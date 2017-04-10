@@ -3176,13 +3176,15 @@ instance.web.form.FieldMany2One = instance.web.form.AbstractField.extend(instanc
         // doesn't work
     },
     show_error_displayer: function() {
+        new instance.web.form.M2ODialog(this).open();
+        // FIXME
         // show quick create dialog if
         //   m2o_dialog is true
         // or
         //   m2o_dialog is undefined and (create or create_edit) is true
         // or
         //   m2o_dialog/create/create_edit are undefined and can_create is true
-        if (
+        /* if (
             (this.options.m2o_dialog)
             ||
             (typeof this.options.m2o_dialog === 'undefined' &&
@@ -3194,7 +3196,7 @@ instance.web.form.FieldMany2One = instance.web.form.AbstractField.extend(instanc
                 new instance.web.form.M2ODialog(this).open();
             } else {
                 alert('invalid input');
-            }
+            } */
     },
     render_editable: function() {
         var self = this;
