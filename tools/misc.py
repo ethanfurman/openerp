@@ -613,10 +613,14 @@ def logged(f):
 class tracker(object):
     from pprint import pformat
     pformat = staticmethod(pformat)
-    indent = 0
+    thread_local_storage = local()
+    thread_local_storage.indent = 0
     def __call__(self, func):
         def wrapper(model, cr, *args, **kwds):
-            indent = '   ' * self.indent
+            initialized = getattr(self.thread_local_storage, 'indent', None)
+            if initialized is None:
+                self.thread_local_storage.indent = 0
+            indent = '   ' * self.thread_local_storage.indent
             print(
                 '\n{indent}{cls}.{func}(\n'
                 '{indent}    cr,\n'
@@ -630,11 +634,15 @@ class tracker(object):
                 args=(',\n%s    '%indent).join([repr(a) for a in args]),
                 kwds=(',\n%s    '%indent).join(['%s=%r' % (k, v) for k, v in kwds.items()]),
                 ))
-            self.__class__.indent += 1
+            self.thread_local_storage.indent += 1
             result = func(model, cr, *args, **kwds)
-            formatted_result = self.pformat(result, indent=2, depth=2).replace('\n','\n%*s' % (self.indent*3, ' '))
-            print('%s<-- %s\n' % (indent, formatted_result))
-            self.__class__.indent -= 1
+            formatted_result = (
+                    self
+                    .pformat(result, indent=2, depth=2)
+                    .replace('\n','\n%*s' % (self.thread_local_storage.indent*3, ' '))
+                    )
+            print('\n%s<-- %s\n' % (indent, formatted_result))
+            self.thread_local_storage.indent -= 1
             return result
         return wrapper
 tracker = tracker()
