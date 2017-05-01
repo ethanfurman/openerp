@@ -448,6 +448,17 @@
   clear: both;
   visibility: hidden;
 }
+.openerp .oe_preliminary {
+  width: 60%;
+  float: left;
+}
+.openerp .oe_preliminary:after {
+  content: ".";
+  display: block:
+  height: 2em;
+  clear: both;
+  visibility: hidden;
+}
 .openerp .oe_button_box {
   width: 270px;
   text-align: right;
