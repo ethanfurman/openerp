@@ -611,16 +611,35 @@ def logged(f):
     return wrapper
 
 class tracker(object):
+    from textwrap import wrap
+    wrap = staticmethod(wrap)
     from pprint import pformat
     pformat = staticmethod(pformat)
     thread_local_storage = local()
     thread_local_storage.indent = 0
+    model = False
+
+    def __init__(self, table=None):
+        if table is None:
+            self.model = []
+        else:
+            self.model = table.split(',')
+
     def __call__(self, func):
+        cls = self.__class__
         def wrapper(model, cr, *args, **kwds):
-            initialized = getattr(self.thread_local_storage, 'indent', None)
+            if model._name not in self.model:
+                return func(model, cr, *args, **kwds)
+            initialized = getattr(cls.thread_local_storage, 'indent', None)
             if initialized is None:
-                self.thread_local_storage.indent = 0
-            indent = '   ' * self.thread_local_storage.indent
+                cls.thread_local_storage.indent = 0
+            indent = ' . ' * cls.thread_local_storage.indent
+            new_args = []
+            for a in args:
+                if not isinstance(a, dict) or len(a) < 7:
+                    new_args.append(a)
+                else:
+                    new_args.append('{...}')
             print(
                 '\n{indent}{cls}.{func}(\n'
                 '{indent}    cr,\n'
@@ -631,21 +650,26 @@ class tracker(object):
                 cls=model.__class__.__name__,
                 func=func.__name__,
                 model=model._name,
-                args=(',\n%s    '%indent).join([repr(a) for a in args]),
+                args=(',\n%s    '%indent).join([repr(a) for a in new_args]),
                 kwds=(',\n%s    '%indent).join(['%s=%r' % (k, v) for k, v in kwds.items()]),
                 ))
-            self.thread_local_storage.indent += 1
+            cls.thread_local_storage.indent += 1
             result = func(model, cr, *args, **kwds)
-            formatted_result = (
-                    self
+            if isinstance(result, list):
+                formatted_result = cls.wrap(repr(result), 100)
+                formatted_result = ('\n%*s' % (cls.thread_local_storage.indent*3, ' ')).join(formatted_result)
+            else:
+                formatted_result = (
+                    cls
                     .pformat(result, indent=2, depth=2)
-                    .replace('\n','\n%*s' % (self.thread_local_storage.indent*3, ' '))
+                    .replace('\n','\n%*s' % (cls.thread_local_storage.indent*3, ' '))
                     )
             print('\n%s<-- %s\n' % (indent, formatted_result))
-            self.thread_local_storage.indent -= 1
+            cls.thread_local_storage.indent -= 1
             return result
         return wrapper
-tracker = tracker()
+
+    # tracker = tracker()
 
 class profile(object):
     def __init__(self, fname=None):
