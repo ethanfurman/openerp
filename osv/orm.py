@@ -1751,7 +1751,7 @@ class BaseModel(object):
 
     def __view_look_dom(self, cr, user, node, view_id, in_tree_view, model_fields, context=None):
         """
-        eturn the description of the fields in the node.
+        return the description of the fields in the node.
 
         In a normal call to this method, node is a complete view architecture
         but it is actually possible to give some sub-node (this is used so
@@ -1796,6 +1796,38 @@ class BaseModel(object):
                     fields.pop(node.get('name'), None)
                     # no point processing view-level ``groups`` anymore, return
                     return False
+            elif node.tag == 'filter':
+                # remove any filters that reference restricted fields
+                node_domain = eval(node.get('domain', '[]'), {'uid': user})
+                for spec in node_domain:
+                    if len(spec) != 3:
+                        continue
+                    field, op, target = spec
+                    if field not in self._all_columns:
+                        continue
+                    column = self._all_columns[field].column
+                    if column.groups and not self.user_has_groups(
+                                cr,
+                                user,
+                                groups=column.groups,
+                                context=context,
+                        ):
+                        node.getparent().remove(node)
+                        fields.pop(node.get('name'), None)
+                        return False
+                node_context = eval(node.get('context', '{}'))
+                group_by = node_context.get('group_by')
+                if group_by in self._all_columns:
+                    column = self._all_columns[group_by].column
+                    if column.groups and not self.user_has_groups(
+                                cr,
+                                user,
+                                groups=column.groups,
+                                context=context,
+                        ):
+                        node.getparent().remove(node)
+                        fields.pop(node.get('name'), None)
+                        return False
             # check for group override in view
             if node.get('groups'):
                 can_see = self.user_has_groups(cr, user,
@@ -3722,7 +3754,6 @@ class BaseModel(object):
             for mirror in mirrors:
                 link_mirror = link_field + '.' + mirror
                 res[link_mirror] = link_table_fields[mirror]
-                # TODO: eventually support writing to mirrored fields
                 res[link_mirror]['readonly'] = True
 
         return res
@@ -5612,4 +5643,3 @@ PGERROR_TO_OE = collections.defaultdict(
     # unique constraint error
     '23505': convert_pgerror_23505,
 })
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

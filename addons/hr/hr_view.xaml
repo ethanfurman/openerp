@@ -38,7 +38,7 @@
                                         @parent_id
                                         @coach_id
                                         ~label $Employee_No for='identification_id'
-                                        @identification_id groups='' nolabel='1'
+                                        @identification_id nolabel='1'
                                     ~group
                                         @company_id groups='base.group_multi_company'
                                         @user_id $User_Record invisible='1'
@@ -46,11 +46,11 @@
                             ~page @Personal $Confidential groups='base.group_hr_manager'
                                 ~group
                                     ~group string='Citizenship & Other Info'
-                                        @passport_id groups=''
+                                        @passport_id
                                         @country_id options='{"no_open": True}'
                                         @birthday
                                         @gender
-                                        @otherid groups=''
+                                        @otherid
                                         ~separator $Status colspan='2'
                                         @marital
                                     ~group $Contact_Information
@@ -102,7 +102,7 @@
                     ~filter $Female @type_female domain="[('gender','=','female')]"
                     ~filter $Male @type_male domain="[('gender','=','male')]"
                     ~separator
-                    ~filter string='Current/Past_Employees' @type_all_employees domain="['|',('active','=',True),('active','=',False)]"
+                    ~filter string='Current/Past_Employees' @type_all_employees domain="['|',('current','=',True),('current','=',False)]"
                     ~group $Group_By... expand='0'
                         ~filter $Department context="{'group_by':'department_id'}" domain='[]' icon='terp-personal+'
                         ~filter $Manager context="{'group_by':'parent_id'}" domain='[]' icon='terp-personal'

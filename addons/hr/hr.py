@@ -147,11 +147,11 @@ class hr_job(osv.osv):
         self.write(cr, uid, ids, {'state': 'open', 'no_of_recruitment': 0})
         return True
 
-
 class hr_employee(osv.osv):
     _name = "hr.employee"
     _description = "Employee"
     _inherits = {'resource.resource': "resource_id"}
+    _order='name_related'
 
     def _get_image(self, cr, uid, ids, name, args, context=None):
         result = dict.fromkeys(ids, False)
@@ -222,9 +222,21 @@ class hr_employee(osv.osv):
         'city': fields.related('partner_id', 'city', type='char', string='City'),
         'login': fields.related('user_id', 'login', type='char', string='Login', readonly=1),
         'last_login': fields.related('user_id', 'date', type='datetime', string='Latest Connection', readonly=1),
+        'current': fields.related(
+            'resource_id', 'active',
+            type='boolean',
+            string='Current Employee',
+            ),
     }
 
-    _order='name_related'
+    fields.apply_groups(
+            _columns,
+            {
+                'base.group_hr_manager': [
+                    'current', 'country_id', 'birthday', 'ssnid', 'sinid', 'otherid',
+                    'gender', 'marital', 'home_.*', 'emergency_.*','notes', 'child_ids',
+                    'passport_id', 'color', 'city',
+                    ]})
 
     def create(self, cr, uid, data, context=None):
         # work around view not using default image

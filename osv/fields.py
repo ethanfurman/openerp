@@ -1723,4 +1723,17 @@ class SelectionEnum(Enum):
                 return default
         raise LookupError('%r not found in %s' % (text, cls.__name__))
 
+def apply_groups(columns, groups):
+    "convenience method for applying groups to columns"
+    all_columns = columns.keys()
+    for group, spec_list in groups.items():
+        for spec in spec_list:
+            for field in all_columns:
+                if re.match(spec, field):
+                    column = columns[field]
+                    all_groups = column.groups and column.groups.split(',') or []
+                    all_groups.append(group)
+                    column.groups = ','.join(set(all_groups))
+
+
 # vim:expandtab:tabstop=4:softtabstop=4:shiftwidth=4:

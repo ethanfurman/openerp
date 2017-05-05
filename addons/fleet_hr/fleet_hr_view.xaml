@@ -16,6 +16,7 @@
                             @driver_license_class
                             @driver_license_exp
                             @driver_medical_exp
+                            @driver_renewal_state invisible='1'
 
         ~record model='ir.ui.view' #fleet_hr_driver_tree
             @name: hr.employee.tree
@@ -25,7 +26,7 @@
             @arch type='xml'
                 ~xpath expr="//tree[@string='Employees']" position='attributes'
                     ~attribute @colors
-                        orange:driver_license_renewal_due_soon or driver_medical_renewal_due_soon; red:driver_license_renewal_overdue or driver_medical_renewal_overdue
+                        orange:driver_renewal_state=='SOON';red:driver_renewal_state=='OVERDUE'
                 ~xpath expr="//field[@name='job_id']" position='after'
                     @driver_license_exp
                     @driver_medical_exp
@@ -33,6 +34,7 @@
                     @driver_license_renewal_overdue invisible='1'
                     @driver_medical_renewal_due_soon invisible='1'
                     @driver_medical_renewal_overdue invisible='1'
+                    @driver_renewal_state invisible='1'
 
         ~record model='ir.actions.act_window' #fleet.fleet_vehicle_act
             @context: {'show_driver':1}
@@ -45,9 +47,10 @@
             @arch type='xml'
                 ~xpath expr="//tree[@string='Vehicle']" position='attributes'
                     ~attribute @colors
-                        orange:contract_renewal_due_soon or driver_license_renewal_due_soon or driver_medical_renewal_due_soon or dmv_reg_warning=='warning'; red:contract_renewal_overdue or driver_license_renewal_overdue or driver_medical_renewal_overdue or dmv_reg_warning=='expired'
+                        orange:contract_renewal_due_soon or driver_renewal_state=='SOON' or dmv_reg_warning=='warning'; red:contract_renewal_overdue or driver_renewal_state=='OVERDUE' or dmv_reg_warning=='expired'
                 ~xpath expr="//field[@name='location']" position='after'
                     @driver_license_renewal_due_soon invisible='1'
                     @driver_license_renewal_overdue invisible='1'
                     @driver_medical_renewal_due_soon invisible='1'
                     @driver_medical_renewal_overdue invisible='1'
+                    @driver_renewal_state invisible='1'

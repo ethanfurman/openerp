@@ -1,40 +1,60 @@
 import logging
 from osv import osv, fields
 from dbf import Date
+from openerp import SUPERUSER_ID
 
 _logger = logging.getLogger(__name__)
 
+class RenewalState(fields.SelectionEnum):
+    SOON = 'Renewal Due Soon'
+    OVERDUE = 'Renewal Overdue'
 
+def _get_license_expiries(model, cr, uid, ids, field_names, unknown_none, context=None):
+    res = {}
+    today = Date.today()
+    for record in model.browse(cr, SUPERUSER_ID, ids, context=context):
+        res[record.id] = {}
+        dl_soon = dl_over = False
+        md_soon = md_over = False
+        renewal_state = ''
+        # check for restricted fields
+        if all(f in field_names for f in (
+                'driver_license_renewal_due_soon',
+                'driver_license_renewal_overdue',
+                'driver_medical_renewal_due_soon',
+                'driver_medical_renewal_overdue',
+                )
+                or uid == record.id
+            ):
+            if record.driver_license_exp:
+                if today > Date(record.driver_license_exp):
+                    dl_over = True
+                elif today.replace(delta_day=30) > Date(record.driver_license_exp):
+                    dl_soon = True
+            if record.driver_medical_exp:
+                if today > Date(record.driver_medical_exp):
+                    md_over = True
+                elif today.replace(delta_day=30) > Date(record.driver_medical_exp):
+                    md_soon = True
+            if dl_soon or md_soon:
+                renewal_state = RenewalState.SOON
+            if dl_over or md_over:
+                renewal_state = RenewalState.OVERDUE
+        for possible, status in (
+                ('driver_license_renewal_due_soon', dl_soon),
+                ('driver_license_renewal_overdue', dl_over),
+                ('driver_medical_renewal_due_soon', md_soon),
+                ('driver_medical_renewal_overdue', md_over),
+                ('driver_renewal_state', renewal_state),
+            ):
+            if possible in field_names:
+                res[record.id][possible] = status
+    return res
 
 class hr_employee(osv.Model):
     "fleet driver information fields"
     _name = 'hr.employee'
     _inherit = 'hr.employee'
-
-    def _get_license_expiries(self, cr, uid, ids, field_names, unknown_none, context=None):
-        res = {}
-        today = Date.today()
-        for employee in self.browse(cr, uid, ids, context=context):
-            dl_soon = dl_over = False
-            md_soon = md_over = False
-
-            if employee.driver_license_exp:
-                if today > Date(employee.driver_license_exp):
-                    dl_over = True
-                elif today.replace(delta_day=30) > Date(employee.driver_license_exp):
-                    dl_soon = True
-            if employee.driver_medical_exp:
-                if today > Date(employee.driver_medical_exp):
-                    md_over = True
-                elif today.replace(delta_day=30) > Date(employee.driver_medical_exp):
-                    md_soon = True
-            res[employee.id] = {
-                    'driver_license_renewal_due_soon': dl_soon,
-                    'driver_license_renewal_overdue': dl_over,
-                    'driver_medical_renewal_due_soon': md_soon,
-                    'driver_medical_renewal_overdue': md_over,
-                    }
-        return res
 
     _columns = {
         'driver_license_state': fields.many2one('res.country.state', 'State of License'),
@@ -66,7 +86,19 @@ class hr_employee(osv.Model):
             string="Medical clearance expired",
             multi='driver',
             ),
+        'driver_renewal_state': fields.function(
+            _get_license_expiries,
+            type='selection',
+            selection=RenewalState,
+            string='Renewal Status',
+            multi='driver',
+            ),
         }
+
+    fields.apply_groups(
+            _columns,
+            {'base.group_hr_manager': ['driver_license_.*', 'driver_medical_.*']},
+            )
 
 
 class res_partner(osv.Model):
@@ -101,30 +133,6 @@ class fleet_vehicle(osv.Model):
     _name = 'fleet.vehicle'
     _inherit = 'fleet.vehicle'
 
-    def _get_license_expiries(self, cr, uid, ids, field_names, unknown_none, context=None):
-        res = {}
-        for vehicle in self.browse(cr, uid, ids, context=context):
-            dl_soon = dl_over = False
-            md_soon = md_over = False
-            if vehicle.driver_id and vehicle.driver_id.employee_id:
-                employee = vehicle.driver_id.employee_id
-                today = Date.today()
-                if not employee.driver_license_exp or today > Date(employee.driver_license_exp):
-                    dl_over = True
-                elif today.replace(delta_day=30) > Date(employee.driver_license_exp):
-                    dl_soon = True
-                if not employee.driver_medical_exp or today > Date(employee.driver_medical_exp):
-                    md_over = True
-                elif today.replace(delta_day=30) > Date(employee.driver_medical_exp):
-                    md_soon = True
-            res[vehicle.id] = {
-                    'driver_license_renewal_due_soon': dl_soon,
-                    'driver_license_renewal_overdue': dl_over,
-                    'driver_medical_renewal_due_soon': md_soon,
-                    'driver_medical_renewal_overdue': md_over,
-                    }
-        return res
-
     _columns = {
         'driver_id': fields.many2one(
             'res.partner',
@@ -154,6 +162,13 @@ class fleet_vehicle(osv.Model):
             _get_license_expiries,
             type='boolean',
             string="Medical clearance expired",
+            multi='driver',
+            ),
+        'driver_renewal_state': fields.function(
+            _get_license_expiries,
+            type='selection',
+            selection=RenewalState,
+            string='Renewal Status',
             multi='driver',
             ),
         }
