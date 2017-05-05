@@ -232,7 +232,7 @@ class Cursor(object):
                 query = str(query)
                 if len(query) > 1000:
                     query = query[:400] + ' . . . ' + query[-250:]
-                _logger.error("Programming error: %s, in query %s", pe, query)
+                _logger.error("Programming error: %s, in query %s, with params %r", pe, query, params)
             raise
         except Exception:
             if self._default_log_exceptions if log_exceptions is None else log_exceptions:
