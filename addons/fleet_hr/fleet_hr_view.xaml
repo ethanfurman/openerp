@@ -26,7 +26,7 @@
             @arch type='xml'
                 ~xpath expr="//tree[@string='Employees']" position='attributes'
                     ~attribute @colors
-                        orange:driver_renewal_state=='SOON';red:driver_renewal_state=='OVERDUE'
+                        orange:driver_renewal_state=='soon';red:driver_renewal_state=='overdue'
                 ~xpath expr="//field[@name='job_id']" position='after'
                     @driver_license_exp
                     @driver_medical_exp
@@ -47,7 +47,7 @@
             @arch type='xml'
                 ~xpath expr="//tree[@string='Vehicle']" position='attributes'
                     ~attribute @colors
-                        orange:contract_renewal_due_soon or driver_renewal_state=='SOON' or dmv_reg_warning=='warning'; red:contract_renewal_overdue or driver_renewal_state=='OVERDUE' or dmv_reg_warning=='expired'
+                        orange:contract_renewal_due_soon or driver_renewal_state=='soon' or dmv_reg_warning=='warning'; red:contract_renewal_overdue or driver_renewal_state=='overdue' or dmv_reg_warning=='expired'
                 ~xpath expr="//field[@name='location']" position='after'
                     @driver_license_renewal_due_soon invisible='1'
                     @driver_license_renewal_overdue invisible='1'

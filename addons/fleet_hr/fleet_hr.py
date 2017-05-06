@@ -6,8 +6,8 @@ from openerp import SUPERUSER_ID
 _logger = logging.getLogger(__name__)
 
 class RenewalState(fields.SelectionEnum):
-    SOON = 'Renewal Due Soon'
-    OVERDUE = 'Renewal Overdue'
+    soon = 'Renewal Due Soon'
+    overdue = 'Renewal Overdue'
 
 def _get_license_expiries(model, cr, uid, ids, field_names, unknown_none, context=None):
     res = {}
@@ -17,29 +17,28 @@ def _get_license_expiries(model, cr, uid, ids, field_names, unknown_none, contex
         dl_soon = dl_over = False
         md_soon = md_over = False
         renewal_state = ''
-        # check for restricted fields
-        if all(f in field_names for f in (
-                'driver_license_renewal_due_soon',
-                'driver_license_renewal_overdue',
-                'driver_medical_renewal_due_soon',
-                'driver_medical_renewal_overdue',
-                )
-                or uid == record.id
-            ):
-            if record.driver_license_exp:
-                if today > Date(record.driver_license_exp):
+        employee = None
+        # if this is a vehicle record, grab the employee record from it
+        if model._name == 'hr.employee':
+            employee = record
+        elif model._name == 'fleet.vehicle':
+            if record.driver_id and record.driver_id.employee_id:
+                employee = record.driver_id.employee_id
+        if employee is not None:
+            if employee.driver_license_exp:
+                if today > Date(employee.driver_license_exp):
                     dl_over = True
-                elif today.replace(delta_day=30) > Date(record.driver_license_exp):
+                elif today.replace(delta_day=30) > Date(employee.driver_license_exp):
                     dl_soon = True
-            if record.driver_medical_exp:
-                if today > Date(record.driver_medical_exp):
+            if employee.driver_medical_exp:
+                if today > Date(employee.driver_medical_exp):
                     md_over = True
-                elif today.replace(delta_day=30) > Date(record.driver_medical_exp):
+                elif today.replace(delta_day=30) > Date(employee.driver_medical_exp):
                     md_soon = True
             if dl_soon or md_soon:
-                renewal_state = RenewalState.SOON
+                renewal_state = RenewalState.soon
             if dl_over or md_over:
-                renewal_state = RenewalState.OVERDUE
+                renewal_state = RenewalState.overdue
         for possible, status in (
                 ('driver_license_renewal_due_soon', dl_soon),
                 ('driver_license_renewal_overdue', dl_over),
@@ -97,7 +96,7 @@ class hr_employee(osv.Model):
 
     fields.apply_groups(
             _columns,
-            {'base.group_hr_manager': ['driver_license_.*', 'driver_medical_.*']},
+            {'base.group_hr_manager,fleet.group_fleet_manager': ['driver_license_.*', 'driver_medical_.*']},
             )
 
 
