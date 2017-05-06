@@ -1564,7 +1564,6 @@ class property(function):
     def restart(self):
         self.field_id = {}
 
-
 def field_to_dict(model, cr, user, field, context=None):
     """ Return a dictionary representation of a field.
 
@@ -1656,14 +1655,14 @@ class column_info(object):
 
 _raise_lookup = Sentinel('raise LookupError')
 
-class SelectionEnum(Enum):
+class SelectionEnum(str, Enum):
 
     _settings_ = EnumAutoValue
     _init_ = 'db user'
 
     def __new__(cls, *args, **kwds):
         count = len(cls.__members__)
-        obj = object.__new__(cls)
+        obj = str.__new__(cls, args[0])
         obj._count = count
         obj._value_ = args
         return obj
