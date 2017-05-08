@@ -619,53 +619,60 @@ class tracker(object):
     thread_local_storage.indent = 0
     model = False
 
-    def __init__(self, table=None):
+    def __init__(self, table=None, recurse=True):
+        self.recurse = recurse
+        self._seen = defaultdict(int)
         if table is None:
             self.model = []
         else:
             self.model = table.split(',')
 
     def __call__(self, func):
+        _logger.warning('self.model = %r', self.model, )
         cls = self.__class__
         def wrapper(model, cr, *args, **kwds):
-            if model._name not in self.model:
+            if self.model and model._name not in self.model:
                 return func(model, cr, *args, **kwds)
             initialized = getattr(cls.thread_local_storage, 'indent', None)
             if initialized is None:
                 cls.thread_local_storage.indent = 0
-            indent = ' . ' * cls.thread_local_storage.indent
-            new_args = []
-            for a in args:
-                if not isinstance(a, dict) or len(a) < 7:
-                    new_args.append(a)
-                else:
-                    new_args.append('{...}')
-            print(
-                '\n{indent}{cls}.{func}(\n'
-                '{indent}    cr,\n'
-                '{indent}    {args},\n'
-                '{indent}    {kwds},\n'
-                '{indent}    )\n'.format(
-                indent=indent,
-                cls=model.__class__.__name__,
-                func=func.__name__,
-                model=model._name,
-                args=(',\n%s    '%indent).join([repr(a) for a in new_args]),
-                kwds=(',\n%s    '%indent).join(['%s=%r' % (k, v) for k, v in kwds.items()]),
-                ))
-            cls.thread_local_storage.indent += 1
+            self._seen[model] += 1
+            if self.recurse or self._seen[model] == 1:
+                indent = ' . ' * cls.thread_local_storage.indent
+                new_args = []
+                for a in args:
+                    if not isinstance(a, dict) or len(a) < 7:
+                        new_args.append(a)
+                    else:
+                        new_args.append('{...}')
+                print(
+                    '\n{indent}{cls}.{func}(\n'
+                    '{indent}    cr,\n'
+                    '{indent}    {args},\n'
+                    '{indent}    {kwds},\n'
+                    '{indent}    )\n'.format(
+                    indent=indent,
+                    cls=model.__class__.__name__,
+                    func=func.__name__,
+                    model=model._name,
+                    args=(',\n%s    '%indent).join([repr(a) for a in new_args]),
+                    kwds=(',\n%s    '%indent).join(['%s=%r' % (k, v) for k, v in kwds.items()]),
+                    ), file=sys.stdout)
+                cls.thread_local_storage.indent += 1
             result = func(model, cr, *args, **kwds)
-            if isinstance(result, list):
-                formatted_result = cls.wrap(repr(result), 100)
-                formatted_result = ('\n%*s' % (cls.thread_local_storage.indent*3, ' ')).join(formatted_result)
-            else:
-                formatted_result = (
-                    cls
-                    .pformat(result, indent=2, depth=2)
-                    .replace('\n','\n%*s' % (cls.thread_local_storage.indent*3, ' '))
-                    )
-            print('\n%s<-- %s\n' % (indent, formatted_result))
-            cls.thread_local_storage.indent -= 1
+            if self.recurse or self._seen[model] == 1:
+                if isinstance(result, list):
+                    formatted_result = cls.wrap(repr(result), 100)
+                    formatted_result = ('\n%*s' % (cls.thread_local_storage.indent*3, ' ')).join(formatted_result)
+                else:
+                    formatted_result = (
+                        cls
+                        .pformat(result, indent=2, depth=2, width=10240)
+                        .replace('\n','\n%*s' % (cls.thread_local_storage.indent*3, ' '))
+                        )
+                print('\n%s<-- %s\n' % (indent, formatted_result))
+                cls.thread_local_storage.indent -= 1
+            self._seen[model] -= 1
             return result
         return wrapper
 
