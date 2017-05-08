@@ -409,11 +409,24 @@ class browse_record(object):
             # if the field is a classic one or a many2one, we'll fetch all classic and many2one fields
             if col._prefetch:
                 # gen the list of "local" (ie not inherited) fields which are classic or many2one
-                fields_to_fetch = filter(lambda x: x[1]._classic_write, self._table._columns.items())
+                potential_fields = filter(lambda x: x[1]._classic_write, self._table._columns.items())
                 # gen the list of inherited fields
                 inherits = map(lambda x: (x[0], x[1][2]), self._table._inherit_fields.items())
                 # complete the field list with the inherited fields which are classic or many2one
-                fields_to_fetch += filter(lambda x: x[1]._classic_write, inherits)
+                potential_fields += filter(lambda x: x[1]._classic_write, inherits)
+                # then apply group restrictions
+                fields_to_fetch = []
+                has_group = self._model.pool.get('res.users').has_group
+                for col_name, col_obj in potential_fields:
+                    if (
+                            col_name == name
+                            or not col_obj.groups
+                            or any([
+                                has_group(self._cr, self._uid, [self._uid], group_ext_id=grp, context=self._context)
+                                for grp in col_obj.groups.split(',')
+                                ])
+                        ):
+                        fields_to_fetch.append((col_name, col_obj))
             # otherwise we fetch only that field
             else:
                 fields_to_fetch = [(name, col)]
