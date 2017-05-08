@@ -406,6 +406,7 @@ class fleet_vehicle(osv.Model):
         'engine_hours': fields.float('Engine Hours', size=10, help='Engine Hours'),
         'dmv_reg_expiry': fields.date('DMV Registration Expires'),
         'dmv_reg_warning': fields.function(_get_dmv_expiry, type='char', string='Days until dmv expiry'),
+        'gps_unit': fields.char('GPS Unit ID', size=64),
         }
 
     _defaults = {

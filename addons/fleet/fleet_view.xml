@@ -240,6 +240,7 @@
                                 <field name="seats" />
                                 <field name="doors" />
                                 <field name="color" />
+                                <field name="gps_unit" />
                                 <field name="dmv_class" />
                                 <field name="dmv_reg_expiry" />
                                 <field name="fast_track_no" />
