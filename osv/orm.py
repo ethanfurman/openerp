@@ -1787,13 +1787,16 @@ class BaseModel(object):
                :return: True if field should be included in the result of fields_view_get
             """
             # check for group override in table
-            if node.tag == 'field' and node.get('name') in self._all_columns:
-                column = self._all_columns[node.get('name')].column
+            tag = node.tag
+            target = {'field': 'name', 'label': 'for'}.get(tag)
+            if tag in ('field', 'label') and node.get(target) in self._all_columns:
+                column = self._all_columns[node.get(target)].column
                 if column.groups and not self.user_has_groups(cr, user,
                                                               groups=column.groups,
                                                               context=context):
                     node.getparent().remove(node)
-                    fields.pop(node.get('name'), None)
+                    if tag == 'field':
+                        fields.pop(node.get('name'), None)
                     # no point processing view-level ``groups`` anymore, return
                     return False
             elif node.tag == 'filter':
