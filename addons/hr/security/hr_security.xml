@@ -7,16 +7,22 @@
     </record>
 
     <record id="base.group_hr_user" model="res.groups">
-        <field name="name">Officer</field>
+        <field name="name">Supervisor</field>
         <field name="category_id" ref="base.module_category_human_resources"/>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-        <field name="comment">the user will be able to approve document created by employees.</field>
+        <field name="comment">Supervisors can administer Trainings.</field>
+    </record>
+    <record id="base.group_hr_officer" model="res.groups">
+        <field name="name">Officer</field>
+        <field name="category_id" ref="base.module_category_human_resources"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_hr_user'))]"/>
+        <field name="comment">Officers can set up and create Trainings/Certifications.</field>
     </record>
     <record id="base.group_hr_manager" model="res.groups">
         <field name="name">Manager</field>
-        <field name="comment">the user will have an access to the human resources configuration as well as statistic reports.</field>
+        <field name="comment">Managers have full access to HR and associated reports.</field>
         <field name="category_id" ref="base.module_category_human_resources"/>
-        <field name="implied_ids" eval="[(4, ref('base.group_hr_user'))]"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_hr_officer'))]"/>
         <field name="users" eval="[(4, ref('base.user_root'))]"/>
     </record>
 
