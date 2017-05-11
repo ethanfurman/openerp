@@ -3,9 +3,9 @@
     ~data
 
         // menu items
-        ~menuitem name='Human Resources' #menu_hr_root groups='base.group_hr_manager,base.group_hr_user,base.group_user' sequence='90'
+        ~menuitem name='Human Resources' #menu_hr_root groups='base.group_user' sequence='90'
         ~menuitem name='Human Resources' #menu_hr_main parent='menu_hr_root' sequence='0'
-        ~menuitem @Configuration #menu_hr_configuration groups='base.group_hr_manager' parent='hr.menu_hr_root' sequence='50'
+        ~menuitem @Configuration #menu_hr_configuration groups='base.group_hr_officer' parent='hr.menu_hr_root' sequence='50'
         ~menuitem @Reports #menu_hr_reporting_timesheet parent='menu_hr_reporting' sequence='6'
 
         // employee form view
@@ -20,7 +20,7 @@
                             ~label .oe_edit_only for='name'
                             ~h1
                                 @name
-                            ~label .oe_edit_only for='category_ids' groups='base.group_hr_user'
+                            ~label .oe_edit_only for='category_ids' groups='base.group_hr_officer'
                             @category_ids groups='base.group_hr_user' placeholder='e.g. Part Time' widget='many2many_tags' nolabel='1'
                         ~div @button_box class='oe_right oe_button_box'
                         ~notebook
@@ -70,7 +70,7 @@
                                         @emergency_number $Phone
                             // Claims will become visible when extended by other HR modules
                             ~page @Claims $Claims groups='base.group_hr_manager' invisible='1'
-                            ~page @Settings $HR_Settings groups='base.group_hr_user'
+                            ~page @Settings $HR_Settings groups='base.group_hr_manager'
                                 ~group
                                     ~group @active_group $Active
                                         @active
@@ -96,7 +96,7 @@
                 ~search $Employees
                     @name
                     @department_id
-                    @category_ids groups='base.group_hr_user'
+                    @category_ids groups='base.group_hr_officer'
                     @active
                     ~separator
                     ~filter $Female @type_female domain="[('gender','=','female')]"
@@ -208,6 +208,7 @@
             @domain: [('id','in',active_ids)]
             @view_type: tree
             @view_id ref='view_partner_tree2'
+
         ~ir_set
             @key eval="'action'"
             @key2 eval="'client_action_multi'"
@@ -248,7 +249,7 @@
             @view_type: form
             @view_mode: tree,form
 
-        ~menuitem #menu_view_employee_category_form action='open_view_categ_form' groups='base.group_no_one' parent='hr.menu_hr_configuration' sequence='1'
+        ~menuitem #menu_view_employee_category_form action='open_view_categ_form' groups='base.group_hr_officer' parent='hr.menu_hr_configuration' sequence='1'
 
         ~record model='ir.actions.act_window' #hr_employee_normal_action_tree
             @name: Employees
@@ -270,8 +271,8 @@
             @arch type='xml'
                 ~form $Job version='7.0'
                     ~header
-                        ~button @job_recruitement $Launch_Recruitement .oe_highlight groups='base.group_user' states='open' type='object'
-                        ~button @job_open $Stop_Recruitment .oe_highlight groups='base.group_user' states='recruit' type='object'
+                        ~button @job_recruitement $Launch_Recruitement .oe_highlight groups='base.group_hr_officer' states='open' type='object'
+                        ~button @job_open $Stop_Recruitment .oe_highlight groups='base.group_hr_officer' states='recruit' type='object'
                         @state statusbar_visible='recruit,open' widget='statusbar'
                     ~sheet
                         ~div .oe_title
