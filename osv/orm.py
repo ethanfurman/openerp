@@ -1814,7 +1814,7 @@ class BaseModel(object):
                     return False
             elif node.tag == 'filter':
                 # remove any filters that reference restricted fields
-                node_domain = eval(node.get('domain', '[]'), {'uid': user})
+                node_domain = eval(node.get('domain', '[]'), {'uid': user, 'time': time, 'current_date': datetime.date.today()})
                 for spec in node_domain:
                     if len(spec) != 3:
                         continue
@@ -1833,6 +1833,9 @@ class BaseModel(object):
                         return False
                 node_context = eval(node.get('context', '{}'))
                 group_by = node_context.get('group_by')
+                if isinstance(group_by, list):
+                    _logger.error('invalid group_by %r in %r', group_by, self._name)
+                    group_by = None
                 if group_by in self._all_columns:
                     column = self._all_columns[group_by].column
                     if column.groups and not self.user_has_groups(
