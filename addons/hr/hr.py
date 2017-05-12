@@ -23,7 +23,7 @@ from openerp import addons
 import logging
 from openerp.osv import fields, osv
 from openerp.osv.osv import except_osv
-from openerp import tools
+from openerp import tools, SUPERUSER_ID
 _logger = logging.getLogger(__name__)
 
 class hr_employee_category(osv.osv):
@@ -140,11 +140,11 @@ class hr_job(osv.osv):
     def job_recruitement(self, cr, uid, ids, *args):
         for job in self.browse(cr, uid, ids):
             no_of_recruitment = job.no_of_recruitment == 0 and 1 or job.no_of_recruitment
-            self.write(cr, uid, [job.id], {'state': 'recruit', 'no_of_recruitment': no_of_recruitment})
+            self.write(cr, SUPERUSER_ID, [job.id], {'state': 'recruit', 'no_of_recruitment': no_of_recruitment})
         return True
 
     def job_open(self, cr, uid, ids, *args):
-        self.write(cr, uid, ids, {'state': 'open', 'no_of_recruitment': 0})
+        self.write(cr, SUPERUSER_ID, ids, {'state': 'open', 'no_of_recruitment': 0})
         return True
 
 class hr_employee(osv.osv):
