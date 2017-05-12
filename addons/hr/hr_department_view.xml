@@ -58,7 +58,7 @@
             </field>
         </record>
 
-       <menuitem action="open_module_tree_department" id="menu_hr_department_tree" parent="hr.menu_hr_configuration" sequence="5"/>
+       <menuitem action="open_module_tree_department" id="menu_hr_department_tree" parent="hr.menu_hr_configuration" sequence="5" groups="base.group_hr_manager"/>
 
     </data>
 </openerp>

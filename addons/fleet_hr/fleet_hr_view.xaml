@@ -9,7 +9,7 @@
             @priority eval='16'
             @arch type='xml'
                 ~page @Personal position='after'
-                    ~page @Fleet $Fleet_Information groups='base.group_hr_user,fleet.group_fleet_manager'
+                    ~page @Fleet $Fleet_Information groups='base.group_hr_manager,fleet.group_fleet_manager'
                         ~group colspan='2'
                             @driver_license_state
                             @driver_license_num

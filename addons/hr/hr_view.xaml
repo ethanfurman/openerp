@@ -249,7 +249,7 @@
             @view_type: form
             @view_mode: tree,form
 
-        ~menuitem #menu_view_employee_category_form action='open_view_categ_form' groups='base.group_hr_officer' parent='hr.menu_hr_configuration' sequence='1'
+        ~menuitem #menu_view_employee_category_form action='open_view_categ_form' groups='base.group_hr_manager' parent='hr.menu_hr_configuration' sequence='1'
 
         ~record model='ir.actions.act_window' #hr_employee_normal_action_tree
             @name: Employees
