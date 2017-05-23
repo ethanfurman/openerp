@@ -166,7 +166,7 @@ class hr_employee(osv.osv):
     def _calc_emp_typ_abbr(self, cr, uid, ids, name, args, context=None):
         result = dict.fromkeys(ids, False)
         for rec in self.browse(cr, uid, ids, context=context):
-            result[rec.id] = EmploymentType(rec.employment_type).list_view_abbr
+            result[rec.id] = EmploymentType[rec.employment_type].list_view_abbr
         return result
 
     _columns = {
