@@ -37,8 +37,7 @@
                                         @job_id context="{'form_view_ref': 'hr.view_hr_job_employee_form'}" domain="[('state','!=','old')]" options='{"no_open": True}'
                                         @parent_id
                                         @coach_id
-                                        ~label $Employee_No for='identification_id'
-                                        @identification_id nolabel='1'
+                                        @identification_id $Employee_No nolabel='1'
                                     ~group
                                         @company_id groups='base.group_multi_company'
                                         @user_id $User_Record invisible='1'
@@ -72,7 +71,9 @@
                             ~page @Claims $Claims groups='base.group_hr_manager' invisible='1'
                             ~page @Settings $HR_Settings groups='base.group_hr_manager'
                                 ~group
-                                    ~group @active_group $Active
+                                    ~group @misc_group
+                                        @employment_type
+                                    ~group @active_group
                                         @active
 
         ~record model='ir.ui.view' #view_employee_tree
@@ -80,6 +81,7 @@
             @model: hr.employee
             @arch type='xml'
                 ~tree $Employees default_order='name'
+                    @employment_type_abbr $Type
                     @name
                     @work_phone
                     @work_email
@@ -97,10 +99,13 @@
                     @name
                     @department_id
                     @category_ids groups='base.group_hr_officer'
-                    @active
                     ~separator
                     ~filter $Female @type_female domain="[('gender','=','female')]"
                     ~filter $Male @type_male domain="[('gender','=','male')]"
+                    ~separator
+                    ~filter $Permanent_Employees @type_permanent domain="[('employment_type','=','standard')]"
+                    ~filter $Temporary_Employees @type_temporary domain="[('employment_type','=','temporary')]"
+                    ~filter $Contract_Employees @type_contract domain="[('employment_type','=','contract')]"
                     ~separator
                     ~filter string='Current/Past_Employees' @type_all_employees domain="['|',('current','=',True),('current','=',False)]"
                     ~group $Group_By... expand='0'
@@ -168,7 +173,7 @@
             @view_type: form
             @view_mode: kanban,tree,form
             @domain: []
-            @context: {}
+            @context: {'search_default_type_permanent': 1, 'search_default_type_temporary': 1, 'search_default_type_contract': 1}
             @view_id eval='False'
             @search_view_id ref='view_employee_filter'
             @help type='html'

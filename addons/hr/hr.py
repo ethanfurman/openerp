@@ -24,6 +24,7 @@ import logging
 from openerp.osv import fields, osv
 from openerp.osv.osv import except_osv
 from openerp import tools, SUPERUSER_ID
+from selections import *
 _logger = logging.getLogger(__name__)
 
 class hr_employee_category(osv.osv):
@@ -119,7 +120,7 @@ class hr_job(osv.osv):
         'requirements': fields.text('Requirements'),
         'department_id': fields.many2one('hr.department', 'Department'),
         'company_id': fields.many2one('res.company', 'Company'),
-        'state': fields.selection([('open', 'No Recruitment'), ('recruit', 'Recruitement in Progress')], 'Status', readonly=True, required=True,
+        'state': fields.selection(JobState, 'Status', readonly=True, required=True,
             help="By default 'In position', set it to 'In Recruitment' if recruitment process is going on for this job position."),
     }
     _defaults = {
@@ -162,6 +163,12 @@ class hr_employee(osv.osv):
     def _set_image(self, cr, uid, id, name, value, args, context=None):
         return self.write(cr, uid, [id], {'image': tools.image_resize_image_big(value)}, context=context)
 
+    def _calc_emp_typ_abbr(self, cr, uid, ids, name, args, context=None):
+        result = dict.fromkeys(ids, False)
+        for rec in self.browse(cr, uid, ids, context=context):
+            result[rec.id] = EmploymentType(rec.employment_type).list_view_abbr
+        return result
+
     _columns = {
         #we need a related field in order to be able to sort the employee by name
         'name_related': fields.related('resource_id', 'name', type='char', string='Name', readonly=True, store=True),
@@ -171,8 +178,8 @@ class hr_employee(osv.osv):
         'sinid': fields.char('SIN No', size=32, help="Social Insurance Number"),
         'identification_id': fields.char('Identification No', size=32),
         'otherid': fields.char('Other Id', size=64),
-        'gender': fields.selection([('male', 'Male'),('female', 'Female')], 'Gender'),
-        'marital': fields.selection([('single', 'Single'), ('married', 'Married'), ('widower', 'Widower'), ('divorced', 'Divorced')], 'Marital Status'),
+        'gender': fields.selection(Gender, 'Gender'),
+        'marital': fields.selection(Marital, 'Marital Status'),
         'department_id':fields.many2one('hr.department', 'Department'),
         'partner_id': fields.many2one('res.partner', 'Partner Record'),
         #'address_home_id': fields.many2one('res.partner', 'Home Address'),
@@ -227,6 +234,17 @@ class hr_employee(osv.osv):
             type='boolean',
             string='Current Employee',
             ),
+        'employment_type': fields.selection(EmploymentType, "Employment Status"),
+        'employment_type_abbr': fields.function(
+            _calc_emp_typ_abbr,
+            fnct_inv=True,
+            type='char',
+            string='Employment Status Abbr',
+            size=1,
+            store={
+                'hr.employee': (lambda t, c, u, ids, ctx: ids, ['employement_type'], 10),
+                },
+            )
     }
 
     fields.apply_groups(
@@ -235,7 +253,7 @@ class hr_employee(osv.osv):
                 'base.group_hr_manager': [
                     'current', 'country_id', 'birthday', 'ssnid', 'sinid', 'otherid',
                     'gender', 'marital', 'home_.*', 'emergency_.*','notes', 'child_ids',
-                    'passport_id', 'color', 'city',
+                    'passport_id', 'color', 'city', 'identification_id', 'employment_type.*',
                     ]})
 
     def create(self, cr, uid, data, context=None):
@@ -335,6 +353,7 @@ class hr_employee(osv.osv):
         'active': 1,
         'image': _get_default_image,
         'color': 0,
+        'employment_type': EmploymentType.temporary,
     }
 
     def _check_recursion(self, cr, uid, ids, context=None):
