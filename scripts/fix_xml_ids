@@ -1,0 +1,124 @@
+#!/usr/bin/env python
+"""
+If a model changes how it tracks the FIS code, e.g. moving from the
+OpenERP HR field of identification_id to using the fnx.xmlid mixin,
+duplicate records can be generated:
+
+    - the original record, with all the preexisting data
+    - the new record, with the FIS xml_id and module date
+
+This script will adjust the matching records in ir.model.data to point
+to the pre-existing records, update the preexisting records with the xml_id
+and module data, and remove the duplicate and now superfluous records.
+"""
+
+from __future__ import print_function
+
+from scription import *
+from aenum import NamedTuple
+from collections import defaultdict
+from openerplib import get_connection, get_records
+
+
+@Command(
+        table=Spec('which table to deduplicate'),
+        fields=Spec('which field(s) to use to match original and duplicate records', MULTI),
+        dry_run=Spec('only show what would happen, do not commit', FLAG),
+        )
+def merge(table, fields, dry_run):
+    if not fields:
+        help('FIELDS must be specified')
+    Fields = NamedTuple('Fields', ('id', )+fields, type=FieldsBase)
+    print('getting records...')
+    config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
+    conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
+    ir_model_data = conn.get_model('ir.model.data')
+    target_table = conn.get_model(table)
+    imd_records = dict([
+            (rec.res_id, rec)
+            for rec in get_records(
+                    ir_model_data,
+                    domain=[('model','=',table)],
+                    fields=['model', 'res_id', 'module', 'name'],
+                    )
+            ])
+    duplicate_records = dict([
+            (rec.id, rec)
+            for rec in get_records(
+                    target_table,
+                    fields=fields + ('xml_id', 'module'),
+                    )
+            ])
+    pairs = defaultdict(list)
+    # gather duplicates
+    for rec in duplicate_records.values():
+        pairs[tuple(rec[f] for f in fields)].append(rec.id)
+    # check for non-pairs
+    discard = []
+    too_many = []
+    for key, pair in pairs.items():
+        if len(pair) == 1:
+            discard.append(key)
+        elif len(pair) != 2:
+            too_many.extend(pair)
+    if too_many:
+        abort('Some records have too many duplicates (ids: %s)' % ', '.join(too_many))
+    for single in discard:
+        print('removing %r' % (single, ), verbose=2)
+        del pairs[single]
+    # merge/delete pair and update ir_model_data record
+    bad_dupes = []
+    for p1, p2 in ProgressView(message='merging $total records...', view_type='bar', iterable=pairs.values()):
+        # figure out which is which
+        print('\np1: %r,  p2: %r' % (p1, p2), verbose=2)
+        if p1 in imd_records:
+            print('p2 in ir.model.data', verbose=2)
+            xml_rec = duplicate_records[p1]
+            orphan_rec = duplicate_records[p2]
+            print('---\npri: %r\ndup: %r\n---' % (orphan_rec, xml_rec), verbose=2)
+        elif p2 in imd_records:
+            print('p1 in ir.model.data', verbose=2)
+            xml_rec = duplicate_records[p2]
+            orphan_rec = duplicate_records[p1]
+            print('---\npri: %r\ndup: %r\n---' % (orphan_rec, xml_rec), verbose=2)
+        else:
+            bad_dupes.append((p1, p2))
+            continue
+        imd = imd_records[xml_rec.id]
+        if dry_run:
+            echo('---')
+        # adjust ir.model.data, if necessary
+        if not orphan_rec.module:
+            if dry_run:
+                echo('%r would be set in ir.model.data' % (Fields(**orphan_rec), ))
+            else:
+                ir_model_data.write(imd.id, {'res_id': orphan_rec.id})
+        else:
+            # records are backwards, switch them up
+            orphan_rec, xml_rec = xml_rec, orphan_rec
+        # remove duplicate
+        if dry_run:
+            echo('%r would be removed' % (Fields(**xml_rec), ))
+        else:
+            target_table.unlink([xml_rec.id])
+        # update primary
+        if dry_run:
+            echo('module & xml_id would be set to %r/%r' % (xml_rec.module, xml_rec.xml_id))
+        else:
+            orphan_rec.xml_id = xml_rec.xml_id
+            orphan_rec.module = xml_rec.module
+            target_table.write(orphan_rec.id, {'xml_id': xml_rec.xml_id, 'module': xml_rec.module})
+    print('done')
+
+class FieldsBase(NamedTuple):
+    def __new__(cls, **mapping):
+        print('incoming: %r' % (mapping, ))
+        final = dict([
+                (name, value)
+                for name, value in mapping.items()
+                if name in cls.__fields__
+                ])
+        print('outgoing: %r' % (final, ))
+        return super(FieldsBase, cls).__new__(cls, **final)
+
+Main()
