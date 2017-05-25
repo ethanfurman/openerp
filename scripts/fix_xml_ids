@@ -23,12 +23,17 @@ from openerplib import get_connection, get_records
 @Command(
         table=Spec('which table to deduplicate'),
         fields=Spec('which field(s) to use to match original and duplicate records', MULTI),
+        inactive=Spec('include "active=False" records', FLAG),
         dry_run=Spec('only show what would happen, do not commit', FLAG),
         )
-def merge(table, fields, dry_run):
+def merge(table, fields, inactive, dry_run):
     if not fields:
         help('FIELDS must be specified')
-    Fields = NamedTuple('Fields', ('id', )+fields, type=FieldsBase)
+    Fields = NamedTuple('Record', ('id', )+fields, type=FieldsBase)
+    if inactive:
+        domain = ['|',('active','=',True),('active','=',False)]
+    else:
+        domain = []
     print('getting records...')
     config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
     conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
@@ -46,6 +51,7 @@ def merge(table, fields, dry_run):
             (rec.id, rec)
             for rec in get_records(
                     target_table,
+                    domain=domain,
                     fields=fields + ('xml_id', 'module'),
                     )
             ])
