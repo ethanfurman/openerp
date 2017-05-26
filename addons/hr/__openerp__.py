@@ -52,12 +52,12 @@ You can manage:
     'data': [
         'security/hr_security.xml',
         'security/ir.model.access.csv',
+        'hr_data.xaml',
         'board_hr_view.xml',
         'hr_view.xaml',
         'hr_department_view.xml',
         'process/hr_process.xml',
         'hr_installer.xml',
-        'hr_data.xaml',
         'res_config_view.xml',
     ],
     'demo': ['hr_demo.xml'],
