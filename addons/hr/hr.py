@@ -225,6 +225,7 @@ class hr_employee(osv.osv):
                  "resized as a 64x64px image, with aspect ratio preserved. "\
                  "Use this field anywhere a small image is required."),
         'passport_id':fields.char('Passport No', size=64),
+        'blueshield_id': fields.char('Blue Shield No', size=64),
         'color': fields.integer('Color Index'),
         'city': fields.related('partner_id', 'city', type='char', string='City'),
         'login': fields.related('user_id', 'login', type='char', string='Login', readonly=1),
