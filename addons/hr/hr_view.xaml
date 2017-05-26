@@ -113,7 +113,7 @@
                     ~filter $Temporary @type_temporary domain="[('employment_type','=','temporary')]"
                     ~filter $Contract @type_contract domain="[('employment_type','=','contract')]"
                     ~separator
-                    ~filter string='Current/Past_Employees' @type_all_employees domain="['|',('current','=',True),('current','=',False)]"
+                    ~filter string='Current/Past_Employees' @type_all_employees domain="['|',('active','=',True),('active','=',False)]"
                     ~group $Group_By... expand='0'
                         ~filter $Department context="{'group_by':'department_id'}" domain='[]' icon='terp-personal+'
                         ~filter $Manager context="{'group_by':'parent_id'}" domain='[]' icon='terp-personal'
