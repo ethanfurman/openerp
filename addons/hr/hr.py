@@ -237,12 +237,11 @@ class hr_employee(osv.osv):
         'employment_type': fields.selection(EmploymentType, "Employment Status"),
         'employment_type_abbr': fields.function(
             _calc_emp_typ_abbr,
-            fnct_inv=True,
             type='char',
             string='Employment Status Abbr',
             size=1,
             store={
-                'hr.employee': (lambda t, c, u, ids, ctx: ids, ['employement_type'], 10),
+                'hr.employee': (lambda t, c, u, ids, ctx: ids, ['employment_type'], 10),
                 },
             ),
         'employment_agency_id': fields.many2one('res.partner', 'Employment Agency'),
