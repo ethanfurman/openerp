@@ -1,5 +1,11 @@
 !!!xml1.0
 ~openerp
+
+    ~data noupdate='0'
+
+        ~record model='res.partner.category' #temp_agency
+            @name: Employment Agency
+
     ~data noupdate='1'
 
         // notify all employees of module installation

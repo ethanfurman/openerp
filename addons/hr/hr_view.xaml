@@ -37,7 +37,6 @@
                                         @job_id context="{'form_view_ref': 'hr.view_hr_job_employee_form'}" domain="[('state','!=','old')]" options='{"no_open": True}'
                                         @parent_id
                                         @coach_id
-                                        @identification_id $Employee_No nolabel='1'
                                     ~group
                                         @company_id groups='base.group_multi_company'
                                         @user_id $User_Record invisible='1'
@@ -50,9 +49,7 @@
                                         @birthday
                                         @gender
                                         @otherid
-                                        ~separator $Status colspan='2'
-                                        @marital
-                                    ~group $Contact_Information
+                                        ~separator $Contact colspan='2'
                                         @home_phone
                                         @home_email
                                         ~label $Address for='home_street'
@@ -67,12 +64,21 @@
                                         ~separator $Emergency_Contact colspan='2'
                                         @emergency_contact $Name
                                         @emergency_number $Phone
+                                    ~group $Status
+                                        @identification_id $Employee_No
+                                        @employment_type
+                                        @employment_agency_id (
+                                            attrs="{'invisible': [('employment_type','!=','temporary')]}"
+                                            options="{'create': 0, 'create_edit': 1}"
+                                            context="{'default_category_id': [%(hr.temp_agency)d], 'default_customer': 0, 'default_supplier': 0, 'default_is_company': 1, 'mail_create_nosubscribe': 1}"
+                                            domain="[('category_id','in',[%(hr.temp_agency)d])]"
+                                            )
+                                        @marital
                             // Claims will become visible when extended by other HR modules
                             ~page @Claims $Claims groups='base.group_hr_manager' invisible='1'
                             ~page @Settings $HR_Settings groups='base.group_hr_manager'
                                 ~group
-                                    ~group @misc_group
-                                        @employment_type
+                                    ~group @misc_group invisible='1'
                                     ~group @active_group
                                         @active
 
@@ -103,9 +109,9 @@
                     ~filter $Female @type_female domain="[('gender','=','female')]"
                     ~filter $Male @type_male domain="[('gender','=','male')]"
                     ~separator
-                    ~filter $Permanent_Employees @type_permanent domain="[('employment_type','=','standard')]"
-                    ~filter $Temporary_Employees @type_temporary domain="[('employment_type','=','temporary')]"
-                    ~filter $Contract_Employees @type_contract domain="[('employment_type','=','contract')]"
+                    ~filter $Permanent @type_permanent domain="[('employment_type','=','standard')]"
+                    ~filter $Temporary @type_temporary domain="[('employment_type','=','temporary')]"
+                    ~filter $Contract @type_contract domain="[('employment_type','=','contract')]"
                     ~separator
                     ~filter string='Current/Past_Employees' @type_all_employees domain="['|',('current','=',True),('current','=',False)]"
                     ~group $Group_By... expand='0'
@@ -173,7 +179,7 @@
             @view_type: form
             @view_mode: kanban,tree,form
             @domain: []
-            @context: {'search_default_type_permanent': 1, 'search_default_type_temporary': 1, 'search_default_type_contract': 1}
+            @context: {}
             @view_id eval='False'
             @search_view_id ref='view_employee_filter'
             @help type='html'

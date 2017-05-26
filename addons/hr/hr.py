@@ -244,7 +244,8 @@ class hr_employee(osv.osv):
             store={
                 'hr.employee': (lambda t, c, u, ids, ctx: ids, ['employement_type'], 10),
                 },
-            )
+            ),
+        'employment_agency_id': fields.many2one('res.partner', 'Employment Agency'),
     }
 
     fields.apply_groups(
@@ -392,5 +393,11 @@ class res_partner(osv.Model):
 
     _columns = {
         'employee_id': fields.many2one('hr.employee', 'Employee Record'),
+        'agency_referred_ids': fields.one2many(
+            'hr.employee',
+            'employment_agency_id',
+            'Referred Employees',
+            readonly=False,
+            ),
         }
 
