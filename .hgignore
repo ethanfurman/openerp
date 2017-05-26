@@ -24,6 +24,7 @@ addons/fis_integration
 addons/fleet_hr/fleet_hr_view.xml
 addons/fnx
 addons/hr/hr_view.*\.xml$
+addons/hr/hr_data\.xml$
 addons/personal_address_book
 addons/salesinq
 addons/status
