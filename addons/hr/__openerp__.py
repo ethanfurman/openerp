@@ -57,7 +57,7 @@ You can manage:
         'hr_department_view.xml',
         'process/hr_process.xml',
         'hr_installer.xml',
-        'hr_data.xml',
+        'hr_data.xaml',
         'res_config_view.xml',
     ],
     'demo': ['hr_demo.xml'],
