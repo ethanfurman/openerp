@@ -73,6 +73,7 @@
                                             context="{'default_category_id': [%(hr.temp_agency)d], 'default_customer': 0, 'default_supplier': 0, 'default_is_company': 1, 'mail_create_nosubscribe': 1}"
                                             domain="[('category_id','in',[%(hr.temp_agency)d])]"
                                             )
+                                        ~separator $Miscellaneous colspan='2'
                                         @blueshield_id
                                         @marital
                             // Claims will become visible when extended by other HR modules
