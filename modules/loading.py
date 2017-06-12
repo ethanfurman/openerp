@@ -234,6 +234,11 @@ def load_module_graph(cr, graph, status=None, perform_checks=True, skip_modules=
                 if hasattr(package, kind):
                     delattr(package, kind)
 
+        # run post-update method if it exists
+        for model in models:
+            if hasattr(model, '_post_init'):
+                model._post_init(pool, cr)
+
         if module_name == test_module:
             report.record_result(openerp.modules.module.run_unit_tests(module_name))
         cr.commit()
