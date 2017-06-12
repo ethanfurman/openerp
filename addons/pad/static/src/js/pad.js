@@ -21,12 +21,17 @@ openerp.pad = function(instance) {
                         object_id: self.view.datarecord.id
                     }}).done(function(data) {
                     if(data&&data.url){
-                        self.set({value: data.url});
+                        self.set({value: data.url.substr(4)});
                         _super(data.url);
                         self.renderElement();
                     }
                 });
             } else {
+                var url = self.get("value");
+                if (_.str.startsWith(url, 'http')){
+                    url = url.substr(4);
+                }
+                self.internal_set_value(url);
                 self.renderElement();
             }
             this._dirty_flag = true;
@@ -37,24 +42,40 @@ openerp.pad = function(instance) {
             if (this.pad_loading_request) {
                 this.pad_loading_request.abort();
             }
-            if(!_.str.startsWith(value,'http')){
+            if (value === false || value === ""){
                 this.configured = false;
                 this.content = "";
             }else{
+                if (!_.str.startsWith(value,'http')){
+                    value = 'http' + value;
+                }
                 this.configured = true;
                 if(!this.get('effective_readonly')){
                     this.content = '<iframe width="100%" height="100%" frameborder="0" src="'+value+'?showChat=false&userName='+this.session.username+'"></iframe>';
                 }else{
                     this.content = '<div class="oe_pad_loading">... Loading pad ...</div>';
-                    this.pad_loading_request = $.get(value+'/export/html')
-                    .done(function(data){
-                        groups = /\<\s*body\s*\>(.*?)\<\s*\/body\s*\>/.exec(data);
-                        data = (groups || []).length >= 2 ? groups[1] : '';
+                    var xhr = new XMLHttpRequest();
+                    xhr.onload = function() {
+                        var data = this.responseText;
+                        var groups = /\<\s*body\s*\>([\s\S]*?)\<\s*\/body\s*\>/.exec(data);
+                        data = (groups || []).length >= 2 ? groups[1] : '<br/>';
+                        var invite = /You can invite others to share this pad./.exec(data);
+                        var advert = /Welcome to Etherpad!/.exec(data);
+                        if (invite || advert || data === "<br/>") {
+                            data = '<br/>';
+                        } else {
+                            groups = /([\s\S]*?)\<div style="display:none.*?\<\/div\>([\s\S]*?)/.exec(data);
+                            data = (groups || []).length >= 2 ? groups[1] : groups[0];
+                        }
                         self.$('.oe_pad_content').html('<div class="oe_pad_readonly"><div>');
                         self.$('.oe_pad_readonly').html(data);
-                    }).error(function(){
+                    };
+                    xhr.onerror = function() {
                         self.$('.oe_pad_content').text('Unable to load pad');
-                    });
+                    };
+                    this.pad_loading_request = xhr;
+                    xhr.open('GET', value+'/export/html', true);
+                    xhr.send();
                 }
             }
             this._super();
