@@ -35,12 +35,12 @@ class pad_common(osv.osv_memory):
         path = '%s-%s-%s' % (cr.dbname.replace('_','-'), self._name, salt)
         # contruct the url
         url = '%s/p/%s' % (pad["server"], path)
+        myPad = EtherpadLiteClient( pad["key"], pad["server"]+'/api')
+        myPad.createPad(path)
+        myPad.setText(path, '')
 
         #if create with content
         if "field_name" in context and "model" in context and "object_id" in context:
-            myPad = EtherpadLiteClient( pad["key"], pad["server"]+'/api')
-            myPad.createPad(path)
-
             #get attr on the field model
             model = self.pool.get(context["model"])
             field = model._all_columns[context['field_name']]
@@ -52,9 +52,6 @@ class pad_common(osv.osv_memory):
                     myPad.setText(path, html2plaintext(record[real_field]))
                     #Etherpad for html not functional
                     #myPad.setHTML(path, record[real_field])
-                    break
-            else:
-                myPad.setText(path, '')
 
         return {
             "server": pad["server"],
