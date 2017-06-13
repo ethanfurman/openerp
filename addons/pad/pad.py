@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-from openerp.osv import fields, osv
+from openerp.osv import osv
 import random
 import re
 import string
 import urllib2
 import logging
-from openerp.tools.translate import _
 from openerp.tools import html2plaintext
 from py_etherpad import EtherpadLiteClient
 
@@ -30,12 +29,12 @@ class pad_common(osv.osv_memory):
         pad["server"] = pad["server"].rstrip('/')
         # generate a salt
         s = string.ascii_uppercase + string.digits
-        salt = ''.join([s[random.randint(0, len(s) - 1)] for i in range(10)])
+        salt = ''.join([s[random.randint(0, len(s)-1)] for i in range(10)])
         #path
-        path = '%s-%s-%s' % (cr.dbname.replace('_','-'), self._name, salt)
+        path = '%s-%s-%s' % (cr.dbname.replace('_', '-'), self._name, salt)
         # contruct the url
         url = '%s/p/%s' % (pad["server"], path)
-        myPad = EtherpadLiteClient( pad["key"], pad["server"]+'/api')
+        myPad = EtherpadLiteClient(pad["key"], pad["server"]+'/api')
         myPad.createPad(path)
         myPad.setText(path, '')
 
@@ -131,9 +130,9 @@ class pad_common(osv.osv_memory):
     def _set_pad_value(self, cr, uid, vals, context=None):
         # the 'http' is removed by the javascript widget to force a rewrite;
         # add it back, and update pad_content_field
-        for k,v in vals.items():
+        for k, v in vals.items():
             field = self._all_columns[k].column
-            if hasattr(field,'pad_content_field'):
+            if hasattr(field, 'pad_content_field'):
                 if not v.startswith('http'):
                     v = 'http' + v
                     vals[k] = v
