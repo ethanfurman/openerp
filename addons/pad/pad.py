@@ -131,12 +131,38 @@ class pad_common(osv.osv_memory):
             server = 'http://' + server
         for rec in res:
             for tf in target_fields:
-                path = rec[tf]
-                if not path:
+                url = rec[tf]
+                if not url:
                     continue
-                head, sep, tail = path.partition('/p/')
-                path = server + sep + tail
-                rec[tf] = path
+                head, sep, tail = url.partition('/p/')
+                url = server + sep + tail
+                rec[tf] = url
+        return res
+
+    def unlink(self, cr, uid, ids, context=None):
+        if not ids:
+            return super(pad_common, self).unlink(cr, uid, ids, context=context)
+        company = self.pool.get('res.users').browse(cr, uid, uid, context=context).company_id;
+        key = company.pad_key
+        # gather all etherpad-linked fields so we can delete after host records
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        pad_fields = [n for n, f in self._all_columns.items() if hasattr(f.column, 'pad_content_field')]
+        pads = []
+        for record in self.read(cr, uid, ids, fields=pad_fields, context=context):
+            for k, v in record.items():
+                if k != 'id':
+                    pads.append(v)
+        # we have the pads, delete the records
+        res = super(pad_common, self).unlink(cr, uid, ids, context=context)
+        # now delete the pads
+        for pad in pads:
+            try:
+                server, sep, path = pad.partition('/p/')
+                myPad = EtherpadLiteClient(key, server+'/api')
+                myPad.deletePad(path)
+            except urllib2.HTTPError:
+                _logger.exception('Failed to remove pad %r.', pad)
         return res
 
     def write(self, cr, uid, ids, vals, context=None):
