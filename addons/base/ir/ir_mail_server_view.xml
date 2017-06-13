@@ -9,6 +9,7 @@
                   <sheet>
                     <group col="4">
                         <field name="name"/>
+                        <field name="active"/>
                         <field name="sequence"/>
                     </group>
                     <group col="4" string="Connection Information">
@@ -22,7 +23,7 @@
                         <field name="smtp_pass" password="True"/>
                         <button name="test_smtp_connection" type="object" string="Test Connection" icon="gtk-network"/>
                     </group>
-                  </sheet>  
+                  </sheet>
                 </form>
             </field>
         </record>

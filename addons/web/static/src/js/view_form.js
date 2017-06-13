@@ -810,7 +810,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
         return def.promise();
     },
     can_be_discarded: function() {
-        if (this.$el.is('.oe_form_dirty')) {
+        if (this.get('actual_mode') !== 'view' && this.$el.is('.oe_form_dirty')) {
             if (!confirm(_t("Warning, the record has been modified, your changes will be discarded.\n\nAre you sure you want to leave this page ?"))) {
                 return false;
             }
