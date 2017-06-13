@@ -3454,6 +3454,11 @@ class BaseModel(object):
         del self._foreign_keys
 
 
+    def _post_init(self, pool, cr):
+        # final stop for super()
+        return True
+
+
     def _table_exist(self, cr):
         cr.execute("SELECT relname FROM pg_class WHERE relkind IN ('r','v') AND relname=%s", (self._table,))
         return cr.rowcount
