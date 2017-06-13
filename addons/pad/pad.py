@@ -15,12 +15,10 @@ class pad_common(osv.osv_memory):
 
     def pad_generate_url(self, cr, uid, context=None):
         company = self.pool.get('res.users').browse(cr, uid, uid, context=context).company_id;
-
         pad = {
             "server" : company.pad_server,
             "key" : company.pad_key,
         }
-
         # make sure pad server in the form of http://hostname
         if not pad["server"]:
             return pad
@@ -51,7 +49,6 @@ class pad_common(osv.osv_memory):
                     myPad.setText(path, html2plaintext(record[real_field]))
                     #Etherpad for html not functional
                     #myPad.setHTML(path, record[real_field])
-
         return {
             "server": pad["server"],
             "path": path,
@@ -95,12 +92,28 @@ class pad_common(osv.osv_memory):
                     continue
         return content.strip()
 
-    # TODO
-    # reverse engineer protocol to be setHtml without using the api key
+    def _set_pad_value(self, cr, uid, vals, context=None):
+        # Set the pad content in vals
+        #
+        # the 'http' is removed by the javascript widget to force a rewrite;
+        # add it back, and update pad_content_field
+        for k, v in vals.items():
+            field = self._all_columns[k].column
+            if hasattr(field, 'pad_content_field'):
+                if not v.startswith('http'):
+                    v = 'http' + v
+                    vals[k] = v
+                vals[field.pad_content_field] = self.pad_get_content(cr, uid, v, context=context)
 
-    def write(self, cr, uid, ids, vals, context=None):
-        self._set_pad_value(cr, uid, vals, context)
-        return super(pad_common, self).write(cr, uid, ids, vals, context=context)
+    def copy(self, cr, uid, id, default=None, context=None):
+        if not default:
+            default = {}
+        for k, v in self._all_columns.iteritems():
+            field = v.column
+            if hasattr(field,'pad_content_field'):
+                pad = self.pad_generate_url(cr, uid, context)
+                default[k] = pad.get('url')
+        return super(pad_common, self).copy(cr, uid, id, default, context)
 
     def create(self, cr, uid, vals, context=None):
         self._set_pad_value(cr, uid, vals, context)
@@ -126,24 +139,6 @@ class pad_common(osv.osv_memory):
                 rec[tf] = path
         return res
 
-    # Set the pad content in vals
-    def _set_pad_value(self, cr, uid, vals, context=None):
-        # the 'http' is removed by the javascript widget to force a rewrite;
-        # add it back, and update pad_content_field
-        for k, v in vals.items():
-            field = self._all_columns[k].column
-            if hasattr(field, 'pad_content_field'):
-                if not v.startswith('http'):
-                    v = 'http' + v
-                    vals[k] = v
-                vals[field.pad_content_field] = self.pad_get_content(cr, uid, v, context=context)
-
-    def copy(self, cr, uid, id, default=None, context=None):
-        if not default:
-            default = {}
-        for k, v in self._all_columns.iteritems():
-            field = v.column
-            if hasattr(field,'pad_content_field'):
-                pad = self.pad_generate_url(cr, uid, context)
-                default[k] = pad.get('url')
-        return super(pad_common, self).copy(cr, uid, id, default, context)
+    def write(self, cr, uid, ids, vals, context=None):
+        self._set_pad_value(cr, uid, vals, context)
+        return super(pad_common, self).write(cr, uid, ids, vals, context=context)
