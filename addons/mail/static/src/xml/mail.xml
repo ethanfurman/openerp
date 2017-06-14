@@ -50,8 +50,8 @@
             <t t-if="!widget.options.view_mailbox">
                 <div class="field_text oe_compact oe_compact_record">
                     <a class="oe_compose_post" t-if="widget.options.compose_placeholder"><t t-raw="widget.options.compose_placeholder"/></a>
-		    <!-- <a class="oe_compose_post" t-if="!widget.options.compose_placeholder and !widget.options.view_mailbox">Send a message</a>
-		    <span class="oe_grey oe_sep_word">or</span> -->
+                    <!-- <a class="oe_compose_post" t-if="!widget.options.compose_placeholder and !widget.options.view_mailbox">Send a message</a>
+                    <span class="oe_grey oe_sep_word">or</span> -->
                     <a class="oe_compose_log">Log a note</a>
                 </div>
             </t>
@@ -67,7 +67,7 @@
         <span class="oe_attachment_file">
             <span class="oe_add">
                 <!-- uploader of file -->
-                <button class="oe_attach"><span class="oe_e">'</span></button> 
+                <button class="oe_attach"><span class="oe_e">'</span></button>
                 <span class='oe_attach_label'>Attach a File</span>
                 <t t-call="HiddenInputFile">
                     <t t-set="fileupload_id" t-value="widget.fileupload_id"/>
@@ -149,11 +149,11 @@
             </t>
         </div>
         <div t-if="widget.is_log">
-            <span>Attach a note that will not be sent to the followers</span>
+            <span>Attach a note to this document:</span>
         </div>
     </t>
 
-    <!-- 
+    <!--
         wall main template
         Template used to display the communication history in the wall.
         -->
