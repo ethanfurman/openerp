@@ -373,9 +373,10 @@
                         <field name="stage_id" widget="statusbar" clickable="True"/>
                     </header>
                     <sheet string="Task">
-                    <h1>
+                    <h1 class="oe_left">
                         <field name="name" placeholder="Task summary..."/>
                     </h1>
+                    <span class="oe_right oe_italic">ID: <field name="id" class="oe_inline"/></span>
                     <group>
                         <group>
                             <field name="project_id"  on_change="onchange_project(project_id)" context="{'default_use_tasks':1}"/>
@@ -545,6 +546,7 @@
                 <tree fonts="bold:message_unread==True" colors="grey:state in ('cancelled','done');blue:state == 'pending';red:date_deadline and (date_deadline&lt;current_date) and (state in ('draft','pending','open'))" string="Tasks" default_order="name">
                     <field name="message_unread" invisible="1"/>
                     <field name="sequence" invisible="not context.get('seq_visible', False)"/>
+                    <field name="id"/>
                     <field name="name"/>
                     <field name="project_id" icon="gtk-indent" invisible="context.get('user_invisible', False)"/>
                     <field name="user_id" invisible="context.get('user_invisible', False)"/>
