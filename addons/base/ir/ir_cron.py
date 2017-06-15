@@ -158,10 +158,16 @@ class ir_cron(osv.osv):
                 result = method(cr, uid, *args)
                 end_time = time.time()
                 if result in (None, True, False):
-                    result = 'Job Start: %s\nJob End: %s' % (start_time, end_time)
+                    result = 'Job Start: %s\nJob End: %s' % (
+                            datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S'),
+                            datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S'),
+                            )
                 else:
                     # better be a string
-                    result = result.strip() + '\n\nJob Start: %s\nJob End: %s' % (start_time, end_time)
+                    result = result.strip() + '\n\nJob Start: %s\nJob End: %s' % (
+                            datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S'),
+                            datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S'),
+                            )
                 _logger.debug('%.3fs (%s, %s)' % (end_time - start_time, model_name, method_name))
                 return result
             except Exception, e:
