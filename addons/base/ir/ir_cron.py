@@ -148,17 +148,22 @@ class ir_cron(osv.osv):
         """
         args = str2tuple(args)
         model = self.pool.get(model_name)
+        result = None
         if model and hasattr(model, method_name):
             method = getattr(model, method_name)
             try:
                 log_depth = (None if _logger.isEnabledFor(logging.DEBUG) else 1)
                 netsvc.log(_logger, logging.DEBUG, 'cron.object.execute', (cr.dbname,uid,'*',model_name,method_name)+tuple(args), depth=log_depth)
-                if _logger.isEnabledFor(logging.DEBUG):
-                    start_time = time.time()
-                method(cr, uid, *args)
-                if _logger.isEnabledFor(logging.DEBUG):
-                    end_time = time.time()
-                    _logger.debug('%.3fs (%s, %s)' % (end_time - start_time, model_name, method_name))
+                start_time = time.time()
+                result = method(cr, uid, *args)
+                end_time = time.time()
+                if result in (None, True, False):
+                    result = 'Job Start: %s\nJob End: %s' % (start_time, end_time)
+                else:
+                    # better be a string
+                    result = result.strip() + '\n\nJob Start: %s\nJob End: %s' % (start_time, end_time)
+                _logger.debug('%.3fs (%s, %s)' % (end_time - start_time, model_name, method_name))
+                return result
             except Exception, e:
                 cls, exc, tb = sys.exc_info()
                 self._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, job_name, e)
