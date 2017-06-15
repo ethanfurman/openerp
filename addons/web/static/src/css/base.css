@@ -377,6 +377,9 @@
 .openerp .oe_bold {
   font-weight: bold;
 }
+.openerp .oe_italic {
+  font-style: italic;
+}
 .openerp .oe_inline {
   width: auto !important;
 }
