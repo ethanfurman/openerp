@@ -263,15 +263,6 @@ class hr_employee(osv.osv):
             data.pop('image_medium', None)
             data['image'] = self._get_default_image(cr, uid, context=context)
         employee_id = super(hr_employee, self).create(cr, uid, data, context=context)
-        try:
-            if (context or {}).get('hr_welcome', True):
-                (model, mail_group_id) = self.pool.get('ir.model.data').get_object_reference(cr, uid, 'mail', 'group_all_employees')
-                employee = self.browse(cr, uid, employee_id, context=context)
-                self.pool.get('mail.group').message_post(cr, uid, [mail_group_id],
-                    body='Welcome, %s!  Thank you for joining our company!' % (employee.name),
-                    subtype='mail.mt_comment', context=context)
-        except:
-            pass # group deleted: do not push a message
         partner_id = data.get('partner_id')
         if partner_id:
             self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id, 'employee':True}, context=context)
