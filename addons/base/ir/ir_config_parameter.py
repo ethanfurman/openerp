@@ -35,6 +35,7 @@ A dictionary holding some configuration parameters to be initialized when the da
 _default_parameters = {
     "database.uuid": lambda: str(uuid.uuid1()),
     "database.create_date": lambda: datetime.datetime.now().strftime(misc.DEFAULT_SERVER_DATETIME_FORMAT),
+    "database.time_zone": lambda: 'UTC',
     "web.base.url": lambda: "http://localhost:%s" % config.get('xmlrpc_port'),
 }
 
