@@ -281,15 +281,27 @@ class date(_column):
     _type = 'date'
 
     @staticmethod
-    def today(*args):
+    def today(model, cr, *args):
         """ Returns the current date in a format fit for being a
         default value to a ``date`` field.
 
         This method should be provided as is to the _defaults dict, it
         should not be called.
         """
-        return DT.date.today().strftime(
-            tools.DEFAULT_SERVER_DATE_FORMAT)
+        today = DT.datetime.now()
+        # get database timezone
+        tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+        if tz_name:
+            try:
+                db_tz = pytz.timezone(tz_name)
+                utc_today = UTC.localize(today, is_dst=False) # UTC = no DST
+                db_today = utc_today.astimezone(db_tz)
+            except Exception:
+                _logger.warning("failed to compute context/client-specific today date, "
+                              "using the UTC value for `today`",
+                              exc_info=True)
+        print '\ntoday ->%r\ndb_today ->%r\n' % (today, db_today)
+        return (db_today or today).strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
 
     @staticmethod
     def context_today(model, cr, uid, context=None, timestamp=None):
@@ -343,15 +355,26 @@ class datetime(_column):
     _symbol_set = (_symbol_c, _symbol_f)
 
     @staticmethod
-    def now(*args):
+    def now(model, cr, *args):
         """ Returns the current datetime in a format fit for being a
         default value to a ``datetime`` field.
 
         This method should be provided as is to the _defaults dict, it
         should not be called.
         """
-        return DT.datetime.now().strftime(
-            tools.DEFAULT_SERVER_DATETIME_FORMAT)
+        timestamp = DT.datetime.now()
+        tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+        if tz_name:
+            try:
+                db_tz = pytz.timezone(tz_name)
+                utc_timestamp = UTC.localize(timestamp, is_dst=False) # UTC = no DST
+                tz_timestamp = utc_timestamp.astimezone(db_tz)
+            except Exception:
+                _logger.warning("failed to compute context/client-specific timestamp, "
+                              "using the UTC value",
+                              exc_info=True)
+        print '\nnow ->%r\ntz_now ->%r\n' % (timestamp, tz_timestamp)
+        return (tz_timestamp or timestamp).strftime( tools.DEFAULT_SERVER_DATETIME_FORMAT)
 
     @staticmethod
     def context_timestamp(cr, uid, timestamp=None, context=None):
@@ -1656,7 +1679,6 @@ class column_info(object):
 _raise_lookup = Sentinel('raise LookupError')
 
 class SelectionEnum(str, Enum):
-
     _settings_ = EnumAutoValue
     _init_ = 'db user'
 
