@@ -300,7 +300,6 @@ class date(_column):
                 _logger.warning("failed to compute context/client-specific today date, "
                               "using the UTC value for `today`",
                               exc_info=True)
-        print '\ntoday ->%r\ndb_today ->%r\n' % (today, db_today)
         return (db_today or today).strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
 
     @staticmethod
@@ -373,7 +372,6 @@ class datetime(_column):
                 _logger.warning("failed to compute context/client-specific timestamp, "
                               "using the UTC value",
                               exc_info=True)
-        print '\nnow ->%r\ntz_now ->%r\n' % (timestamp, tz_timestamp)
         return (tz_timestamp or timestamp).strftime( tools.DEFAULT_SERVER_DATETIME_FORMAT)
 
     @staticmethod
