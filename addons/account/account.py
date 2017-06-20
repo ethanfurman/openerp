@@ -1158,7 +1158,7 @@ class account_move(osv.osv):
         Prepares and returns a dictionary of values, ready to be passed to create() based on the parameters received.
         '''
         if not date:
-            date = fields.date.today()
+            date = fields.date.today(self, cr)
         period_obj = self.pool.get('account.period')
         if not company_id:
             user = self.pool.get('res.users').browse(cr, uid, uid, context=context)

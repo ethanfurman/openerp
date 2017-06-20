@@ -68,7 +68,7 @@ class procurement_order(osv.osv):
                 cr.commit()
             company = self.pool.get('res.users').browse(cr, uid, uid, context=context).company_id
             maxdate = (datetime.today() + relativedelta(days=company.schedule_range)).strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
-            start_date = fields.datetime.now()
+            start_date = fields.datetime.now(self, cr)
             offset = 0
             report = []
             report_total = 0
@@ -117,7 +117,7 @@ class procurement_order(osv.osv):
                     cr.commit()
                 offset += len(ids)
                 if not ids: break
-            end_date = fields.datetime.now()
+            end_date = fields.datetime.now(self, cr)
 
             if use_new_cursor:
                 cr.commit()

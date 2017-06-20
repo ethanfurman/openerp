@@ -318,7 +318,7 @@ class res_partner(osv.osv):
         if not followup_ids:
             raise osv.except_osv(_('Error!'),_("There is no followup plan defined for the current company."))
         data = {
-            'date': fields.date.today(),
+            'date': fields.date.today(self, cr),
             'followup_id': followup_ids[0],
         }
         #call the print overdue report on this partner

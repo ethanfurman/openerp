@@ -217,7 +217,7 @@ class base_stage(object):
 
     def case_close(self, cr, uid, ids, context=None):
         """ Closes case """
-        return self.case_set(cr, uid, ids, 'done', {'active': True, 'date_closed': fields.datetime.now()}, context=context)
+        return self.case_set(cr, uid, ids, 'done', {'active': True, 'date_closed': fields.datetime.now(self, cr)}, context=context)
 
     def case_cancel(self, cr, uid, ids, context=None):
         """ Cancels case """

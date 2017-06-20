@@ -67,7 +67,7 @@ class note_note(osv.osv):
         return res
 
     def onclick_note_is_done(self, cr, uid, ids, context=None):
-        return self.write(cr, uid, ids, {'open': False, 'date_done': fields.date.today()}, context=context)
+        return self.write(cr, uid, ids, {'open': False, 'date_done': fields.date.today(self, cr)}, context=context)
 
     def onclick_note_not_done(self, cr, uid, ids, context=None):
         return self.write(cr, uid, ids, {'open': True}, context=context)

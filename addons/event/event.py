@@ -346,7 +346,7 @@ class event_registration(osv.osv):
         """
         if context is None:
             context = {}
-        today = fields.datetime.now()
+        today = fields.datetime.now(self, cr)
         for registration in self.browse(cr, uid, ids, context=context):
             if today >= registration.event_id.date_begin:
                 values = {'state': 'done', 'date_closed': today}

@@ -109,7 +109,7 @@ class base_state(object):
         for case in cases:
             values = {'active': True}
             if case.state == 'draft':
-                values['date_open'] = fields.datetime.now()
+                values['date_open'] = fields.datetime.now(self, cr)
             if not case.user_id:
                 values['user_id'] = uid
             self.case_set(cr, uid, [case.id], 'open', values, context=context)
@@ -117,7 +117,7 @@ class base_state(object):
 
     def case_close(self, cr, uid, ids, context=None):
         """ Closes case """
-        return self.case_set(cr, uid, ids, 'done', {'date_closed': fields.datetime.now()}, context=context)
+        return self.case_set(cr, uid, ids, 'done', {'date_closed': fields.datetime.now(self, cr)}, context=context)
 
     def case_cancel(self, cr, uid, ids, context=None):
         """ Cancels case """
