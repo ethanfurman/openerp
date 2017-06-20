@@ -26,10 +26,13 @@ import time
 from openerp import SUPERUSER_ID
 from openerp import tools
 from openerp.osv import fields, osv
+from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 from openerp.tools.translate import _
 
 from openerp.addons.base_status.base_stage import base_stage
 from openerp.addons.resource.faces import task as Task
+
+from fnx import date as fnx_date
 
 _TASK_STATE = [('draft', 'New'),('open', 'In Progress'),('pending', 'Pending'), ('done', 'Done'), ('cancelled', 'Cancelled')]
 
@@ -726,6 +729,30 @@ class task(base_stage, osv.osv):
             if work.task_id: result[work.task_id.id] = True
         return result.keys()
 
+    def _calculate_warning_date(self, cr, uid, ids, field_name, arg, context=None):
+        result = {}
+        if not ids:
+            return result
+        for record in self.read(cr, uid, ids, fields=['id', 'date_deadline'], context=context):
+            deadline = record['date_deadline']
+            if deadline:
+                print 'deadline -> %r' % (deadline,)
+                warning = fnx_date(deadline).replace(delta_day=-14)
+                result[record['id']] = warning.strftime(DEFAULT_SERVER_DATE_FORMAT)
+        return result
+
+    def _post_init(self, pool, cr):
+        # make sure all tasks with a deadline also have a warning
+        ids = self.search(cr, 1, [('date_deadline','!=',False),('date_warning','=',False)])
+        res = self._calculate_warning_date(cr, 1, ids, ['date_warning'], None)
+        same_dates = {}
+        for id, warn in res.items():
+            same_dates.setdefault(warn, []).append(id)
+        for warn, ids in same_dates.items():
+            print 'writing %r to %r' % (warn, ids)
+            self.write(cr, 1, ids, {'date_warning': warn})
+        return True
+
     _columns = {
         'active': fields.function(_is_template, store=True, string='Not a Template Task', type='boolean', help="This field is computed automatically and have the same behavior than the boolean 'active' field: if the task is linked to a template or unactivated project, it will be hidden unless specifically asked."),
         'name': fields.char('Task Summary', size=128, required=True, select=True),
@@ -753,6 +780,15 @@ class task(base_stage, osv.osv):
         'date_start': fields.datetime('Starting Date',select=True),
         'date_end': fields.datetime('Ending Date',select=True),
         'date_deadline': fields.date('Deadline',select=True),
+        'date_warning': fields.function(
+            _calculate_warning_date,
+            fnct_inv=True,
+            string='Deadline Warning',
+            type='date',
+            store={
+                'project.task': (lambda s, c, u, ids, ctx: ids, ['date_deadline'], 10),
+                }
+            ),
         'project_id': fields.many2one('project.project', 'Project', ondelete='set null', select="1", track_visibility='onchange'),
         'parent_ids': fields.many2many('project.task', 'project_task_parent_rel', 'task_id', 'parent_id', 'Parent Tasks'),
         'child_ids': fields.many2many('project.task', 'project_task_parent_rel', 'parent_id', 'task_id', 'Delegated Tasks'),
