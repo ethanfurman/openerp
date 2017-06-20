@@ -118,13 +118,11 @@ def merge(table, fields, inactive, dry_run):
 
 class FieldsBase(NamedTuple):
     def __new__(cls, **mapping):
-        print('incoming: %r' % (mapping, ))
         final = dict([
                 (name, value)
                 for name, value in mapping.items()
                 if name in cls.__fields__
                 ])
-        print('outgoing: %r' % (final, ))
         return super(FieldsBase, cls).__new__(cls, **final)
 
 Main()
