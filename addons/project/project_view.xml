@@ -373,7 +373,7 @@
                         <field name="stage_id" widget="statusbar" clickable="True"/>
                     </header>
                     <sheet string="Task">
-                    <h1 class="oe_left">
+                    <h1>
                         <field name="name" placeholder="Task summary..."/>
                     </h1>
                     <span class="oe_right oe_italic">ID: <field name="id" class="oe_inline"/></span>
