@@ -998,7 +998,7 @@ class task(base_stage, osv.osv):
             # close task
             vals['remaining_hours'] = 0.0
             if not task.date_end:
-                vals['date_end'] = fields.datetime.now()
+                vals['date_end'] = fields.datetime.now(self, cr)
             self.case_set(cr, uid, [task.id], 'done', vals, context=context)
         return True
 
@@ -1025,7 +1025,7 @@ class task(base_stage, osv.osv):
 
     def case_open(self, cr, uid, ids, context=None):
         if not isinstance(ids,list): ids = [ids]
-        return self.case_set(cr, uid, ids, 'open', {'date_start': fields.datetime.now()}, context=context)
+        return self.case_set(cr, uid, ids, 'open', {'date_start': fields.datetime.now(self, cr)}, context=context)
 
     def do_draft(self, cr, uid, ids, context=None):
         """ Compatibility when changing to case_draft. """
