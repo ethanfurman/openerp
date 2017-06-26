@@ -1196,14 +1196,12 @@ class function(_column):
                 obj_model = obj.pool.get(obj._columns[field].relation)
                 dict_names = dict(obj_model.name_get(cr, uid, [value], context))
                 result = (value, dict_names[value])
-
         if field_type == 'binary':
             if context.get('bin_size'):
                 # client requests only the size of binary fields
                 result = get_nice_size(value)
             elif not context.get('bin_raw'):
                 result = sanitize_binary_value(value)
-
         if field_type == "integer" and value > xmlrpclib.MAXINT:
             # integer/long values greater than 2^31-1 are not supported
             # in pure XMLRPC, so we have to pass them as floats :-(
@@ -1211,6 +1209,17 @@ class function(_column):
             # fields, as their values are constrained by the database backend
             # to the same 32bits signed int limit.
             result = __builtin__.float(value)
+        return result
+
+    def preprocess(self, cr, obj, field, value=None, context=None):
+        if context is None:
+            context = {}
+        result = value
+        field_type = obj._columns[field]._type
+        if field_type == "date":
+            # cannot pass False values into the db, so replace them with None
+            if value is False:
+                result = None
         return result
 
     def get(self, cr, obj, ids, name, uid=False, context=None, values=None):
@@ -1230,19 +1239,17 @@ class function(_column):
         if context is None:
             context = {}
         if self._fnct_inv:
+            value = self.preprocess(cr, obj, name, value, context=context)
             self._fnct_inv(obj, cr, user, id, name, value, self._fnct_inv_arg, context)
 
     @staticmethod
-    def _simple_store(model, cr, uid, ids, field_name, field_value, inv_arg=None, context=None):
+    def _simple_store(obj, cr, uid, id, field_name, field_value, inv_arg=None, context=None):
         """
-        stores `field_value` into `field_name` for matching `ids`
+        stores `field_value` into `field_name` for matching `id`
 
         select with `fnct_inv=True`
         """
-        if isinstance(ids, (int, long)):
-            ids = [ids]
-        for id in ids:
-            cr.execute('UPDATE %s SET %s=%%s where id=%%s' % (model._table, field_name), (field_value, id))
+        cr.execute('UPDATE %s SET %s=%%s where id=%%s' % (obj._table, field_name), (field_value, id))
         return True
 
     @classmethod
