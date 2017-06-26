@@ -736,7 +736,6 @@ class task(base_stage, osv.osv):
         for record in self.read(cr, uid, ids, fields=['id', 'date_deadline'], context=context):
             deadline = record['date_deadline']
             if deadline:
-                print 'deadline -> %r' % (deadline,)
                 warning = fnx_date(deadline).replace(delta_day=-14)
                 result[record['id']] = warning.strftime(DEFAULT_SERVER_DATE_FORMAT)
         return result
@@ -749,7 +748,6 @@ class task(base_stage, osv.osv):
         for id, warn in res.items():
             same_dates.setdefault(warn, []).append(id)
         for warn, ids in same_dates.items():
-            print 'writing %r to %r' % (warn, ids)
             self.write(cr, 1, ids, {'date_warning': warn})
         return True
 
