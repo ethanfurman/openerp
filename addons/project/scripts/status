@@ -6,6 +6,11 @@ from antipathy import Path
 from scription import *
 from openerplib import get_connection, get_records, MissingRecord
 
+import sys
+sys.path.insert(0, '/usr/local/bin/evs')
+from hg_tools import extract_hg
+sys.path.pop(0)
+
 config_file = Path('/etc/openerp/fnx.ini')
 
 @Command(
@@ -17,11 +22,19 @@ def set(type, id, status):
     setup()
     # check that id exists
     types = get_types()
+    # ensure_stages(types, type, id, required=('Needs installed', 'Testing'))
     try:
         get_records(models[type], ids=id)
     except MissingRecord:
         abort('record not found in %r' % models[type].model_name)
     models[type].write(id, {'stage_id': types[stages[status]].id})
+
+
+@Command()
+def status():
+    hg = extract_hg()
+    echo(hg)
+    abort('just testing...')
 
 
 def ensure_stages(types, type, id, required):
