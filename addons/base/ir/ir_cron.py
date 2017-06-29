@@ -167,9 +167,11 @@ class ir_cron(osv.osv):
                 _logger.debug('%.3fs (%s, %s)' % (end_time - start_time, model_name, method_name))
                 return result
             except Exception, e:
+                end_time = time.time()
+                end_dt = fields.datetime.now(self, cr)
                 cls, exc, tb = sys.exc_info()
                 self._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, job_name, e)
-                return '\n'.join(traceback.format_exception(cls, exc,tb))
+                return '\n'.join(traceback.format_exception(cls, exc,tb)) + '\n\nJob Start: %s\nJob End: %s' % (start_dt, end_dt)
 
     def _process_job(self, job_cr, job, cron_cr, force=False):
         """ Run a given job taking care of the repetition.
