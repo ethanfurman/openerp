@@ -32,7 +32,8 @@ def set(type, id, status, note):
     except MissingRecord:
         abort('record not found in %r' % models[type].model_name)
     model.write([id], {'stage_id': stage.id})
-    model.message_post(id, body=note)
+    if note:
+        model.message_post(id, body=note)
 
 
 @Command()
@@ -48,7 +49,7 @@ def update():
     commits = job.stdout.split('\n-=-\n')[:-1]
     issues = find_issues(*commits)
     for issue in issues:
-        set(issue.type, issue.id, 'test')
+        set(issue.type, issue.id, 'test', None)
 
 
 def ensure_stages(types, type, id, required):
