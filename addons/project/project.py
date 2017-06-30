@@ -583,7 +583,11 @@ class task(base_stage, osv.osv):
     def _get_default_stage_id(self, cr, uid, context=None):
         """ Gives default stage_id """
         project_id = self._get_default_project_id(cr, uid, context=context)
-        return self.stage_find(cr, uid, [], project_id, [('state', '=', 'draft')], context=context)
+        stage_id = self.stage_find(cr, uid, [], project_id, [('state', '=', 'draft')], context=context)
+        if not stage_id:
+            # use first stage, whatever its state is
+            stage_id = self.stage_find(cr, uid, [], project_id, [], order='sequence, name', context=context)
+        return stage_id
 
     def _resolve_project_id_from_context(self, cr, uid, context=None):
         """ Returns ID of project based on the value of 'default_project_id'
