@@ -281,7 +281,7 @@ class date(_column):
     _type = 'date'
 
     @staticmethod
-    def today(model, cr, *args):
+    def today(model, cr, *args, **kwds):
         """ Returns the current date in a format fit for being a
         default value to a ``date`` field.
 
@@ -289,17 +289,19 @@ class date(_column):
         should not be called.
         """
         today = DT.datetime.now()
-        # get database timezone
-        tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
-        if tz_name:
-            try:
-                db_tz = pytz.timezone(tz_name)
-                utc_today = UTC.localize(today, is_dst=False) # UTC = no DST
-                db_today = utc_today.astimezone(db_tz)
-            except Exception:
-                _logger.warning("failed to compute context/client-specific today date, "
-                              "using the UTC value for `today`",
-                              exc_info=True)
+        db_today = None
+        if kwds.get('localtime'):
+            # get database timezone
+            tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+            if tz_name:
+                try:
+                    db_tz = pytz.timezone(tz_name)
+                    utc_today = UTC.localize(today, is_dst=False) # UTC = no DST
+                    db_today = utc_today.astimezone(db_tz)
+                except Exception:
+                    _logger.warning("failed to compute context/client-specific today date, "
+                                  "using the UTC value for `today`",
+                                  exc_info=True)
         return (db_today or today).strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
 
     @staticmethod
@@ -354,7 +356,7 @@ class datetime(_column):
     _symbol_set = (_symbol_c, _symbol_f)
 
     @staticmethod
-    def now(model, cr, *args):
+    def now(model, cr, *args, **kwds):
         """ Returns the current datetime in a format fit for being a
         default value to a ``datetime`` field.
 
@@ -362,16 +364,18 @@ class datetime(_column):
         should not be called.
         """
         timestamp = DT.datetime.now()
-        tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
-        if tz_name:
-            try:
-                db_tz = pytz.timezone(tz_name)
-                utc_timestamp = UTC.localize(timestamp, is_dst=False) # UTC = no DST
-                tz_timestamp = utc_timestamp.astimezone(db_tz)
-            except Exception:
-                _logger.warning("failed to compute context/client-specific timestamp, "
-                              "using the UTC value",
-                              exc_info=True)
+        tz_timestamp = None
+        if kwds.get('localtime'):
+            tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+            if tz_name:
+                try:
+                    db_tz = pytz.timezone(tz_name)
+                    utc_timestamp = UTC.localize(timestamp, is_dst=False) # UTC = no DST
+                    tz_timestamp = utc_timestamp.astimezone(db_tz)
+                except Exception:
+                    _logger.warning("failed to compute context/client-specific timestamp, "
+                                  "using the UTC value",
+                                  exc_info=True)
         return (tz_timestamp or timestamp).strftime( tools.DEFAULT_SERVER_DATETIME_FORMAT)
 
     @staticmethod
