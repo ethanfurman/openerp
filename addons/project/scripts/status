@@ -33,7 +33,8 @@ def set(type, id, status):
 @Command()
 def status():
     hg = extract_hg()
-    echo(hg)
+    for k in hg.names:
+        echo('  ', k, '-->', repr(hg[k]))
     abort('just testing...')
 
 
