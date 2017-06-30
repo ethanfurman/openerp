@@ -8,10 +8,15 @@ from openerplib import get_connection, get_records, MissingRecord
 
 import sys
 sys.path.insert(0, '/usr/local/bin/evs')
-from hg_tools import extract_hg
+from hg_tools import extract_hg, find_issues
 sys.path.pop(0)
 
 config_file = Path('/etc/openerp/fnx.ini')
+
+
+@Script()
+def main():
+    setup()
 
 @Command(
         type=Spec('type of update', choices=['task', 'issue']),
@@ -19,23 +24,30 @@ config_file = Path('/etc/openerp/fnx.ini')
         status=Spec('new status', choices=['install', 'test']),
         )
 def set(type, id, status):
-    setup()
-    # check that id exists
-    types = get_types()
-    # ensure_stages(types, type, id, required=('Needs installed', 'Testing'))
+    model = models[type]
+    stage = types[stages[status]]
     try:
-        get_records(models[type], ids=id)
+        get_records(model, ids=id)
     except MissingRecord:
         abort('record not found in %r' % models[type].model_name)
-    models[type].write(id, {'stage_id': types[stages[status]].id})
+    model.write([id], {'stage_id': stage.id})
 
 
 @Command()
-def status():
+def update():
+    # get primary hg info
+    setup()
     hg = extract_hg()
-    for k in hg.names:
-        echo('  ', k, '-->', repr(hg[k]))
-    abort('just testing...')
+    # get commit desriptions
+    job = Execute('hg log -r%s: --template "{desc}\n-=-\n"' % hg.revision)
+    if job.returncode or job.stderr:
+        if job.stderr:
+            error(job.stderr, end='')
+        raise SystemExit(job.returncode or 1)
+    commits = job.stdout.split('\n-=-\n')[:-1]
+    issues = find_issues(*commits)
+    for issue in issues:
+        set(issue.type, issue.id, 'test')
 
 
 def ensure_stages(types, type, id, required):
@@ -44,7 +56,6 @@ def ensure_stages(types, type, id, required):
     if record.project_id:
         # some tasks/issues are not assigned to a project
         project_record = get_records(project, ids=record.project_id[0], fields=['type_ids'])
-        echo(project_record)
         needs_ids = []
         for req in required:
             type_id = types[req]
@@ -54,7 +65,22 @@ def ensure_stages(types, type, id, required):
             project.write(project_record.id, {'type_ids': needs_ids})
 
 
-def get_types():
+def setup():
+    global config, conn, project, project_task, project_issue, project_task_type, models, stages, types
+    config = OrmFile(config_file, section='openerp')
+    conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
+    project = conn.get_model('project.project')
+    project_task = conn.get_model('project.task')
+    project_issue = conn.get_model('project.issue')
+    project_task_type = conn.get_model('project.task.type')
+    models = {
+            'issue': project_issue,
+            'task':  project_task,
+            }
+    stages = {
+            'install': 'Needs installed',
+            'test': 'Testing',
+            }
     types = dict([
         (r.name, r)
         for r in get_records(project_task_type)
@@ -79,23 +105,5 @@ def get_types():
                 'fold': False,
                 })
         types['Testing'] = new_id
-    return types
-
-def setup():
-    global conn, project, project_task, project_issue, project_task_type, models, stages
-    config = OrmFile(config_file, section='openerp')
-    conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
-    project = conn.get_model('project.project')
-    project_task = conn.get_model('project.task')
-    project_issue = conn.get_model('project.issue')
-    project_task_type = conn.get_model('project.task.type')
-    models = {
-            'issue': project_issue,
-            'task':  project_task,
-            }
-    stages = {
-            'install': 'Needs installed',
-            'test': 'Testing',
-            }
 
 Main()
