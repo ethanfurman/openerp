@@ -22,8 +22,9 @@ def main():
         type=Spec('type of update', choices=['task', 'issue']),
         id=Spec('id of task/issue', type=int),
         status=Spec('new status', choices=['install', 'test']),
+        note=Spec('commit message', OPTION),
         )
-def set(type, id, status):
+def set(type, id, status, note):
     model = models[type]
     stage = types[stages[status]]
     try:
@@ -31,6 +32,7 @@ def set(type, id, status):
     except MissingRecord:
         abort('record not found in %r' % models[type].model_name)
     model.write([id], {'stage_id': stage.id})
+    model.message_post(id, body=note)
 
 
 @Command()
