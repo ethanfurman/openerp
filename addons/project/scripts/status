@@ -36,7 +36,6 @@ def set(type, id, status):
 @Command()
 def update():
     # get primary hg info
-    setup()
     hg = extract_hg()
     # get commit desriptions
     job = Execute('hg log -r%s: --template "{desc}\n-=-\n"' % hg.revision)
