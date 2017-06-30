@@ -154,11 +154,11 @@ class ir_cron(osv.osv):
             try:
                 log_depth = (None if _logger.isEnabledFor(logging.DEBUG) else 1)
                 netsvc.log(_logger, logging.DEBUG, 'cron.object.execute', (cr.dbname,uid,'*',model_name,method_name)+tuple(args), depth=log_depth)
-                start_dt = fields.datetime.now(self, cr)
+                start_dt = fields.datetime.now(self, cr, localtime=True)
                 start_time = time.time()
                 result = method(cr, uid, *args)
                 end_time = time.time()
-                end_dt = fields.datetime.now(self, cr)
+                end_dt = fields.datetime.now(self, cr, localtime=True)
                 if result in (None, True, False):
                     result = 'Job Start: %s\nJob End: %s' % (start_dt, end_dt)
                 else:
