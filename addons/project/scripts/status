@@ -31,9 +31,7 @@ def set(type, id, status, note):
         get_records(model, ids=id)
     except MissingRecord:
         abort('record not found in %r' % models[type].model_name)
-    model.write([id], {'stage_id': stage.id})
-    if note:
-        model.message_post(id, body=note)
+    model.write([id], {'stage_id': stage.id, 'message_body': note})
 
 
 @Command()
