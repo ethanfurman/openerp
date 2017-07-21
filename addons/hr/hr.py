@@ -257,9 +257,9 @@ class hr_employee(osv.osv):
                 'base.group_hr_manager': [
                     'current', 'country_id', 'birthday', 'ssnid', 'sinid', 'otherid',
                     'gender', 'marital', 'home_.*', 'emergency_.*','notes', 'child_ids',
-                    'passport_id', 'color', 'city', 'employment_type.*',
-                    'current', 'employment_agency', 'blueshield_id',
-                    'partner_id', 'category_ids', 'resource_id',  'login','last_login',
+                    'passport_id', 'color', 'city', 'employment_type.*', 'current',
+                    'employment_agency', 'blueshield_id', 'partner_id', 'category_ids',
+                    'resource_id',  'login','last_login',
                     ]})
 
     def create(self, cr, uid, data, context=None):
