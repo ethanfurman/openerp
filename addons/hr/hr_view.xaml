@@ -127,7 +127,6 @@
             @model: hr.employee
             @arch type='xml'
                 ~kanban default_order='name'
-                    @last_login
                     ~templates
                         ~t t-name='kanban-box'
                             ~div .oe_employee_vignette
@@ -138,13 +137,7 @@
                                     ~h4
                                         ~a type='open'
                                             @name
-                                            ~t t-if='record.login.raw_value': (
-                                                @login
-                                                )
                                     ~ul
-                                        ~li #last_login
-                                            ~span .oe_kanban_button style='font-size: 100%%' t-if='record.last_login.raw_value && record.last_login.raw_value.is().today()'
-                                                ~t t-esc="record.last_login.raw_value.toString('HH:mm')"
                                         ~li t-if='record.job_id.raw_value'
                                             @job_id
                                         ~li t-if='record.work_location.raw_value'

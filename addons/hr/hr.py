@@ -251,10 +251,15 @@ class hr_employee(osv.osv):
     fields.apply_groups(
             _columns,
             {
+                'base.group_hr_user': [
+                    'identification_id',
+                    ],
                 'base.group_hr_manager': [
                     'current', 'country_id', 'birthday', 'ssnid', 'sinid', 'otherid',
                     'gender', 'marital', 'home_.*', 'emergency_.*','notes', 'child_ids',
-                    'passport_id', 'color', 'city', 'identification_id', 'employment_type.*',
+                    'passport_id', 'color', 'city', 'employment_type.*',
+                    'current', 'employment_agency', 'blueshield_id',
+                    'partner_id', 'category_ids', 'resource_id',  'login','last_login',
                     ]})
 
     def create(self, cr, uid, data, context=None):
