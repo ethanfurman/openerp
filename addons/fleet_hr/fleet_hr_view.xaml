@@ -7,9 +7,10 @@
             @model: hr.employee
             @inherit_id ref='hr.view_employee_form'
             @priority eval='16'
+            @groups_id eval="[(4, ref('base.group_hr_manager')), (4, ref('fleet.group_fleet_manager'))]"
             @arch type='xml'
                 ~page @Personal position='after'
-                    ~page @Fleet $Fleet_Information groups='base.group_hr_manager,fleet.group_fleet_manager'
+                    ~page @Fleet $Fleet_Information
                         ~group colspan='2'
                             @driver_license_state
                             @driver_license_num
@@ -23,6 +24,7 @@
             @model: hr.employee
             @inherit_id ref='hr.view_employee_tree'
             @priority eval='16'
+            @groups_id eval="[(4, ref('base.group_hr_manager')), (4, ref('fleet.group_fleet_manager'))]"
             @arch type='xml'
                 ~xpath expr="//tree[@string='Employees']" position='attributes'
                     ~attribute @colors

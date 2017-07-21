@@ -96,8 +96,10 @@ class hr_employee(osv.Model):
 
     fields.apply_groups(
             _columns,
-            {'base.group_hr_manager,fleet.group_fleet_manager': ['driver_license_.*', 'driver_medical_.*']},
-            )
+            {
+                'base.group_hr_manager,fleet.group_fleet_manager':
+                    ['driver_license_.*', 'driver_medical_.*', 'driver_renewal_state']
+                    })
 
 
 class res_partner(osv.Model):
