@@ -363,6 +363,12 @@ class resource_resource(osv.osv):
         'active' : True,
         'company_id': lambda self, cr, uid, context: self.pool.get('res.company')._company_default_get(cr, uid, 'resource.resource', context=context)
     }
+    fields.apply_groups(
+            _columns,
+            {
+                'base.group_user': ['name'],
+                'base.group_hr_manager': ['.*'],
+                })
 
 
     def copy(self, cr, uid, id, default=None, context=None):
