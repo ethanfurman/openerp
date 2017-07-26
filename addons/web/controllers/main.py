@@ -1411,6 +1411,7 @@ class Action(openerpweb.Controller):
 
     @openerpweb.jsonrequest
     def load(self, req, action_id, do_not_eval=False):
+        _logger.debug('Action.load(\n  %r\n  %r\n  %r' % (req, action_id, do_not_eval))
         Actions = req.session.model('ir.actions.actions')
         value = False
         try:
@@ -1418,12 +1419,19 @@ class Action(openerpweb.Controller):
         except ValueError:
             try:
                 module, xmlid = action_id.split('.', 1)
-                model, action_id = req.session.model('ir.model.data').get_object_reference(module, xmlid)
-                assert model.startswith('ir.actions.')
-            except Exception:
-                action_id = 0   # force failed read
-
+            except ValueError:
+                _logger.error('action_id must have module and id; got %r' % (action_id, ))
+                action_id = 0
+            else:
+                try:
+                    model, action_id = req.session.model('ir.model.data').get_object_reference(module, xmlid)
+                    assert model.startswith('ir.actions.')
+                except Exception:
+                    _logger.exception('unknown error')
+                    action_id = 0   # force failed read
+        _logger.debug('  action_id: %r' % (action_id, ))
         base_action = Actions.read([action_id], ['type'], req.context)
+        _logger.debug('  base_action: %r' % (base_action, ))
         if base_action:
             ctx = {}
             action_type = base_action[0]['type']
@@ -1433,6 +1441,7 @@ class Action(openerpweb.Controller):
             action = req.session.model(action_type).read([action_id], False, ctx)
             if action:
                 value = clean_action(req, action[0])
+        _logger.debug('  value: %r' % (value, ))
         return value
 
     @openerpweb.jsonrequest
