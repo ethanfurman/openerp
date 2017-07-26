@@ -326,8 +326,10 @@ class date(_column):
         context_today = None
         if context and context.get('tz'):
             tz_name = context['tz']
+        elif uid != SUPERUSER_ID:
+            tz_name = model.pool.get('res.users').read(cr, SUPERUSER_ID, uid, ['name', 'tz'])['tz']
         else:
-            tz_name = model.pool.get('res.users').read(cr, SUPERUSER_ID, uid, ['tz'])['tz']
+           tz_name = ''
         if tz_name:
             try:
                 context_tz = pytz.timezone(tz_name)
@@ -401,9 +403,11 @@ class datetime(_column):
         assert isinstance(timestamp, DT.datetime), 'Datetime instance expected'
         if context and context.get('tz'):
             tz_name = context['tz']
-        else:
+        elif uid != SUPERUSER_ID:
             registry = openerp.modules.registry.RegistryManager.get(cr.dbname)
             tz_name = registry.get('res.users').read(cr, SUPERUSER_ID, uid, ['tz'])['tz']
+        else:
+           tz_name = ''
         if tz_name:
             try:
                 context_tz = pytz.timezone(tz_name)
