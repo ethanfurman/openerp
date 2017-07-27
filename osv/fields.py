@@ -292,7 +292,11 @@ class date(_column):
         db_today = None
         if kwds.get('localtime'):
             # get database timezone
-            tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+            try:
+                tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+            except IndexError:
+                _logger.warning('missing system parameter: database.time_zone')
+                tz_name = ''
             if tz_name:
                 try:
                     db_tz = pytz.timezone(tz_name)
@@ -368,7 +372,11 @@ class datetime(_column):
         timestamp = DT.datetime.now()
         tz_timestamp = None
         if kwds.get('localtime'):
-            tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+            try:
+                tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+            except IndexError:
+                _logger.warning('missing system parameter: database.time_zone')
+                tz_name = ''
             if tz_name:
                 try:
                     db_tz = pytz.timezone(tz_name)
