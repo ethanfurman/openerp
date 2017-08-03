@@ -121,6 +121,8 @@ class Graph(dict):
                 current.remove(package)
                 node = self.add_node(package, info)
                 node.data = info
+                if info.get('load_sequence'):
+                    node.depth = info['load_sequence']
                 for kind in ('init', 'demo', 'update'):
                     if package in tools.config[kind] or 'all' in tools.config[kind] or kind in force:
                         setattr(node, kind, True)
