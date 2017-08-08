@@ -347,6 +347,39 @@ def update_openerp(database, customers, suppliers, vendors, carriers, employees,
         nvty = fd.fisData('NVTY', keymatch='10%s')
         update_products(nvty, product_codes, default_product_codes)
 
+@Command(
+        filenum=Spec('file abbreviation or number to operate on', ),
+        subset=Spec('subset template to match many records to', ),
+        code=Spec('code to match with template', force_default='', type=lambda s: s and tuple(s.split(',') or s)),
+        fields=Spec('specific fields to display [default: all, counting starts with 0]', MULTI, type=int),
+        )
+def values(filenum, subset, code, fields):
+    if not fields:
+        abort('no FIELDS specified')
+    # adjust for zero-based numbering
+    fields = [i-1 for i in fields]
+    if filenum.isdigit():
+        filenum = int(filenum)
+    fis_table = fd.fisData(filenum, subset=subset)
+    table_spec = fd.tables[filenum]
+    table_fields = []
+    for i, row in enumerate(table_spec['fields']):
+        if i not in fields:
+            continue
+        name, spec = row[1:4:2]
+        table_fields.append((name, spec, set()))
+    for rec in [v for k, v in fis_table.get_subset(code)]:
+        for name, spec, values in table_fields:
+            values.add(rec[spec])
+    for name, spec, values in table_fields:
+        print('%s:  ' % name, ', '.join([repr(v) for v in sorted(values)]), verbose=0)
+
+# helpers
+
+table_keys = {
+    328: '10%s000010000',
+    }
+
 def update_customers(table, customer_codes, contacts, state_recs, country_recs_name ):
     context = {'mail_create_nosubscribe': True}
     active_customers = get_active_customers()
@@ -444,41 +477,6 @@ def update_customers(table, customer_codes, contacts, state_recs, country_recs_n
                 print('creating contact with:', result, verbose=2)
                 id = res_partner.create(result, context=context)
                 customer_codes[key] = id
-
-
-@Command(
-        filenum=Spec('file abbreviation or number to operate on', ),
-        subset=Spec('subset template to match many records to', ),
-        code=Spec('code to match with template', force_default='', type=lambda s: s and tuple(s.split(',') or s)),
-        fields=Spec('specific fields to display [default: all, counting starts with 0]', MULTI, type=int),
-        )
-def values(filenum, subset, code, fields):
-    if not fields:
-        abort('no FIELDS specified')
-    # adjust for zero-based numbering
-    fields = [i-1 for i in fields]
-    if filenum.isdigit():
-        filenum = int(filenum)
-    fis_table = fd.fisData(filenum, subset=subset)
-    table_spec = fd.tables[filenum]
-    table_fields = []
-    for i, row in enumerate(table_spec['fields']):
-        if i not in fields:
-            continue
-        name, spec = row[1:4:2]
-        table_fields.append((name, spec, set()))
-    for rec in [v for k, v in fis_table.get_subset(code)]:
-        for name, spec, values in table_fields:
-            values.add(rec[spec])
-    for name, spec, values in table_fields:
-        print('%s:  ' % name, ', '.join([repr(v) for v in sorted(values)]), verbose=0)
-
-# helpers
-
-table_keys = {
-    328: '10%s000010000',
-    }
-
 
 def update_suppliers(table, customer_codes, contacts, state_recs, country_recs_name ):
     context = {'mail_create_nosubscribe': True}
