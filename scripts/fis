@@ -349,6 +349,7 @@ def update_openerp(database, customers, suppliers, vendors, carriers, employees,
 
 def update_customers(table, customer_codes, contacts, state_recs, country_recs_name ):
     context = {'mail_create_nosubscribe': True}
+    active_customers = get_active_customers()
     for cus_rec in table:
         # rep = cus_rec[F33.salesrep]
         # rep = sales_people.get(rep, False)
@@ -361,14 +362,8 @@ def update_customers(table, customer_codes, contacts, state_recs, country_recs_n
         result['module'] = 'CSMS'
         # valid customer code? active account?
         result['fis_valid'] = fis_valid = True
-        if (
-                cus_rec[F33.this_year_sales]
-             or cus_rec[F33.last_year_sales]
-            ):
+        if key in active_customers:
             result['active'] = True
-        else:
-            # TODO check for open orders
-            pass
         # notify_by = Specials.get_member(cus_rec[F33.catalog_category].upper(), None)
         # result['special_notifications'] = notify_by and notify_by.db or False
         result['name'] = re.sub(
@@ -998,6 +993,20 @@ def get_xml_id_map(oe, model, module, ids=None):
     for rec in get_records(imd, domain=[('model','=',model),('module','ilike',module)]):
         if ids is None or rec.res_id in ids:
             result[rec.name] = rec.res_id
+    return result
+
+def get_active_customers():
+    import requests
+    result = set()
+    if config.network.active_customer_url:
+        web_data = requests.get(config.network.active_customer_url)
+        companies = re.findall(r'<th.*?>(.*?)</th>', web_data.text)
+        for line in companies:
+            fis_id = line.split()[0]
+            if fis_id.isdigit():
+                result.add(fis_id)
+                print(line)
+    echo('found %d companies' % len(result))
     return result
 
 class FISenum(str, Enum):
