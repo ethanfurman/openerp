@@ -19,7 +19,7 @@
 #
 ##############################################################################
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from lxml import etree
 import time
 
@@ -31,8 +31,6 @@ from openerp.tools.translate import _
 
 from openerp.addons.base_status.base_stage import base_stage
 from openerp.addons.resource.faces import task as Task
-
-from fnx import date as fnx_date
 
 _TASK_STATE = [('draft', 'New'),('open', 'In Progress'),('pending', 'Pending'), ('done', 'Done'), ('cancelled', 'Cancelled')]
 
@@ -740,7 +738,8 @@ class task(base_stage, osv.osv):
         for record in self.read(cr, uid, ids, fields=['id', 'date_deadline'], context=context):
             deadline = record['date_deadline']
             if deadline:
-                warning = fnx_date(deadline).replace(delta_day=-14)
+                # warning = fnx_date(deadline).replace(delta_day=-14)
+                warning = date.strptime(DEFAULT_SERVER_DATE_FORMAT) - timedelta(14)
                 result[record['id']] = warning.strftime(DEFAULT_SERVER_DATE_FORMAT)
         return result
 
