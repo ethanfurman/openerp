@@ -569,9 +569,14 @@ class Root(object):
         for addons_path in openerp.modules.module.ad_paths:
             for module in sorted(os.listdir(addons_path)):
                 if module not in addons_module:
+                    py_module_path = os.path.join(addons_path, module, '__init__.py')
                     manifest_path = os.path.join(addons_path, module, '__openerp__.py')
                     path_static = os.path.join(addons_path, module, 'static')
-                    if os.path.isfile(manifest_path) and os.path.isdir(path_static):
+                    if (
+                            os.path.isfile(py_module_path)
+                            and os.path.isfile(manifest_path)
+                            and os.path.isdir(path_static)
+                        ):
                         manifest = ast.literal_eval(open(manifest_path).read())
                         manifest['addons_path'] = addons_path
                         _logger.debug("Loading %s", module)
