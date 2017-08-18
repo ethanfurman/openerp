@@ -30,6 +30,8 @@
 import os
 os.environ['TZ'] = 'UTC' # Set the timezone...
 import time              # ... *then* import time.
+# and set base directory while we're here
+BASE_DIR = os.path.split(os.path.split((__file__))[0])[0]
 del os
 del time
 
@@ -60,6 +62,7 @@ wsgi.register_wsgi_handler = wsgi.wsgi_server.register_wsgi_handler
 # its own copy of the data structure and we don't need to care about
 # locks between threads.
 multi_process = False
+
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
 
