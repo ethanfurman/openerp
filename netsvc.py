@@ -55,8 +55,14 @@ def close_socket(sock):
     :param sock: the network socket to close
     :type sock: socket.socket
     """
-    time.sleep(1)
-    if not isinstance(sock._sock, socket._closedsocket):
+    # for unknown reasons this can be called twice on the same socket, so we
+    # check to see if the socket has already been closed before trying to
+    # close it again
+    for _ in range(10):
+        time.sleep(0.1)
+        if isinstance(sock._sock, socket._closedsocket):
+            break
+    else:
         try:
             sock.shutdown(socket.SHUT_RDWR)
         except socket.error, e:
