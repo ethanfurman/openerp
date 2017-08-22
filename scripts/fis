@@ -322,9 +322,7 @@ def update_openerp(database, customers, suppliers, vendors, carriers, employees,
     country_recs = get_records(oe, 'res.country')
     country_recs_name = dict([(r.name, r.id) for r in country_recs])
     if customers:
-        customer_codes = get_xml_id_map(oe, model='res.partner', module='csms')
-        csms = fd.fisData('CSMS', keymatch='%s ' % partner_key)
-        update_customers(csms, customer_codes, contacts, state_recs, country_recs_name)
+        update_customers(oe, contacts, state_recs, country_recs_name)
     if suppliers:
         supplier_codes = get_xml_id_map(oe, model='res.partner', module='posm')
         posm = fd.fisData('POSM', keymatch=partner_key)
@@ -380,10 +378,19 @@ table_keys = {
     328: '10%s000010000',
     }
 
-def update_customers(table, customer_codes, contacts, state_recs, country_recs_name ):
+
+def update_customers(oe, contacts, state_recs, country_recs_name ):
     context = {'mail_create_nosubscribe': True}
     active_customers = get_active_customers()
-    for cus_rec in table:
+    customer_codes = get_xml_id_map(oe, model='res.partner', module='csms')
+    customer_ship_tos = get_xml_id_map(oe, model='res.partner', module='csmsbs')
+    customers = fd.fisData('CSMS', keymatch='10%s ')
+    ship_tos = fd.fisData('CSMSB', subset='10%s1')
+    # alternate ship-tos exist in both CSMSB and CSMSS, but because
+    # the final portion of the key is not specified in the schema, we can get them
+    # all at once
+    # process customers
+    for cus_rec in customers:
         # rep = cus_rec[F33.salesrep]
         # rep = sales_people.get(rep, False)
         result = {'active': False}
@@ -395,11 +402,12 @@ def update_customers(table, customer_codes, contacts, state_recs, country_recs_n
         result['module'] = 'CSMS'
         # valid customer code? active account?
         result['fis_valid'] = fis_valid = True
-        if key in active_customers:
+        if key in active_customers or not active_customers:
+            # if active customers is empty, mark them all as active
             result['active'] = True
         # notify_by = Specials.get_member(cus_rec[F33.catalog_category].upper(), None)
         # result['special_notifications'] = notify_by and notify_by.db or False
-        result['name'] = re.sub(
+        result['name'] = customer_name = re.sub(
                 config.fis_imports.name_from,
                 config.fis_imports.name_to,
                 BsnsCase(cus_rec[F33.name]),
@@ -447,8 +455,10 @@ def update_customers(table, customer_codes, contacts, state_recs, country_recs_n
             id = res_partner.create(result, context=context)
             print('creating with:', result, verbose=2)
             customer_codes[key] = id
+        cus_id = id
+        default_ship_to = result.copy()
+        # process contacts
         if contacts and cus_rec[F33.contact]:
-            cus_id = id
             contact = cus_rec[F33.contact]
             result = {
                     'active': result['active'],
@@ -465,18 +475,83 @@ def update_customers(table, customer_codes, contacts, state_recs, country_recs_n
             result['customer'] = True
             result['parent_id'] = cus_id
             result['use_parent_address'] = True
-            result['xml_id'] = key = 'cntct_' + key
+            result['xml_id'] = contact_key = 'cntct_' + key
             result['module'] = 'CSMS'
-            if key in customer_codes:
+            if contact_key in customer_codes:
                 print('updating contact with:', result, verbose=2)
-                id = customer_codes[key]
-                # leave fis_valid alone
-                del result['fis_valid']
+                id = customer_codes[contact_key]
                 res_partner.write(id, result)
             else:
                 print('creating contact with:', result, verbose=2)
                 id = res_partner.create(result, context=context)
-                customer_codes[key] = id
+                customer_codes[contact_key] = id
+        # process alternate ship-tos
+        alternates = ship_tos.get_subset(key) # or ((None, None), )
+        for _, ship_to in sorted(alternates):
+            result = {
+                    'active': result['active'],
+                    'fis_valid': fis_valid,
+                    }
+            result['parent_id'] = False
+            result['ship_to_parent_id'] = cus_id
+            result['is_company'] = False
+            result['customer'] = False
+            result['use_parent_address'] = False
+            result['module'] = 'CSMSBS'
+            if ship_to is None:
+                result.update(default_ship_to)
+                result['xml_id'] = ship_to_key = 'ship_' + key + '100'
+                result['notes'] = 'main address from customer record'
+                print('  ship-to:', ship_to_key)
+            else:
+                result['xml_id'] = ship_to_key = 'ship_' + ship_to[F140.code] + (ship_to[F140.ship_to_sequence].strip() or '00')
+                print('  ship-to:', ship_to_key)
+                result['notes'] = ship_to[F140.comments]
+                result['name'] = re.sub(
+                        config.fis_imports.name_from,
+                        config.fis_imports.name_to,
+                        BsnsCase(ship_to[F140.name]),
+                        flags=re.I,
+                        ) or customer_name
+                addr1, addr2, addr3 = Sift(ship_to[F140.addr1], ship_to[F140.addr2], ship_to[F140.addr3])
+                addr2, city, state, postal, country = cszk(addr2, addr3)
+                addr3 = ''
+                print('    ' + '\n    '.join([addr1, addr2, addr3, str([city, state, repr(postal)]), country]), verbose=2)
+                if city and not (addr2 or state or postal or country):
+                    addr2, city = city, addr2
+                addr1 = normalize_address(addr1)
+                addr2 = normalize_address(addr2)
+                addr1, addr2 = AddrCase(Rise(addr1, addr2))
+                city = NameCase(city)
+                state, country = NameCase(state), NameCase(country)
+                result['street'] = addr1
+                result['street2'] = addr2
+                result['city'] = city
+                result['zip'] = postal.code
+                result['country_id'] = False
+                result['state_id'] = False
+                if state:
+                    result['state_id'] = state_recs[state][0]
+                    result['country_id'] = state_recs[state][2]
+                elif country:
+                    country_id = country_recs_name.get(country, None)
+                    if country_id is None:
+                        # _logger.critical("Customer %s has invalid country <%r>" % (key, country))
+                        continue
+                    else:
+                        result['country_id'] = country_id
+                result['phone'] = fix_phone(ship_to[F140.tele])
+            if ship_to_key in customer_ship_tos:
+                # do not overwrite a possibly user-updated name
+                del result['name']
+                print('updating ship-to with:', result, verbose=2)
+                id = customer_ship_tos[ship_to_key]
+                res_partner.write(id, result)
+            else:
+                print('creating ship-to with:', result, verbose=2)
+                id = res_partner.create(result, context=context)
+                customer_ship_tos[ship_to_key] = id
+
 
 def update_suppliers(table, customer_codes, contacts, state_recs, country_recs_name ):
     context = {'mail_create_nosubscribe': True}
@@ -487,7 +562,7 @@ def update_suppliers(table, customer_codes, contacts, state_recs, country_recs_n
         result['supplier'] = True
         result['customer'] = False
         result['use_parent_address'] = False
-        result['xml_id'] = key = sup_rec[F163.supplier_no]
+        result['xml_id'] = key = sup_rec[F163.code]
         result['module'] = 'POSM'
         # valid customer code? active account?
         result['fis_valid'] = True
@@ -497,7 +572,7 @@ def update_suppliers(table, customer_codes, contacts, state_recs, country_recs_n
         result['name'] = re.sub(
                 config.fis_imports.name_from,
                 config.fis_imports.name_to,
-                BsnsCase(sup_rec[F163.supplier_name]),
+                BsnsCase(sup_rec[F163.name]),
                 flags=re.I,
                 )
         print('name:', result['name'])
@@ -528,7 +603,7 @@ def update_suppliers(table, customer_codes, contacts, state_recs, country_recs_n
                 continue
             else:
                 result['country_id'] = country_id
-        result['telephone'] = fix_phone(sup_rec[F163.phone_no])
+        result['phone'] = fix_phone(sup_rec[F163.tele])
         if not result['name']:
             # _logger.critical("Missing name for customer %s -- skipping" % (key, ))
             continue
@@ -988,7 +1063,11 @@ def get_xml_id_map(oe, model, module, ids=None):
     "return {xml_id: id} for all xml_ids in module"
     imd = oe.get_model('ir.model.data')
     result = {}
-    for rec in get_records(imd, domain=[('model','=',model),('module','ilike',module)]):
+    for rec in get_records(
+            imd,
+            domain=[('model','=',model),('module','ilike',module)],
+            skip_fields=['is_salesinq_able', 'salesinq_data', 'image', 'image_small', 'image_medium'],
+            ):
         if ids is None or rec.res_id in ids:
             result[rec.name] = rec.res_id
     return result
@@ -997,14 +1076,18 @@ def get_active_customers():
     import requests
     result = set()
     if config.network.active_customer_url:
-        web_data = requests.get(config.network.active_customer_url)
-        companies = re.findall(r'<th.*?>(.*?)</th>', web_data.text)
-        for line in companies:
-            fis_id = line.split()[0]
-            if fis_id.isdigit():
-                result.add(fis_id)
-                print(line)
-    echo('found %d companies' % len(result))
+        try:
+            web_data = requests.get(config.network.active_customer_url)
+        except requests.exceptions.ConnectionError:
+            pass
+        else:
+            companies = re.findall(r'<th.*?>(.*?)</th>', web_data.text)
+            for line in companies:
+                fis_id = line.split()[0]
+                if fis_id.isdigit():
+                    result.add(fis_id)
+                    print(line)
+    echo('found %d active companies' % len(result))
     return result
 
 class FISenum(str, Enum):
@@ -1119,6 +1202,22 @@ class F135(FISenum):
     committed               = 'I(7)'           #  56: Quantity Committed
     on_order                = 'I(8)'           #  57: Quantity on order
 
+class F140(str, Enum):
+    """
+    CSMSB - CUSTOMER MASTER FILE - DEFAULT SHIP-TO
+    """
+    company_id            = 'An$(1,2)'       #   0: COMPANY
+    code                  = 'An$(3,6)'       #   1: Customer Code
+    ship_to               = 'An$(9,1)'       #   2: ship-to indicator -> ' ' = False, '1' = True
+    ship_to_sequence      = 'An$(10,2)'      #   3: default or sequence -> '  ' = default; '01', etc,
+    name                  = 'Bn$'            #   4: SHIP TO NAME
+    addr1                 = 'Cn$'            #   5: ADDRESS LINE 1
+    addr2                 = 'Dn$'            #   6: ADDRESS LINE 2
+    addr3                 = 'En$'            #   7: ADDRESS LINE 3
+    postal                = 'Ln$'            #   8: ZIP CODE
+    tele                  = 'Qn$(1,15)'      #  52: Phone Number
+    comments              = 'Gn$'            #  55: Comments
+
 class F163(FISenum):
     """
     POSM - SUPPLIER MASTER FILE
@@ -1126,10 +1225,10 @@ class F163(FISenum):
     company_id        = 'An$(1,2)'       #   0: COMPANY CODE
     supplier_no       = 'An$(3,6)'       #   1: SUPPLIER NUMBER
     supplier_name     = 'Bn$'            #   2: SUPPLIER NAME
-    addr1         = 'Cn$'            #   3: ADDRESS 1
-    addr2         = 'Dn$'            #   4: ADDRESS 2
-    addr3         = 'En$'            #   5: ADDRESS 3
-    phone_no      = 'Gn$(1,15)'      #   7: Telephone Number
+    addr1             = 'Cn$'            #   3: ADDRESS 1
+    addr2             = 'Dn$'            #   4: ADDRESS 2
+    addr3             = 'En$'            #   5: ADDRESS 3
+    telephone_no      = 'Gn$(1,15)'      #   7: Telephone Number
     fax_no            = 'Gn$(16,15)'     #   8: FAX Number
     vendor_no         = 'In$(10,6)'      #  23: VENDOR NUMBER
 
