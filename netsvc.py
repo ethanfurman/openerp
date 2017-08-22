@@ -55,17 +55,25 @@ def close_socket(sock):
     :param sock: the network socket to close
     :type sock: socket.socket
     """
-    try:
-        sock.shutdown(socket.SHUT_RDWR)
-    except socket.error, e:
-        # On OSX, socket shutdowns both sides if any side closes it
-        # causing an error 57 'Socket is not connected' on shutdown
-        # of the other side (or something), see
-        # http://bugs.python.org/issue4397
-        # note: stdlib fixed test, not behavior
-        if e.errno != errno.ENOTCONN or platform.system() not in ['Darwin', 'Windows']:
-            raise
-    sock.close()
+    # for unknown reasons this can be called twice on the same socket, so we
+    # check to see if the socket has already been closed before trying to
+    # close it again
+    for _ in range(10):
+        time.sleep(0.1)
+        if isinstance(sock._sock, socket._closedsocket):
+            break
+    else:
+        try:
+            sock.shutdown(socket.SHUT_RDWR)
+        except socket.error, e:
+            # On OSX, socket shutdowns both sides if any side closes it
+            # causing an error 57 'Socket is not connected' on shutdown
+            # of the other side (or something), see
+            # http://bugs.python.org/issue4397
+            # note: stdlib fixed test, not behavior
+            if e.errno != errno.ENOTCONN or platform.system() not in ['Darwin', 'Windows']:
+                raise
+        sock.close()
 
 def abort_response(dummy_1, description, dummy_2, details):
     # TODO Replace except_{osv,orm} with these directly.
