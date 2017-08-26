@@ -126,6 +126,27 @@ class document(object):
                         if key not in ('type', 'name', 'default'):
                             el.set(key, value)
 
+                elif attrs['type']=='selection':
+                    field = attrs['name']
+                    value = self.get_value(browser, field)
+                    if value == '' and 'default' in attrs:
+                        value = attrs['default']
+                    else:
+                        if isinstance(browser, list):
+                            model = browser[0]._table
+                        else:
+                            model = browser._table
+                        for db_name, human_name in model._columns[field].selection:
+                            if db_name == value:
+                                value = human_name
+                                break
+                    el = etree.SubElement(parent, node.tag)
+                    el.text = tounicode(value)
+                    #TODO: test this
+                    for key, value in attrs.iteritems():
+                        if key not in ('type', 'name', 'default'):
+                            el.set(key, value)
+
                 elif attrs['type']=='attachment':
                     if isinstance(browser, list):
                         model = browser[0]._table_name

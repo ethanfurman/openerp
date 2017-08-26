@@ -628,7 +628,7 @@ class _rml_flowable(object):
         self.canvas = canvas
 
     def _textual(self, node):
-        rc1 = utils._process_text(self, node.text or '')
+        rc1 = utils.xml2str(utils._process_text(self, node.text or ''))
         for n in utils._child_get(node,self):
             txt_n = copy.deepcopy(n)
             for key in txt_n.attrib.keys():
@@ -670,11 +670,11 @@ class _rml_flowable(object):
             for td in utils._child_get(tr, self,'td'):
                 if td.get('style'):
                     st = copy.deepcopy(self.styles.table_styles[td.get('style')])
-                    for s in st._cmds:
-                        s[1][1] = posy
-                        s[2][1] = posy
-                        s[1][0] = posx
-                        s[2][0] = posx
+                    for si in range(len(st._cmds)):
+                        s = list(st._cmds[si])
+                        s[1] = (s[1][0], posy)
+                        s[2] = (s[2][0], posy)
+                        st._cmds[si] = tuple(s)
                     styles.append(st)
                 if td.get('paraStyle'):
                     # TODO: merge styles
