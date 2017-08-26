@@ -628,7 +628,7 @@ class _rml_flowable(object):
         self.canvas = canvas
 
     def _textual(self, node):
-        rc1 = utils._process_text(self, node.text or '')
+        rc1 = utils.xml2str(utils._process_text(self, node.text or ''))
         for n in utils._child_get(node,self):
             txt_n = copy.deepcopy(n)
             for key in txt_n.attrib.keys():
