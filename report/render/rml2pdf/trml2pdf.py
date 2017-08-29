@@ -840,8 +840,11 @@ class _rml_flowable(object):
                 width = utils.unit_get(node.get('width'))
             else:
                 width = utils.unit_get('1cm')
-            length = utils.unit_get(node.get('length'))
-            return platypus.Spacer(width=width, height=length)
+            if node.get('height'):
+                height = utils.unit_get(node.get('height'))
+            else:
+                height = utils.unit_get(node.get('length'))
+            return platypus.Spacer(width=width, height=height)
         elif node.tag=='section':
             return self.render(node)
         elif node.tag == 'pageNumberReset':
