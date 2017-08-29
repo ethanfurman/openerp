@@ -66,8 +66,6 @@ class document(object):
         return {}
 
     def get_value(self, browser, field_path):
-        print '-' * 50
-        print browser, field_path
         fields = field_path.split('.')
 
         if not len(fields):
@@ -76,7 +74,6 @@ class document(object):
         value = browser
 
         for field in fields:
-            print field
             if isinstance(value, list):
                 if len(value)==0:
                     return ''
@@ -86,7 +83,6 @@ class document(object):
             else:
                 browser = value
                 value = value[field]
-        print field, value, browser
         try:
             if isinstance(value, browse_null):
                 return ''
