@@ -145,6 +145,17 @@ class PageReset(platypus.Flowable):
     def draw(self):
         self.canv._doPageReset = True
 
+class FlexSpacer(platypus.Spacer):
+    "Attempts to leave voidHeight space on page; uses all remaining if unable to"
+    def __init__(self, width, height, voidHeight):
+        platypus.Spacer.__init__(self, width, height)
+        self.voidHeight = voidHeight
+    def wrap(self, availWidth, availHeight):
+        if availHeight < self.voidHeight + self.height:
+            return self.width, availHeight
+        else:
+            return self.width, availHeight-self.voidHeight
+
 class _rml_styles(object,):
     def __init__(self, nodes, localcontext):
         self.localcontext = localcontext
@@ -845,6 +856,14 @@ class _rml_flowable(object):
             else:
                 height = utils.unit_get(node.get('length'))
             return platypus.Spacer(width=width, height=height)
+        elif node.tag=='flexSpacer':
+            if node.get('width'):
+                width = utils.unit_get(node.get('width'))
+            else:
+                width = utils.unit_get('1cm')
+            height = utils.unit_get(node.get('height'))
+            voidHeight = utils.unit_get(node.get('voidHeight'))
+            return FlexSpacer(width=width, height=height, voidHeight=voidHeight)
         elif node.tag=='section':
             return self.render(node)
         elif node.tag == 'pageNumberReset':
