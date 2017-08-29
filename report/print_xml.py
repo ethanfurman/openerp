@@ -66,6 +66,8 @@ class document(object):
         return {}
 
     def get_value(self, browser, field_path):
+        print '-' * 50
+        print browser, field_path
         fields = field_path.split('.')
 
         if not len(fields):
@@ -73,7 +75,8 @@ class document(object):
 
         value = browser
 
-        for f in fields:
+        for field in fields:
+            print field
             if isinstance(value, list):
                 if len(value)==0:
                     return ''
@@ -81,12 +84,31 @@ class document(object):
             if isinstance(value, browse_null):
                 return ''
             else:
-                value = value[f]
+                browser = value
+                value = value[field]
+        print field, value, browser
+        try:
+            if isinstance(value, browse_null):
+                return ''
+            elif isinstance(value, browse_record):
+                return value
+            elif isinstance(browser, list):
+                model = browser[0]._table
+            else:
+                model = browser._table
+            column = model._columns[field]
+            column_type = column._type
+            if column_type == 'selection':
+                for db_name, human_name in column.selection:
+                    if db_name == value:
+                        value = human_name
+                        break
+            elif column_type == 'boolean':
+                value = column.choice[bool(value)]
+        except Exception:
+            pass
 
-        if isinstance(value, browse_null) or (type(value)==bool and not value):
-            return ''
-        else:
-            return value
+        return value and value or ''
 
     def get_value2(self, browser, field_path):
         value = self.get_value(browser, field_path)
@@ -115,31 +137,11 @@ class document(object):
             attrs = self.node_attrs_get(node)
             if 'type' in attrs:
                 if attrs['type']=='field':
-                    value = self.get_value(browser, attrs['name'])
-                    #TODO: test this
-                    if value == '' and 'default' in attrs:
-                        value = attrs['default']
-                    el = etree.SubElement(parent, node.tag)
-                    el.text = tounicode(value)
-                    #TODO: test this
-                    for key, value in attrs.iteritems():
-                        if key not in ('type', 'name', 'default'):
-                            el.set(key, value)
-
-                elif attrs['type']=='selection':
                     field = attrs['name']
                     value = self.get_value(browser, field)
+                    #TODO: test this
                     if value == '' and 'default' in attrs:
                         value = attrs['default']
-                    else:
-                        if isinstance(browser, list):
-                            model = browser[0]._table
-                        else:
-                            model = browser._table
-                        for db_name, human_name in model._columns[field].selection:
-                            if db_name == value:
-                                value = human_name
-                                break
                     el = etree.SubElement(parent, node.tag)
                     el.text = tounicode(value)
                     #TODO: test this
