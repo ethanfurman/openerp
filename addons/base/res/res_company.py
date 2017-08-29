@@ -168,6 +168,7 @@ class res_company(osv.osv):
         # second line: bank accounts
         res_partner_bank = self.pool.get('res.partner.bank')
         account_data = self.resolve_2many_commands(cr, uid, 'bank_ids', bank_ids, context=context)
+        account_data = [d for d in account_data if d['footer']]
         account_names = res_partner_bank._prepare_name_get(cr, uid, account_data, context=context)
         if account_names:
             title = _('Bank Accounts') if len(account_names) > 1 else _('Bank Account')
