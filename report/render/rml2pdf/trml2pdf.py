@@ -890,6 +890,12 @@ class _rml_flowable(object):
             thickness_hr=node.get('thickness') or 1
             lineCap_hr=node.get('lineCap') or 'round'
             return platypus.flowables.HRFlowable(width=width_hr,color=color.get(color_hr),thickness=float(thickness_hr),lineCap=str(lineCap_hr))
+        elif node.tag == 'docIf':
+            # example: always print an even number of pages (makes duplexing easier)
+            # <docIf cond="doc.page%2==1">
+            #     <pageBreak/>
+            # </docIf>
+            return platypus.flowables.DocIf(node.get('cond'), self.render(node))
         else:
             sys.stderr.write('Warning: flowable not yet implemented: %s !\n' % (node.tag,))
             return None
