@@ -9,6 +9,7 @@ import logging
 import operator
 import datetime
 import hashlib
+import mimetypes
 import os
 import re
 import simplejson
@@ -1291,8 +1292,13 @@ class Binary(openerpweb.Controller):
             filename = '%s_%s' % (model.replace('.', '_'), id)
             if filename_field:
                 filename = res.get(filename_field, '') or filename
+            content_type, content_encoding = mimetypes.guess_type(filename)
+            if content_type is None:
+                content_type = 'application/octet-stream'
+                content_encoding = None
             return req.make_response(filecontent,
-                [('Content-Type', 'application/octet-stream'),
+                [('Content-Type', content_type),
+                 ('Content-Encoding', content_encoding or 'identity'),
                  ('Content-Disposition', content_disposition(filename, req))])
 
     @openerpweb.httprequest
@@ -1323,8 +1329,13 @@ class Binary(openerpweb.Controller):
             filename = '%s_%s' % (model.replace('.', '_'), id)
             if filename_field:
                 filename = res.get(filename_field, '') or filename
+            content_type, content_encoding = mimetypes.guess_type(filename)
+            if content_type is None:
+                content_type = 'application/octet-stream'
+                content_encoding = None
             return req.make_response(filecontent,
-                headers=[('Content-Type', 'application/octet-stream'),
+                headers=[('Content-Type', content_type),
+                        ('Content-Encoding', content_encoding or 'identity'),
                         ('Content-Disposition', content_disposition(filename, req))],
                 cookies={'fileToken': token})
 
