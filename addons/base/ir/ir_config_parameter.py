@@ -24,10 +24,15 @@ Store database-specific configuration parameters
 
 import uuid
 import datetime
+import pytz
+from pytz.exceptions import UnknownTimeZoneError
+import sys
+from tempfile import TemporaryFile
 
 from openerp import SUPERUSER_ID
 from openerp.osv import osv, fields
 from openerp.tools import misc, config
+from openerp.exceptions import ERPError
 
 """
 A dictionary holding some configuration parameters to be initialized when the database is created.
@@ -88,6 +93,7 @@ class ir_config_parameter(osv.osv):
                  not exist.
         :rtype: string
         """
+        self.check_param(key, value, context=context)
         ids = self.search(cr, uid, [('key','=',key)], context=context)
         if ids:
             param = self.browse(cr, uid, ids[0], context=context)
@@ -97,5 +103,33 @@ class ir_config_parameter(osv.osv):
         else:
             self.create(cr, uid, {'key': key, 'value': value}, context=context)
             return False
+
+    def check_param(self, key, value, context=None):
+        if key == 'database.time_zone':
+            # make sure new time zone exists
+            try:
+                pytz.timezone(value)
+            except UnknownTimeZoneError:
+                raise ERPError('Unknown Time Zone', 'Time zone %r is not supported.' % (value, ))
+        elif key == 'ir_attachment.location':
+            # check if location is writable by openerp daemon
+            try:
+                with TemporaryFile(dir=value):
+                    pass
+            except (IOError, OSError):
+                exc = sys.exc_info()[1]
+                errno, text = exc.args
+                raise ERPError('Bad Path', text)
+
+    def create(self, cr, uid, vals, context=None):
+        self.check_param(vals['key'], vals['value'])
+        return super(ir_config_parameter, self).create(cr, uid, vals, context=context)
+
+    def write(self, cr, uid, ids, vals, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        for entry in self.read(cr, uid, ids, context=context):
+            self.check_param(entry['key'], vals['value'])
+        return super(ir_config_parameter, self).write(cr, uid, ids, vals, context=context)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
