@@ -28,6 +28,14 @@
                         <field name="key"/>
                         <field name="value"/>
                     </group>
+                    <div class="oe_edit_only">
+                        <span attrs="{'invisible': [('key','!=','ir_attachment.location')]}">
+                            %%{db}s, if used, will be replaced with the name of the database.
+                        </span>
+                        <span attrs="{'invisible': [('key','!=','database.time_zone')]}">
+                            Value needs to be a pytz recognized time zone.
+                        </span>
+                    </div>
                   </sheet>
                 </form>
             </field>
