@@ -93,7 +93,7 @@ class ir_config_parameter(osv.osv):
                  not exist.
         :rtype: string
         """
-        self.check_param(key, value, context=context)
+        self.check_param(cr, key, value, context=context)
         ids = self.search(cr, uid, [('key','=',key)], context=context)
         if ids:
             param = self.browse(cr, uid, ids[0], context=context)
@@ -104,7 +104,7 @@ class ir_config_parameter(osv.osv):
             self.create(cr, uid, {'key': key, 'value': value}, context=context)
             return False
 
-    def check_param(self, key, value, context=None):
+    def check_param(self, cr, key, value, context=None):
         if key == 'database.time_zone':
             # make sure new time zone exists
             try:
@@ -117,23 +117,24 @@ class ir_config_parameter(osv.osv):
                 raise ERPError('Bad Value', 'protocol missing (should be "proto:/some/path")')
             proto, path = value.split(':', 1)
             if proto == 'file':
+                path %= {'db': cr.dbname}
                 try:
                     with TemporaryFile(dir=path):
                         pass
                 except (IOError, OSError):
                     exc = sys.exc_info()[1]
                     errno, text = exc.args
-                    raise ERPError('Bad Path', text)
+                    raise ERPError(text, path)
 
     def create(self, cr, uid, vals, context=None):
-        self.check_param(vals['key'], vals['value'])
+        self.check_param(cr, vals['key'], vals['value'])
         return super(ir_config_parameter, self).create(cr, uid, vals, context=context)
 
     def write(self, cr, uid, ids, vals, context=None):
         if isinstance(ids, (int, long)):
             ids = [ids]
         for entry in self.read(cr, uid, ids, context=context):
-            self.check_param(entry['key'], vals['value'])
+            self.check_param(cr, entry['key'], vals['value'])
         return super(ir_config_parameter, self).write(cr, uid, ids, vals, context=context)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
