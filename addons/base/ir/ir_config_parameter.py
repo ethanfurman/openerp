@@ -117,7 +117,6 @@ class ir_config_parameter(osv.osv):
                 raise ERPError('Bad Value', 'protocol missing (should be "proto:/some/path")')
             proto, path = value.split(':', 1)
             if proto == 'file':
-                path %= {'db': cr.dbname}
                 try:
                     with TemporaryFile(dir=path):
                         pass
