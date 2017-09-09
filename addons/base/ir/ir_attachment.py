@@ -23,10 +23,10 @@ import hashlib
 import itertools
 import logging
 import os
-import re
 import sys
 
 from openerp import tools
+from openerp.exceptions import ERPError
 from openerp.osv import fields,osv
 
 _logger = logging.getLogger(__name__)
@@ -64,21 +64,16 @@ class ir_attachment(osv.osv):
         return data
 
     # 'data' field implementation
-    def _full_path(self, cr, uid, location, path):
+    def _full_path(self, cr, uid, attachment, location, filename):
         # location = 'file:filestore'
         assert location.startswith('file:'), "Unhandled filestore location %s" % location
-        location = location[5:]
+        path_file = os.path.join(location[5:], cr.dbname, attachment.res_model, filename)
+        if path_file[0] not in "/\\":
+            path_file = os.path.join(tools.config['root_path'], path_file)
+        return path_file
 
-        # sanitize location name and path
-        location = re.sub('[.]','',location)
-        location = location.strip('/\\')
-
-        path = re.sub('[.]','',path)
-        path = path.strip('/\\')
-        return os.path.join(tools.config['root_path'], location, cr.dbname, path)
-
-    def _file_read(self, cr, uid, location, fname, bin_size=False):
-        full_path = self._full_path(cr, uid, location, fname)
+    def _file_read(self, cr, uid, attachment, location, fname, bin_size=False):
+        full_path = self._full_path(cr, uid, attachment, location, fname)
         r = ''
         try:
             if bin_size:
@@ -90,26 +85,30 @@ class ir_attachment(osv.osv):
             _logger.error("%s:%s during _read_file reading %s", type, exc, full_path)
         return r
 
-    def _file_write(self, cr, uid, location, value):
-        bin_value = value.decode('base64')
-        fname = hashlib.sha1(bin_value).hexdigest()
-        # scatter files across 1024 dirs
-        # we use '/' in the db (even on windows)
-        fname = fname[:3] + '/' + fname
-        full_path = self._full_path(cr, uid, location, fname)
+    def _file_write(self, cr, uid, attachment, location, value):
+        datas_value = value.decode('base64')
+        size = len(datas_value)
+        file_hash = hashlib.sha512(datas_value).hexdigest()
+        # check if file already exists
+        matches = self.search(cr, 1, [('datas_hash','=',file_hash)])
+        for m in matches:
+            if m.file_size == size and m.datas == datas_value:
+                return m.datas_hash, m.store_fname
+        fname = '_'.join(attachment.datas_fname.split())
+        full_path = self._full_path(cr, uid, attachment, location, fname)
         try:
             dirname = os.path.dirname(full_path)
             if not os.path.isdir(dirname):
                 os.makedirs(dirname)
-            open(full_path,'wb').write(bin_value)
+            open(full_path,'wb').write(datas_value)
         except IOError:
             _logger.error("_file_write writing %s",full_path)
-        return fname
+        return file_hash, fname
 
-    def _file_delete(self, cr, uid, location, fname):
+    def _file_delete(self, cr, uid, attachment, location, fname):
         count = self.search(cr, 1, [('store_fname','=',fname)], count=True)
         if count <= 1:
-            full_path = self._full_path(cr, uid, location, fname)
+            full_path = self._full_path(cr, uid, attachment, location, fname)
             try:
                 os.unlink(full_path)
             except OSError:
@@ -126,7 +125,7 @@ class ir_attachment(osv.osv):
         bin_size = context.get('bin_size')
         for attach in self.browse(cr, uid, ids, context=context):
             if location and attach.store_fname:
-                result[attach.id] = self._file_read(cr, uid, location, attach.store_fname, bin_size)
+                result[attach.id] = self._file_read(cr, uid, attach, location, attach.store_fname, bin_size)
             else:
                 result[attach.id] = attach.db_datas
         return result
@@ -140,19 +139,30 @@ class ir_attachment(osv.osv):
         location = self.pool.get('ir.config_parameter').get_param(cr, uid, 'ir_attachment.location')
         file_size = len(value.decode('base64'))
         attach = self.browse(cr, uid, id, context=context)
+        if not attach.res_model:
+            raise ERPError('Programming Error', 'res_model has not been set')
         if attach.store_fname:
-            self._file_delete(cr, uid, location, attach.store_fname)
+            self._file_delete(cr, uid, attach, location, attach.store_fname)
         if location and not context.get('migrate_to_db'):
-            fname = self._file_write(cr, uid, location, value)
-            super(ir_attachment, self).write(cr, uid, [id], {'store_fname': fname, 'file_size': file_size}, context=context)
+            fhash, fname = self._file_write(cr, uid, attach, location, value)
+            super(ir_attachment, self).write(
+                    cr, uid, [id],
+                    {'store_fname': fname, 'datas_hash': fhash, 'file_size': file_size, 'db_datas': False},
+                    context=context,
+                    )
         else:
-            super(ir_attachment, self).write(cr, uid, [id], {'db_datas': value, 'file_size': file_size, 'store_fname':False}, context=context)
+            super(ir_attachment, self).write(
+                    cr, uid, [id],
+                    {'db_datas': value, 'file_size': file_size, 'store_fname':False, 'datas_hash':False},
+                    context=context,
+                    )
         return True
 
     _name = 'ir.attachment'
     _columns = {
         'name': fields.char('Attachment Name',size=256, required=True),
-        'datas_fname': fields.char('File Name',size=256),
+        'datas_fname': fields.char('File Name',size=256,help='original file name'),
+        'datas_hash': fields.char('File hash (sha512)', size=128),
         'description': fields.text('Description'),
         'res_name': fields.function(_name_get_resname, type='char', size=128, string='Resource Name', store=True),
         'res_model': fields.char('Resource Model',size=64, readonly=True, help="The database object this attachment will be attached to"),
@@ -166,8 +176,8 @@ class ir_attachment(osv.osv):
         'url': fields.char('Url', size=1024),
         # al: We keep shitty field names for backward compatibility with document
         'datas': fields.function(_data_get, fnct_inv=_data_set, string='File Content', type="binary", nodrop=True),
-        'store_fname': fields.char('Stored Filename', size=256),
-        'db_datas': fields.binary('Database Data'),
+        'store_fname': fields.char('Stored Filename', size=1024, help='file name on disk'),
+        'db_datas': fields.binary('Database Data', help='file data stored in database'),
         'file_size': fields.integer('File Size'),
     }
 
@@ -283,7 +293,7 @@ class ir_attachment(osv.osv):
         if location:
             for attach in self.browse(cr, uid, ids, context=context):
                 if attach.store_fname:
-                    self._file_delete(cr, uid, location, attach.store_fname)
+                    self._file_delete(cr, uid, attach, location, attach.store_fname)
         return super(ir_attachment, self).unlink(cr, uid, ids, context)
 
     def create(self, cr, uid, values, context=None):
@@ -295,6 +305,4 @@ class ir_attachment(osv.osv):
     def action_get(self, cr, uid, context=None):
         return self.pool.get('ir.actions.act_window').for_xml_id(
             cr, uid, 'base', 'action_attachment', context=context)
-
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
 
