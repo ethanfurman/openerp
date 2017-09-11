@@ -190,6 +190,8 @@ class report_rml(report_int):
         transform = etree.XSLT(stylesheet)
         xml = etree.tostring(
             transform(etree.fromstring(xml)))
+        if xml is None:
+            raise ValueError('XML/XSL mismatch: unable to find report style sheet (template match issue?)')
 
         return xml
 
