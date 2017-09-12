@@ -146,15 +146,26 @@ class PageReset(platypus.Flowable):
         self.canv._doPageReset = True
 
 class FlexSpacer(platypus.Spacer):
-    "Attempts to leave voidHeight space on page; uses all remaining if unable to"
-    def __init__(self, width, height, voidHeight):
+    """\
+    Customizes different ways to consume vertical space.
+
+    width:  horizontal size of spacer
+    height:  vertical size of spacer; can be less if all reaminging height consumed
+    voidHeight:  if set, consume all remaining space if unable to leave voidHeight
+                 vertical space
+    """
+    def __init__(self, width, height, voidHeight=None):
         platypus.Spacer.__init__(self, width, height)
+        if voidHeight is None:
+            voidHeight = 0
         self.voidHeight = voidHeight
     def wrap(self, availWidth, availHeight):
         if availHeight < self.voidHeight + self.height:
             return self.width, availHeight
-        else:
+        elif self.voidHeight:
             return self.width, availHeight-self.voidHeight
+        else:
+            return self.width, self.height
 
 class _rml_styles(object,):
     def __init__(self, nodes, localcontext):
