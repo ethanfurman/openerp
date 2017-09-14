@@ -4098,7 +4098,7 @@ class BaseModel(object):
             r['xmlid'] = ("%(module)s.%(name)s" % r) if r['name'] else False
             del r['name'], r['module']
         if uniq:
-            return res[ids[0]]
+            return res[0]
         return res
 
     def _check_concurrency(self, cr, ids, context):
