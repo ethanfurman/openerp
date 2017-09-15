@@ -4421,7 +4421,7 @@ class BaseModel(object):
                     and vals[field]:
                 self._check_selection_field_value(cr, user, field, vals[field], context=context)
 
-        if self._log_access:
+        if self._log_access and context.get('log_write_date', True):
             upd0.append('write_uid=%s')
             upd0.append("write_date=(now() at time zone 'UTC')")
             upd1.append(user)
