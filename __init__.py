@@ -31,7 +31,9 @@ import os
 os.environ['TZ'] = 'UTC' # Set the timezone...
 import time              # ... *then* import time.
 # and set base directory while we're here
-BASE_DIR = os.path.split(os.path.split((__file__))[0])[0]
+BASE_DIR = os.path.split(__file__)[0]
+ROOT_DIR = os.path.split(BASE_DIR)[0]
+CONFIG_DIR = os.path.join(BASE_DIR, 'config')
 del os
 del time
 
