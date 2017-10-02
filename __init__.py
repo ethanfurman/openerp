@@ -33,7 +33,7 @@ import time              # ... *then* import time.
 # and set base directory while we're here
 BASE_DIR = os.path.split(__file__)[0]
 ROOT_DIR = os.path.split(BASE_DIR)[0]
-CONFIG_DIR = os.path.join(BASE_DIR, 'config')
+CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
 del os
 del time
 
