@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/local/sbin/suid-python --virtualenv
 """
 If a model changes how it tracks the FIS code, e.g. moving from the
 OpenERP HR field of identification_id to using the fnx.xmlid mixin,
@@ -18,7 +18,7 @@ from scription import *
 from aenum import NamedTuple
 from collections import defaultdict
 from openerplib import get_connection, get_records
-
+import os
 
 @Command(
         table=Spec('which table to deduplicate'),
@@ -35,7 +35,7 @@ def merge(table, fields, inactive, dry_run):
     else:
         domain = []
     print('getting records...')
-    config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
+    config = OrmFile('%s/config/fnx.ini' % os.environ['VIRTUAL_ENV'], section='openerp')
     conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
     ir_model_data = conn.get_model('ir.model.data')
     target_table = conn.get_model(table)
