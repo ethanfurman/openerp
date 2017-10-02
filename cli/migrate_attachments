@@ -1,13 +1,15 @@
-#!/usr/bin/python
+#!/usr/local/sbin/suid-python --virtualenv
 from __future__ import print_function
 
 from scription import *
 from openerplib import get_connection, get_records, AttrDict
+import os
 
 @Script()
 def main():
-    config = OrmFile('/etc/openerp/fnx.ini', section='openerp')
-    module.OE = OE = AttrDict()
+    global OE
+    config = OrmFile('%s/config/openerp/fnx.ini' % os.environ['VIRTUAL_ENV'], section='openerp')
+    OE = AttrDict()
     OE.conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
 
 
