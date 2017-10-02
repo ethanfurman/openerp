@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/local/sbin/suid-python --virtualenv
 
 from __future__ import print_function
 
@@ -6,13 +6,13 @@ from antipathy import Path
 from scription import *
 from openerplib import get_connection, get_records, MissingRecord
 
+import os
 import sys
 sys.path.insert(0, '/usr/local/bin/evs')
 from hg_tools import extract_hg, find_issues
 sys.path.pop(0)
 
-config_file = Path('/etc/openerp/fnx.ini')
-
+config_file = Path('%s/config/openerp/fnx.ini' % os.environ['VIRTUAL_ENV'])
 
 @Script()
 def main():
