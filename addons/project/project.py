@@ -21,6 +21,7 @@
 
 from datetime import datetime, date, timedelta
 from lxml import etree
+from fnx import date as fnx_date
 import time
 
 from openerp import SUPERUSER_ID
@@ -738,8 +739,7 @@ class task(base_stage, osv.osv):
         for record in self.read(cr, uid, ids, fields=['id', 'date_deadline'], context=context):
             deadline = record['date_deadline']
             if deadline:
-                # warning = fnx_date(deadline).replace(delta_day=-14)
-                warning = date.strptime(DEFAULT_SERVER_DATE_FORMAT) - timedelta(14)
+                warning = fnx_date(deadline).replace(delta_day=-14)
                 result[record['id']] = warning.strftime(DEFAULT_SERVER_DATE_FORMAT)
         return result
 
