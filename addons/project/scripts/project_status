@@ -12,7 +12,7 @@ sys.path.insert(0, '/usr/local/bin/evs')
 from hg_tools import extract_hg, find_issues
 sys.path.pop(0)
 
-config_file = Path('%s/config/openerp/fnx.ini' % os.environ['VIRTUAL_ENV'])
+config_file = Path('%s/config/fnx.ini' % os.environ['VIRTUAL_ENV'])
 
 @Script()
 def main():
