@@ -29,6 +29,7 @@ from openerp import tools
 from openerp.osv import fields, osv
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 from openerp.tools.translate import _
+from openerp.exceptions import ERPError
 
 from openerp.addons.base_status.base_stage import base_stage
 from openerp.addons.resource.faces import task as Task
@@ -550,6 +551,15 @@ def Project():
         mail_alias.write(cr, uid, [vals['alias_id']], {'alias_defaults': {'project_id': project_id} }, context)
         if pv == 'followers':
             self.write(cr, uid, [project_id], {'privacy_visibility': 'followers'}, context=context)
+        # add project manager (user_id) and team (members) as followers
+        proj = self.browse(cr, SUPERUSER_ID, project_id, context=context)
+        followers = []
+        if proj.analytic_account_id:
+            followers.append(proj.analytic_account_id.user_id.id)
+        for member in proj.members:
+            followers.append(member.id)
+        if not self.message_subscribe_users(cr, SUPERUSER_ID, [project_id], followers):
+            raise ERPError('Error', 'Unable to add followers')
         return project_id
 
     def write(self, cr, uid, ids, vals, context=None):

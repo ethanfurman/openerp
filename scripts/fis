@@ -7,7 +7,7 @@ from aenum import Enum
 from collections import defaultdict
 from itertools import cycle
 from scription import *
-from VSS.BBxXlate import fisData as fd
+from VSS.BBxXlate import fisData as fd; fd.setup('/opt/falcon/config/fnx.fis.conf')
 from VSS.BBxXlate.bbxfile import TableError
 from VSS.address import cszk, normalize_address, Rise, Sift, AddrCase, NameCase, BsnsCase, name_chars
 from VSS.utils import fix_phone
@@ -20,7 +20,7 @@ import re
 import sys
 from openerplib import get_connection, get_records
 
-config = OrmFile(Path('/etc/openerp/fnx.ini'))
+config = OrmFile(Path('/opt/falcon/config/fnx.ini'))
 
 # SOURCE = Path('/var/fis/production/')
 # ARCHIVE = Path('/var/openerp/archive/production/')
