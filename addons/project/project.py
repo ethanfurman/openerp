@@ -530,6 +530,8 @@ def Project():
 
     def create(self, cr, uid, vals, context=None):
         if context is None: context = {}
+        pv = vals.pop('privacy_visibility', 'public')
+        vals['privacy_visibility'] = 'public'
         # Prevent double project creation when 'use_tasks' is checked!
         context = dict(context, project_creation_in_progress=True)
         mail_alias = self.pool.get('mail.alias')
@@ -546,6 +548,8 @@ def Project():
             vals['type'] = 'contract'
         project_id = super(project, self).create(cr, uid, vals, context)
         mail_alias.write(cr, uid, [vals['alias_id']], {'alias_defaults': {'project_id': project_id} }, context)
+        if pv == 'followers':
+            self.write(cr, uid, [project_id], {'privacy_visibility': 'followers'}, context=context)
         return project_id
 
     def write(self, cr, uid, ids, vals, context=None):
