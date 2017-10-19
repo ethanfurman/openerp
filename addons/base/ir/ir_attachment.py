@@ -65,9 +65,9 @@ class ir_attachment(osv.osv):
 
     # 'data' field implementation
     def _full_path(self, cr, uid, attachment, location, filename):
-        # location = 'file:filestore'
-        assert location.startswith('file:'), "Unhandled filestore location %s" % location
-        path_file = os.path.join(location[5:], cr.dbname, attachment.res_model, filename)
+        # location = 'file://filestore'
+        assert location.startswith('file://'), "Unhandled filestore location %s" % location
+        path_file = os.path.join(location[7:], cr.dbname, attachment.res_model, filename)
         if path_file[0] not in "/\\":
             path_file = os.path.join(tools.config['root_path'], path_file)
         return path_file

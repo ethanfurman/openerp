@@ -113,9 +113,9 @@ class ir_config_parameter(osv.osv):
                 raise ERPError('Unknown Time Zone', 'Time zone %r is not supported.' % (value, ))
         elif key == 'ir_attachment.location':
             # check if location is writable by openerp daemon
-            if ':' not in value:
-                raise ERPError('Bad Value', 'protocol missing (should be "proto:/some/path")')
-            proto, path = value.split(':', 1)
+            if '://' not in value:
+                raise ERPError('Bad Value', 'protocol missing (should be "proto:///some/path")')
+            proto, path = value.split('://', 1)
             if proto == 'file':
                 try:
                     with TemporaryFile(dir=path):
