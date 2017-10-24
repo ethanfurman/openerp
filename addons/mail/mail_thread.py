@@ -480,7 +480,7 @@ class mail_thread(osv.AbstractModel):
                     message = force_body + body
                     track_message = format_message('', tracked_values)
                     if message and track_message:
-                        message += '<br><hr>' + track_message
+                        message += '<br>--=--<br>' + track_message
                     else:
                         message = message or track_message
                     self.message_post(
