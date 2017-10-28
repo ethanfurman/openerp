@@ -19,6 +19,9 @@ import random
 import re
 import sys
 from openerplib import get_connection, get_records
+from openerplib.dates import str_to_datetime, DEFAULT_SERVER_DATETIME_FORMAT as DT_FORMAT
+from openerplib.dates import DEFAULT_SERVER_DATETIME_FORMAT as DT_FORMAT
+from openerplib.dates import DEFAULT_SERVER_DATE_FORMAT as D_FORMAT
 
 config = OrmFile(Path('/opt/falcon/config/fnx.ini'))
 
@@ -26,6 +29,33 @@ config = OrmFile(Path('/opt/falcon/config/fnx.ini'))
 # ARCHIVE = Path('/var/openerp/archive/production/')
 # ERRORS = Path('/var/openerp/archive/production/error')
 
+@Command(
+        database=('which database to check', ),
+        fis_id=('FIS ID of customer to check', ),
+        )
+def is_active_customer(database, fis_id):
+    oe = connect_oe(database)
+    customers = get_records(
+            oe, 'res.partner',
+            domain=[('xml_id','=',fis_id),('module','=','CSMS')],
+            fields=['id', 'name'],
+            )
+    if not customers:
+        error('%r not in OpenERP as a customer' % (fis_id, ))
+        return None
+    elif len(customers) > 1:
+        error('data integrity error: multiple matches for CSMS:%s' % (fis_id, ))
+        for cust in customers:
+            error('  ', cust.name)
+        return None
+    [customer] = customers
+    active = ('is not', 'is')[fis_id in get_active_salesinq_customers()]
+    echo('[CSMS:%s] %s %s active' % (fis_id, customer.name, active))
+    last_accessed = res_partner.perm_read(ids=customer.id)
+    echo('last write date of %r by %r' % (
+        str_to_datetime(last_accessed['write_date']).strftime(DT_FORMAT),
+        last_accessed['write_uid']),
+        )
 
 @Command(
         start=Spec('where to start checking', OPTION),
@@ -380,17 +410,28 @@ table_keys = {
 
 
 def update_customers(oe, contacts, state_recs, country_recs_name ):
-    context = {'mail_create_nosubscribe': True}
-    active_customers = get_active_customers()
+    context = {
+        'mail_create_nosubscribe': True,
+        'log_write_date': False,
+        }
+    active_salesinq_customers = get_active_salesinq_customers()
     customer_codes = get_xml_id_map(oe, model='res.partner', module='csms')
+    customer_last_write = dict([
+        (d.id, d.write_date)
+        for d in get_records(oe, 'res.partner', ids=customer_codes.values(), fields=['write_date'])
+        ])
     customer_ship_tos = get_xml_id_map(oe, model='res.partner', module='csmsbs')
     customers = fd.fisData('CSMS', keymatch='10%s ')
     ship_tos = fd.fisData('CSMSB', subset='10%s1')
+    two_year_cutoff = dbf.Date.today().replace(delta_year=-2).strftime(D_FORMAT)
+    print('two year cutoff:', two_year_cutoff)
+    customer_count = active_count = inactive_count = 0
     # alternate ship-tos exist in both CSMSB and CSMSS, but because
     # the final portion of the key is not specified in the schema, we can get them
     # all at once
     # process customers
     for cus_rec in customers:
+        customer_count += 1
         # rep = cus_rec[F33.salesrep]
         # rep = sales_people.get(rep, False)
         result = {'active': False}
@@ -402,7 +443,7 @@ def update_customers(oe, contacts, state_recs, country_recs_name ):
         result['module'] = 'CSMS'
         # valid customer code? active account?
         result['fis_valid'] = fis_valid = True
-        if key in active_customers or not active_customers:
+        if key in active_salesinq_customers or not active_salesinq_customers:
             # if active customers is empty, mark them all as active
             result['active'] = True
         # notify_by = Specials.get_member(cus_rec[F33.catalog_category].upper(), None)
@@ -449,9 +490,18 @@ def update_customers(oe, contacts, state_recs, country_recs_name ):
             id = customer_codes[key]
             # leave fis_valid alone
             del result['fis_valid']
+            # if active is False, double-check lack of OpenERP activity for this account
+            if not result['active']:
+                if customer_last_write[id] > two_year_cutoff:
+                    result['active'] = True
+            if result['active']:
+                active_count += 1
+            else:
+                inactive_count += 1
             print('updating with:', result, verbose=2)
-            res_partner.write(id, result)
+            res_partner.write(id, result, context=context)
         else:
+            active_count += 1
             id = res_partner.create(result, context=context)
             print('creating with:', result, verbose=2)
             customer_codes[key] = id
@@ -480,7 +530,7 @@ def update_customers(oe, contacts, state_recs, country_recs_name ):
             if contact_key in customer_codes:
                 print('updating contact with:', result, verbose=2)
                 id = customer_codes[contact_key]
-                res_partner.write(id, result)
+                res_partner.write(id, result, context=context)
             else:
                 print('creating contact with:', result, verbose=2)
                 id = res_partner.create(result, context=context)
@@ -546,11 +596,14 @@ def update_customers(oe, contacts, state_recs, country_recs_name ):
                 del result['name']
                 print('updating ship-to with:', result, verbose=2)
                 id = customer_ship_tos[ship_to_key]
-                res_partner.write(id, result)
+                res_partner.write(id, result, context=context)
             else:
                 print('creating ship-to with:', result, verbose=2)
                 id = res_partner.create(result, context=context)
                 customer_ship_tos[ship_to_key] = id
+    print('total customers processed: %5d' % customer_count)
+    print('                   active: %5d' % active_count)
+    print('                 inactive: %5d' % inactive_count)
 
 
 def update_suppliers(table, customer_codes, contacts, state_recs, country_recs_name ):
@@ -611,7 +664,7 @@ def update_suppliers(table, customer_codes, contacts, state_recs, country_recs_n
             id = customer_codes[key]
             # leave fis_valid alone
             del result['fis_valid']
-            res_partner.write(id, result)
+            res_partner.write(id, result, context=context)
         else:
             id = res_partner.create(result, context=context)
             customer_codes[key] = id
@@ -695,7 +748,7 @@ def update_vendors(table, vendor_codes, contacts, state_recs, country_recs_name 
             id = vendor_codes[key]
             # leave fis_valid alone
             del result['fis_valid']
-            res_partner.write(id, result)
+            res_partner.write(id, result, context=context)
         else:
             id = res_partner.create(result, context=context)
             vendor_codes[key] = id
@@ -779,7 +832,7 @@ def update_carriers(table, carrier_codes, contacts, state_recs, country_recs_nam
             id = carrier_codes[key]
             # leave fis_valid alone
             del result['fis_valid']
-            res_partner.write(id, result)
+            res_partner.write(id, result, context=context)
         else:
             id = res_partner.create(result, context=context)
             carrier_codes[key] = id
@@ -863,7 +916,7 @@ def update_employees(table, employee_codes, contacts, state_recs, country_recs_n
             id = employee_codes[key]
             # leave fis_valid alone
             del result['fis_valid']
-            res_partner.write(id, result)
+            res_partner.write(id, result, context=context)
         else:
             id = res_partner.create(result, context=context)
             employee_codes[key] = id
@@ -903,12 +956,12 @@ def update_products(table, item_map, default_product_codes):
             # update existing FIS record
             id = item_map[key]
             print('  updating with:', values, verbose=2)
-            product.write(id, values)
+            product.write(id, values, context=context)
         elif key in default_product_codes:
             # update existing default_code record
             id = default_product_codes[key]
             print('  updating with:', values, verbose=2)
-            product.write(id, values)
+            product.write(id, values, context=context)
         else:
             print('  creating with:', values, verbose=2)
             item_map[key] = product.create(values, context=context)
@@ -1072,7 +1125,7 @@ def get_xml_id_map(oe, model, module, ids=None):
             result[rec.name] = rec.res_id
     return result
 
-def get_active_customers():
+def get_active_salesinq_customers():
     import requests
     result = set()
     if config.network.active_customer_url:
@@ -1087,7 +1140,7 @@ def get_active_customers():
                 if fis_id.isdigit():
                     result.add(fis_id)
                     print(line)
-    echo('found %d active companies' % len(result))
+    print('found %d active companies' % len(result))
     return result
 
 class FISenum(str, Enum):
