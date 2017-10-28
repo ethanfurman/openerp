@@ -410,7 +410,7 @@
             <field name="view_type">form</field>
             <field name="view_mode">kanban,tree,form</field>
             <field name="domain">[('customer','=',1)]</field>
-            <field name="context">{'default_customer':1}</field>
+            <field name="context">{'default_customer':1, 'search_default_customer':1, 'search_default_type_company':1}</field>
             <field name="search_view_id" ref="view_res_partner_filter"/>
             <field name="filter" eval="True"/>
             <field name="help" type="html">
