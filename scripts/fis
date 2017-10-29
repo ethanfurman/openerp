@@ -1,21 +1,18 @@
-#!/usr/bin/python
+#!/usr/local/sbin/suid-python --virtualenv
 from __future__ import print_function, unicode_literals
-
-# DO NOT COMMIT - schema files no longer match Falcon's
 
 from aenum import Enum
 from collections import defaultdict
 from itertools import cycle
 from scription import *
-from VSS.BBxXlate import fisData as fd; fd.setup('/opt/falcon/config/fnx.fis.conf')
+from VSS.BBxXlate import fisData as fd
 from VSS.BBxXlate.bbxfile import TableError
 from VSS.address import cszk, normalize_address, Rise, Sift, AddrCase, NameCase, BsnsCase, name_chars
 from VSS.utils import fix_phone
-# from VSS.utils import fix_phone, fix_date, var
-# from dbf import Date
 from antipathy import Path
 import dbf
 import random
+import os
 import re
 import sys
 from openerplib import get_connection, get_records
@@ -23,11 +20,7 @@ from openerplib.dates import str_to_datetime, DEFAULT_SERVER_DATETIME_FORMAT as 
 from openerplib.dates import DEFAULT_SERVER_DATETIME_FORMAT as DT_FORMAT
 from openerplib.dates import DEFAULT_SERVER_DATE_FORMAT as D_FORMAT
 
-config = OrmFile(Path('/opt/falcon/config/fnx.ini'))
-
-# SOURCE = Path('/var/fis/production/')
-# ARCHIVE = Path('/var/openerp/archive/production/')
-# ERRORS = Path('/var/openerp/archive/production/error')
+config = OrmFile(Path('%s/config/fnx.ini' % os.environ['VIRTUAL_ENV']))
 
 @Command(
         database=('which database to check', ),
@@ -37,8 +30,11 @@ def is_active_customer(database, fis_id):
     oe = connect_oe(database)
     customers = get_records(
             oe, 'res.partner',
-            domain=[('xml_id','=',fis_id),('module','=','CSMS')],
-            fields=['id', 'name'],
+            domain=[
+                ('xml_id','=',fis_id),('module','=','CSMS'),
+                '|',('active','=',False),('active','=',True)
+                ],
+            fields=['id', 'name', 'active'],
             )
     if not customers:
         error('%r not in OpenERP as a customer' % (fis_id, ))
@@ -49,10 +45,13 @@ def is_active_customer(database, fis_id):
             error('  ', cust.name)
         return None
     [customer] = customers
-    active = ('is not', 'is')[fis_id in get_active_salesinq_customers()]
-    echo('[CSMS:%s] %s %s active' % (fis_id, customer.name, active))
+    si_active = fis_id in get_active_salesinq_customers()
+    oe_active = customer.active
+    echo('[CSMS:%s] %s' % (fis_id, customer.name))
+    echo('  active in SalesInq: %s' % (si_active, ))
+    echo('  active in OpenERP:  %s' % (oe_active, ))
     last_accessed = res_partner.perm_read(ids=customer.id)
-    echo('last write date of %r by %r' % (
+    echo('  last write date of %r by %r' % (
         str_to_datetime(last_accessed['write_date']).strftime(DT_FORMAT),
         last_accessed['write_uid']),
         )
@@ -340,8 +339,9 @@ def tables():
         employees=('', FLAG, None),
         contacts=('include contacts', FLAG, None),
         products=('', FLAG, None),
+        key=('only process key', OPTION, None)
         )
-def update_openerp(database, customers, suppliers, vendors, carriers, employees, contacts, products):
+def update_openerp(database, customers, suppliers, vendors, carriers, employees, contacts, products, key):
     "update OpenERP from FIS data"
     oe = connect_oe(database)
     partner_key = '10%s'
@@ -352,7 +352,9 @@ def update_openerp(database, customers, suppliers, vendors, carriers, employees,
     country_recs = get_records(oe, 'res.country')
     country_recs_name = dict([(r.name, r.id) for r in country_recs])
     if customers:
-        update_customers(oe, contacts, state_recs, country_recs_name)
+        update_customers(oe, contacts, state_recs, country_recs_name, key)
+    if key:
+        abort('only customers can use "key"')
     if suppliers:
         supplier_codes = get_xml_id_map(oe, model='res.partner', module='posm')
         posm = fd.fisData('POSM', keymatch=partner_key)
@@ -409,11 +411,12 @@ table_keys = {
     }
 
 
-def update_customers(oe, contacts, state_recs, country_recs_name ):
+def update_customers(oe, contacts, state_recs, country_recs_name, key):
     context = {
         'mail_create_nosubscribe': True,
         'log_write_date': False,
         }
+    print('looking for', key)
     active_salesinq_customers = get_active_salesinq_customers()
     customer_codes = get_xml_id_map(oe, model='res.partner', module='csms')
     customer_last_write = dict([
@@ -431,6 +434,8 @@ def update_customers(oe, contacts, state_recs, country_recs_name ):
     # all at once
     # process customers
     for cus_rec in customers:
+        if key and key != cus_rec[F33.code]:
+            continue
         customer_count += 1
         # rep = cus_rec[F33.salesrep]
         # rep = sales_people.get(rep, False)
@@ -487,12 +492,17 @@ def update_customers(oe, contacts, state_recs, country_recs_name ):
             # _logger.critical("Missing name for customer %s -- skipping" % (key, ))
             continue
         if key in customer_codes:
+            print('found %s in OpenERP' % key, verbose=2)
             id = customer_codes[key]
             # leave fis_valid alone
             del result['fis_valid']
             # if active is False, double-check lack of OpenERP activity for this account
             if not result['active']:
+                print('%s is inactive in SalesInq, and has an OpenERP last-write date of %s' %
+                        (key, customer_last_write[id]), verbose=2,
+                        )
                 if customer_last_write[id] > two_year_cutoff:
+                    print('  but is active in OpenERP', verbose=2)
                     result['active'] = True
             if result['active']:
                 active_count += 1
