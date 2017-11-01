@@ -100,7 +100,8 @@ class ir_attachment(osv.osv):
             dirname = os.path.dirname(full_path)
             if not os.path.isdir(dirname):
                 os.makedirs(dirname)
-            open(full_path,'wb').write(datas_value)
+            with open(full_path,'wb') as datas:
+                datas.write(datas_value)
         except IOError:
             _logger.error("_file_write writing %s",full_path)
         return file_hash, fname
