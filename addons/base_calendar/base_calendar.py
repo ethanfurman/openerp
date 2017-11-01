@@ -552,7 +552,7 @@ class calendar_attendee(osv.osv):
                     if ics_file:
                         vals['attachment_ids'] = [(0,0,{'name': 'invitation.ics',
                                                         'res_model': 'mail.message',
-                                                        'datas_fname': 'invitation.ics',
+                                                        'datas_fname': 'invitation-%s.ics' % res_obj.id,
                                                         'datas': str(ics_file).encode('base64')})]
                     self.pool.get('mail.mail').create(cr, uid, vals, context=context)
             return True
