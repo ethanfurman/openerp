@@ -135,7 +135,7 @@ class _column(object):
         cr.execute('update '+obj._table+' set '+name+'='+self._symbol_set[0]+' where id=%s', (self._symbol_set[1](value), id))
 
     def get(self, cr, obj, ids, name, user=None, offset=0, context=None, values=None):
-        raise Exception(_('undefined get method !'))
+        raise NotImplementedError(_('undefined get method !'))
 
     def search(self, cr, obj, args, name, value, offset=0, limit=None, uid=None, context=None):
         ids = obj.search(cr, uid, args+self._domain+[(name, 'ilike', value)], offset, limit, context=context)
@@ -728,7 +728,7 @@ class many2many(_column):
         _column.__init__(self, string=string, **args)
         self._obj = obj
         if rel and '.' in rel:
-            raise Exception(_('The second argument of the many2many field %s must be a SQL table !'\
+            raise ValueError(_('The second argument of the many2many field %s must be a SQL table !'\
                 'You used %s, which is not a valid SQL table name.')% (string,rel))
         self._rel = rel
         self._id1 = id1
@@ -1123,10 +1123,7 @@ class function(_column):
         _column.__init__(self, **args)
         self._obj = obj
         self._fnct = fnct
-        if fnct_inv is True:
-            self._fnct_inv = self._simple_store
-        else:
-            self._fnct_inv = fnct_inv
+        self._fnct_inv = fnct_inv
         self._arg = arg
         self._multi = multi
         if 'relation' in args:
@@ -1144,6 +1141,11 @@ class function(_column):
 
         if not fnct_search and not store:
             self.selectable = False
+
+        if fnct_inv is True:
+            if fnct_inv_arg:
+                raise ValueError('Cannot use inverse function arguments with simple_set [fnct_inv_arg=%r]' % (fnct_inv_arg, ))
+            self.simple_set = {'many2one': many2one.set, 'many2many': many2many.set, 'one2many': one2many.set}.get(type, _column.set)
 
         if store:
             if self._type != 'many2one':
@@ -1227,17 +1229,6 @@ class function(_column):
             result = __builtin__.float(value)
         return result
 
-    def preprocess(self, cr, obj, field, value=None, context=None):
-        if context is None:
-            context = {}
-        result = value
-        field_type = obj._columns[field]._type
-        if field_type == "date":
-            # cannot pass False values into the db, so replace them with None
-            if value is False:
-                result = None
-        return result
-
     def get(self, cr, obj, ids, name, uid=False, context=None, values=None):
         result = self._fnct(obj, cr, uid, ids, name, self._arg, context)
         if result is None and ids:
@@ -1254,19 +1245,10 @@ class function(_column):
     def set(self, cr, obj, id, name, value, user=None, context=None):
         if context is None:
             context = {}
-        if self._fnct_inv:
-            value = self.preprocess(cr, obj, name, value, context=context)
+        if self._fnct_inv is True:
+            self.simple_set(self, cr, obj, id, name, value, user, context)
+        elif self._fnct_inv:
             self._fnct_inv(obj, cr, user, id, name, value, self._fnct_inv_arg, context)
-
-    @staticmethod
-    def _simple_store(obj, cr, uid, id, field_name, field_value, inv_arg=None, context=None):
-        """
-        stores `field_value` into `field_name` for matching `id`
-
-        select with `fnct_inv=True`
-        """
-        cr.execute('UPDATE %s SET %s=%%s where id=%%s' % (obj._table, field_name), (field_value, id))
-        return True
 
     @classmethod
     def _as_display_name(cls, field, cr, uid, obj, value, context=None):
@@ -1625,7 +1607,10 @@ def field_to_dict(model, cr, user, field, context=None):
         if isinstance(field.store, dict):
             res['store'] = str(field.store)
         res['fnct_search'] = field._fnct_search and field._fnct_search.func_name or False
-        res['fnct_inv'] = field._fnct_inv and field._fnct_inv.func_name or False
+        if field._fnct_inv is True:
+            res['fnct_inv'] = field.set.func_name
+        elif field._fnct_inv:
+            res['fnct_inv'] = field._fnct_inv and field._fnct_inv.func_name or False
         res['fnct_inv_arg'] = field._fnct_inv_arg or False
     if isinstance(field, one2many):
         res['o2m_order'] = field._order or False
