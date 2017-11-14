@@ -793,7 +793,9 @@ class BaseModel(object):
         return _logger.warning("log() is deprecated. Please use OpenChatter notification system instead of the res.log mechanism.")
 
     def view_init(self, cr, uid, fields_list, context=None):
-        """Override this method to do specific things when a view on the object is opened."""
+        """Override this method to do specific things when a view on the object is opened.
+
+        Used mostly in wizards to check preconditions and abort if unmet"""
         pass
 
     def _field_create(self, cr, context=None):
