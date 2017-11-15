@@ -171,6 +171,7 @@ class ir_attachment(osv.osv):
         'create_date': fields.datetime('Date Created', readonly=True),
         'create_uid':  fields.many2one('res.users', 'Owner', readonly=True),
         'write_uid':  fields.many2one('res.users', 'Modified by', readonly=True),
+        'write_date':  fields.datetime('Date Modified', readonly=True),
         'company_id': fields.many2one('res.company', 'Company', change_default=True),
         'type': fields.selection( [ ('url','URL'), ('binary','Binary'), ],
                 'Type', help="Binary File or URL", required=True, change_default=True),
