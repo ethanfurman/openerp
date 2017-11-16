@@ -76,6 +76,15 @@
                                         ~separator $Miscellaneous colspan='2'
                                         @blueshield_id
                                         @marital
+                            ~page $Relations_Issues
+                                ~group
+                                    ~group $Events
+                                        @issue_ids nolabel='1'
+                                            ~tree
+                                                @reporter_id
+                                                // @description_pad widget='pad'
+                                                @description
+                                                @create_date
                             // Claims will become visible when extended by other HR modules
                             ~page @Claims $Claims groups='base.group_hr_manager' invisible='1'
                             ~page @Settings $HR_Settings groups='base.group_hr_manager'

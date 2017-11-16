@@ -77,6 +77,20 @@ class hr_employee_category(osv.osv):
     ]
 
 
+class hr_employee_issue(osv.osv):
+    _name = 'hr.employee.issue'
+    _description = 'employee issue'
+    _inherit = ['pad.common']
+
+    _columns = {
+        'employee_id': fields.many2one('hr.employee', 'Employee'),
+        'reporter_id': fields.many2one('res.users', 'Reported by'),
+        'create_date': fields.datetime('Created', readonly=True),
+        'description': fields.text('Description'),
+        'description_pad': fields.char('Description PAD', pad_content_field='description'),
+        }
+
+
 class hr_job(osv.osv):
 
     def _no_of_employee(self, cr, uid, ids, name, args, context=None):
@@ -182,6 +196,7 @@ class hr_employee(osv.osv):
         'marital': fields.selection(Marital, 'Marital Status'),
         'department_id':fields.many2one('hr.department', 'Department'),
         'partner_id': fields.many2one('res.partner', 'Partner Record'),
+        'issue_ids': fields.one2many('hr.employee.issue', 'employee_id', 'Relations Issues'),
         #'address_home_id': fields.many2one('res.partner', 'Home Address'),
         'home_phone': fields.char('Phone', size=32),
         'home_email': fields.char('Email', size=240),
