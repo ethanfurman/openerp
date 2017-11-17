@@ -79,7 +79,7 @@
                             ~page $Relations_Issues
                                 ~group
                                     ~group $Events
-                                        @issue_ids nolabel='1'
+                                        @issue_ids nolabel='1' context="{'default_employee_id': active_id}"
                                             ~tree editable='top'
                                                 @reporter_id
                                                 // @description_pad widget='pad'
