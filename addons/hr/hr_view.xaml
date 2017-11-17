@@ -80,7 +80,7 @@
                                 ~group
                                     ~group $Events
                                         @issue_ids nolabel='1'
-                                            ~tree
+                                            ~tree editable='top'
                                                 @reporter_id
                                                 // @description_pad widget='pad'
                                                 @description
