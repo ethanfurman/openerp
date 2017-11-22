@@ -56,8 +56,10 @@ class pad_common(osv.osv_memory):
         }
 
     def pad_get_content(self, cr, uid, url, context=None):
-        content = False
+        content = ''
         if url:
+            if not url.startswith('http'):
+                url = 'http' + url
             try:
                 page = urllib2.urlopen('%s/export/html'%url).read()
                 mo = re.search('<body>([\s\S]*?)</body>',page)
