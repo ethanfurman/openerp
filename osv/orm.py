@@ -2705,6 +2705,8 @@ class BaseModel(object):
                 missing_defaults.append(field)
 
         if len(missing_defaults):
+            # remove any magic column fields
+            missing_defaults = [f for f in missing_defaults if f not in MAGIC_COLUMNS]
             # override defaults with the provided values, never allow the other way around
             defaults = self.default_get(cr, uid, missing_defaults, context)
             for dv in defaults:
