@@ -90,6 +90,10 @@ class hr_employee_issue(osv.osv):
         'description_pad': fields.char('Description PAD', pad_content_field='description'),
         }
 
+    _defaults = {
+        'create_date': fields.datetime.now,
+        }
+
 
 class hr_job(osv.osv):
 
@@ -314,6 +318,18 @@ class hr_employee(osv.osv):
         for employee in self.browse(cr, uid, ids, context=context):
             resource_ids.append(employee.resource_id.id)
         return self.pool.get('resource.resource').unlink(cr, uid, resource_ids, context=context)
+
+    def onchange_issues(self, cr, uid, ids, issues, context=None):
+        res = {}
+        res['value'] = value = {'issue_ids': issues}
+        hr_issue = self.pool.get('hr.employee.issue')
+        for op, _, issue in issues:
+            if op == 0:
+                # adding a new record
+                if 'description' not in issue and 'description_pad' in issue:
+                    issue['description'] = hr_issue.pad_get_content(cr, uid, issue['description_pad'], context=context)
+                issue['create_date'] = fields.datetime.now(self, cr)
+        return res
 
     def onchange_state(self, cr, uid, ids, state_id, context=None):
         if state_id:

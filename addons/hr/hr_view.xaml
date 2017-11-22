@@ -79,12 +79,20 @@
                             ~page $Relations_Issues
                                 ~group
                                     ~group $Events
-                                        @issue_ids nolabel='1' context="{'default_employee_id': active_id}"
-                                            ~tree editable='top'
+                                        @issue_ids nolabel='1' context="{'default_employee_id': active_id}" on_change="onchange_issues(issue_ids)"
+                                            ~tree
                                                 @reporter_id
-                                                // @description_pad widget='pad'
                                                 @description
                                                 @create_date
+                                            ~form version='7.0'
+                                                ~group
+                                                    ~group
+                                                        @reporter_id required='1'
+                                                    ~group
+                                                        @create_date readonly='0' viewonly='1'
+                                                ~group
+                                                    ~label for='description_pad' $Description
+                                                    @description_pad widget='pad' nolabel='1'
                             // Claims will become visible when extended by other HR modules
                             ~page @Claims $Claims groups='base.group_hr_manager' invisible='1'
                             ~page @Settings $HR_Settings groups='base.group_hr_manager'
