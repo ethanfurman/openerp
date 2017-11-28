@@ -5103,8 +5103,8 @@ class BaseModel(object):
                                 order = [s[0] for s in sorted(order_column.selection, key=lambda e: e[1])]
                         if order is not None:
                             selection_order = 'CASE '
-                            for i, state in enumerate(order):
-                                selection_order += '''WHEN "%s"."state" = '%s' THEN %i ''' % (self._table, state, i)
+                            for i, value in enumerate(order):
+                                selection_order += '''WHEN "%s"."%s" = '%s' THEN %i ''' % (self._table, order_field, value, i)
                             selection_order += 'END '
                             inner_clause = selection_order
                         else:
@@ -5130,7 +5130,6 @@ class BaseModel(object):
                         order_by_elements.append("%s %s" % (inner_clause, order_direction))
             if order_by_elements:
                 order_by_clause = ",".join(order_by_elements)
-
         return order_by_clause and (' ORDER BY %s ' % order_by_clause) or ''
 
     def _search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False, access_rights_uid=None):
