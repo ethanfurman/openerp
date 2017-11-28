@@ -5096,11 +5096,16 @@ class BaseModel(object):
                     if order_column._classic_read:
                         order = None
                         if order_column._type == 'selection':
+                            print "selection field", order_column.string
                             sort_order = getattr(order_column, 'sort_order', None)
                             if sort_order == 'definition':
+                                print "  using definition order"
                                 order = [s[0] for s in order_column.selection]
                             elif sort_order == 'user_name':
+                                print "  using user_name order"
                                 order = [s[0] for s in sorted(order_column.selection, key=lambda e: e[1])]
+                            else:
+                                print "  using whatever order"
                         if order is not None:
                             selection_order = 'CASE '
                             for i, value in enumerate(order):
@@ -5109,6 +5114,8 @@ class BaseModel(object):
                             inner_clause = selection_order
                         else:
                             inner_clause = '"%s"."%s"' % (self._table, order_field)
+                        if order_column._type == 'selection':
+                            print 'inner clause is: ', inner_clause
                     elif order_column._type == 'many2one':
                         inner_clause = self._generate_m2o_order_by(order_field, query)
                     else:
@@ -5130,6 +5137,8 @@ class BaseModel(object):
                         order_by_elements.append("%s %s" % (inner_clause, order_direction))
             if order_by_elements:
                 order_by_clause = ",".join(order_by_elements)
+
+        print order_by_clause and (' ORDER BY %s ' % order_by_clause) or ''
         return order_by_clause and (' ORDER BY %s ' % order_by_clause) or ''
 
     def _search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False, access_rights_uid=None):
