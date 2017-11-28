@@ -239,13 +239,10 @@
                                 <div class="oe_dropdown_toggle oe_dropdown_kanban" groups="base.group_user">
                                     <span class="oe_e">í</span>
                                     <ul class="oe_dropdown_menu">
-                                        <t t-if="widget.view.is_action_enabled('edit')"><li><a type="edit">Project Settings</a></li></t>
-                                        <t t-if="widget.view.is_action_enabled('delete')"><li><a type="delete">Delete</a></li></t>
                                         <li><ul class="oe_kanban_colorpicker" data-field="color"/></li>
                                     </ul>
                                 </div>
                                 <div class="oe_kanban_content">
-
                                     <h4><field name="name"/></h4>
                                     <div class="oe_kanban_project_list">
                                         <a t-if="record.use_tasks.raw_value" name="%(act_project_project_2_project_task_all)d" type="action" style="margin-right: 10px">
