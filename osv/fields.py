@@ -612,7 +612,9 @@ class one2many(_column):
             res[id] = []
 
         domain = self._domain(obj) if callable(self._domain) else self._domain
-        order = context.get('order', self._order)
+        if 'order' in context:
+            _logger.error("'order':%r in context ignored", context['order'])
+        order = self._order
         ids2 = obj.pool.get(self._obj).search(cr, user, domain + [(self._fields_id, 'in', ids)], limit=self._limit, order=order, context=context)
         for r in obj.pool.get(self._obj)._read_flat(cr, user, ids2, [self._fields_id], order=order, context=context, load='_classic_write'):
             if r[self._fields_id] in res:
@@ -722,7 +724,7 @@ class many2many(_column):
     _prefetch = False
     _type = 'many2many'
 
-    def __init__(self, obj, rel=None, id1=None, id2=None, string='unknown', limit=None, **args):
+    def __init__(self, obj, rel=None, id1=None, id2=None, string='unknown', limit=None, order=None, **args):
         """
         """
         _column.__init__(self, string=string, **args)
@@ -734,6 +736,7 @@ class many2many(_column):
         self._id1 = id1
         self._id2 = id2
         self._limit = limit
+        self._order = order
 
     def _sql_names(self, source_model):
         """Return the SQL names defining the structure of the m2m relationship table
@@ -775,6 +778,9 @@ class many2many(_column):
     def get(self, cr, model, ids, name, user=None, offset=0, context=None, values=None):
         if context is None:
             context = {}
+        if self._context:
+            context = context.copy()
+        context.update(self._context)
         if not values:
             values = {}
         res = {}
@@ -800,7 +806,13 @@ class many2many(_column):
         if where_c:
             where_c = ' AND ' + where_c
 
-        order_by = ' ORDER BY "%s".%s' %(obj._table, obj._order.split(',')[0])
+        # use all fields in _order to sort results; based on patch by funkring
+        # (https://github.com/odoo/odoo/issues/531)
+        order = self._order or obj._order
+        order_by = []
+        for t in order.split(','):
+            order_by.append('"%s".%s' % (obj._table, t.strip()))
+        order_by = " ORDER BY %s" % ",".join(order_by)
 
         limit_str = ''
         if self._limit is not None:
@@ -823,10 +835,13 @@ class many2many(_column):
         return res
 
     def set(self, cr, model, id, name, values, user=None, context=None):
-        if context is None:
-            context = {}
         if not values:
             return
+        if context is None:
+            context = {}
+        if self._context:
+            context = context.copy()
+        context.update(self._context)
         rel, id1, id2 = self._sql_names(model)
         obj = model.pool.get(self._obj)
         for act in values:
