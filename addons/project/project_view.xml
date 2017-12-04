@@ -422,7 +422,7 @@
                             <separator string="Parent Tasks"/>
                             <field name="parent_ids"/>
                             <separator string="Delegated tasks"/>
-                            <field name="child_ids">
+                            <field name="child_ids" context="{'default_project_id': project_id}">
                                 <tree string="Delegated tasks">
                                     <field name="name"/>
                                     <field name="user_id"/>
