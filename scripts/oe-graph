@@ -29,46 +29,46 @@ def setup():
 
 
 @Command(
-    modules=('module', ),
+    modules=('module', MULTI),
+    output=('where graph image will be saved', OPTION),
     prog=('program to create graph', OPTION),
-    filename=('where graph image will be saved', ),
     )
-def ancestors(filename, prog='dot', *modules):
+def ancestors(modules, output, prog='dot'):
     "show modules that depend on MODULE"
     G = DiGraph()
     get_ancestors(G, *modules)
-    draw_graph(G, filename, prog=prog)
+    draw_graph(G, output, prog=prog)
 
 
 @Command(
     modules=('module', ),
+    output=('where graph image will be saved', OPTION),
     prog=('program to create graph', OPTION),
-    filename=('where graph image will be saved', ),
     )
-def centered_on(filename, prog='dot', *modules):
+def centered_on(modules, output, prog='dot'):
     G = DiGraph()
     get_ancestors(G, *modules)
     get_dependents(G, *modules)
-    draw_graph(G, filename, prog=prog)
+    draw_graph(G, output, prog=prog)
 
 
 @Command(
     modules=('module', ),
+    output=('where graph image will be saved', OPTION),
     prog=('program to create graph', OPTION),
-    filename=('where graph image will be saved', ),
     )
-def requires(filename, prog='dot', *modules):
+def requires(modules, output, prog='dot'):
     "show dependencies for modules"
     G = DiGraph()
     get_dependents(G, *modules)
-    draw_graph(G, filename, prog=prog)
+    draw_graph(G, output, prog=prog)
 
 
 @Command(
+    output=('where graph image will be saved', OPTION),
     prog=('program to create graph', OPTION),
-    filename=('where graph image will be saved', ),
     )
-def installed_modules(filename, prog='dot'):
+def installed_modules(output, prog='dot'):
     "create dependency graph for all installed modules"
     modules = get_installed_modules()
     print('installed modules are: %r' % modules)
@@ -77,7 +77,7 @@ def installed_modules(filename, prog='dot'):
         deps = get_info(m)['depends']
         for d in deps:
             G.add_edge(m, d)
-    draw_graph(G, filename, prog=prog)
+    draw_graph(G, output, prog=prog)
 
 
 def get_ancestors(G, *modules):
@@ -135,7 +135,12 @@ def draw_graph(G, filename, prog):
     # any
     A.graph_attr['concentrate'] = True
     A.graph_attr['pad'] = 0.25
-    A.draw(filename, prog='dot')
+    graph = A.draw(prog=prog, format='png')
+    if filename is not None:
+        with open(filename, 'wb') as graph_file:
+            graph_file.write()
+    else:
+        echo(graph, end='')
 
 def get_installed_modules():
     "returns names of all installed modules"
