@@ -30,7 +30,7 @@ def ancestors(modules, output, prog='dot'):
     "show modules that depend on MODULE"
     G = DiGraph()
     get_ancestors(G, *modules)
-    draw_graph(G, output, prog=prog)
+    draw_graph(G, output, prog=prog, modules=modules)
 
 
 @Command(
@@ -42,7 +42,7 @@ def centered_on(modules, output, prog='dot'):
     G = DiGraph()
     get_ancestors(G, *modules)
     get_dependents(G, *modules)
-    draw_graph(G, output, prog=prog)
+    draw_graph(G, output, prog=prog, modules=modules)
 
 
 @Command(
@@ -54,7 +54,7 @@ def requires(modules, output, prog='dot'):
     "show dependencies for modules"
     G = DiGraph()
     get_dependents(G, *modules)
-    draw_graph(G, output, prog=prog)
+    draw_graph(G, output, prog=prog, modules=modules)
 
 
 @Command(
@@ -77,7 +77,7 @@ def installed_modules(output, prog='dot', list=False):
 
 
 def get_ancestors(G, *modules):
-    modules = set(modules)
+    modules_to_check = set(modules)
     possible_modules = set(get_installed_modules())
     does_not_exist = [m for m in modules if m not in possible_modules]
     if does_not_exist:
@@ -91,11 +91,14 @@ def get_ancestors(G, *modules):
     while adding:
         adding = False
         for p, d in deps.items():
-            for m in list(modules):
+            for m in list(modules_to_check):
                 if m in d and (p, m) not in G.edges:
-                    print('adding %s -> %s' % (p, m))
-                    G.add_edge(p, m)
-                    modules.add(p)
+                    print('ancestor:  %s -> %s' % (p, m))
+                    kwds = {}
+                    if p in modules or m in modules:
+                        kwds['color'] = 'green'
+                    G.add_edge(p, m, **kwds)
+                    modules_to_check.add(p)
                     adding = True
 
 def get_dependents(G, *modules):
@@ -104,21 +107,30 @@ def get_dependents(G, *modules):
     while True:
         if not modules_to_check:
             break
-        print('all_modules: %r' % sorted(all_modules))
+        print('all_modules: %r' % sorted(all_modules), verbose=2)
         print('checking:    %r' % sorted(modules_to_check), verbose=2)
         for m in list(modules_to_check):
             all_modules.add(m)
             modules_to_check.remove(m)
             deps = get_info(m)['depends']
             for d in deps:
+                print('dependent:  %r -> %r' % (m, d))
                 if d not in all_modules:
                     modules_to_check.add(d)
-                G.add_edge(m, d)
+                kwds = {}
+                if m in modules or d in modules:
+                    kwds['color'] = 'orange'
+                G.add_edge(m, d, **kwds)
 
-def draw_graph(G, filename, prog):
+def draw_graph(G, filename, prog, modules=()):
     # pos = nx.drawing.nx_agraph.pygraphviz_layout(G)
     # G.layout(prog='neato')
     # G.draw(filename)
+    for m in modules:
+        node = G.node[m]
+        node['style'] = 'filled'
+        node['fontsize'] = 14
+        node['shape'] = 'box'
     A = nx.drawing.nx_agraph.to_agraph(G)
     if prog == 'dot':
         # dot only
@@ -127,6 +139,7 @@ def draw_graph(G, filename, prog):
     # any
     A.graph_attr['concentrate'] = True
     A.graph_attr['pad'] = 0.25
+    A.graph_attr['fontsize'] = 10
     graph = A.draw(prog=prog, format='png')
     if filename is not None:
         echo('opening %r' % filename)
