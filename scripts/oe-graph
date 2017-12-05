@@ -1,4 +1,4 @@
-#!/usr/local/bin/suid-python --virtualenv
+#!/usr/local/sbin/suid-python --virtualenv
 """
 Produce graphs for various bits of OpenERP
 """
@@ -7,8 +7,8 @@ from __future__ import print_function
 from scription import *
 from antipathy import Path
 from networkx import DiGraph
-from openerplib import get_connection, get_records
 import networkx as nx
+import psycopg2
 
 
 @Script()
@@ -18,14 +18,7 @@ def setup():
     if VIRTUAL_ENV is None:
         VIRTUAL_ENV = Path(os.environ['VIRTUAL_ENV'])
     if CONFIG is None:
-        CONFIG = OrmFile(VIRTUAL_ENV/'config/fnx.ini')
-    if OE is None:
-        OE = get_connection(
-                database=CONFIG.openerp.db,
-                login=CONFIG.openerp.user,
-                password=CONFIG.openerp.pw,
-                hostname=CONFIG.openerp.host,
-                )
+        CONFIG = OrmFile(VIRTUAL_ENV/'config/server.conf', plain=True)
 
 
 @Command(
@@ -41,7 +34,7 @@ def ancestors(modules, output, prog='dot'):
 
 
 @Command(
-    modules=('module', ),
+    modules=('module', MULTI),
     output=('where graph image will be saved', OPTION),
     prog=('program to create graph', OPTION),
     )
@@ -53,7 +46,7 @@ def centered_on(modules, output, prog='dot'):
 
 
 @Command(
-    modules=('module', ),
+    modules=('module', MULTI),
     output=('where graph image will be saved', OPTION),
     prog=('program to create graph', OPTION),
     )
@@ -67,11 +60,14 @@ def requires(modules, output, prog='dot'):
 @Command(
     output=('where graph image will be saved', OPTION),
     prog=('program to create graph', OPTION),
+    list=('print names, not graph', FLAG),
     )
-def installed_modules(output, prog='dot'):
+def installed_modules(output, prog='dot', list=False):
     "create dependency graph for all installed modules"
     modules = get_installed_modules()
-    print('installed modules are: %r' % modules)
+    print('installed modules are: %r' % modules, verbose=not list)
+    if list:
+        return
     G = DiGraph()
     for m in modules:
         deps = get_info(m)['depends']
@@ -85,7 +81,7 @@ def get_ancestors(G, *modules):
     possible_modules = set(get_installed_modules())
     does_not_exist = [m for m in modules if m not in possible_modules]
     if does_not_exist:
-        abort('module(s) %s do(es) not exist' % ', '.join(does_not_exist))
+        return
     # create dependency mapping
     deps = {}
     for m in possible_modules:
@@ -113,11 +109,7 @@ def get_dependents(G, *modules):
         for m in list(modules_to_check):
             all_modules.add(m)
             modules_to_check.remove(m)
-            try:
-                deps = get_info(m)['depends']
-            except KeyError:
-                error('%s has no "depends" key' % (m, ))
-                continue
+            deps = get_info(m)['depends']
             for d in deps:
                 if d not in all_modules:
                     modules_to_check.add(d)
@@ -137,22 +129,28 @@ def draw_graph(G, filename, prog):
     A.graph_attr['pad'] = 0.25
     graph = A.draw(prog=prog, format='png')
     if filename is not None:
+        echo('opening %r' % filename)
         with open(filename, 'wb') as graph_file:
-            graph_file.write()
+            graph_file.write(graph)
     else:
         echo(graph, end='')
 
 def get_installed_modules():
     "returns names of all installed modules"
-    return [
-        r.name
-        for r in
-        get_records(
-            OE,
-            'ir.module.module',
-            domain=[('state','=','installed')],
-            fields=['id', 'name'],
-            )]
+    conn = psycopg2.connect(
+            dbname=CONFIG.options.db_name,
+            user=CONFIG.options.db_user,
+            password=CONFIG.options.db_password,
+            host=CONFIG.options.db_host,
+            port=CONFIG.options.db_port,
+            )
+    try:
+        cur = conn.cursor()
+        cur.execute("select name from ir_module_module where state='installed' or state='to upgrade';")
+        records = cur.fetchall()
+        return sorted([r[0] for r in records])
+    finally:
+        conn.close()
 
 def get_info(module):
     "returns __openerp__ dictionary of module (taken from OpenERP 7.0://modules/module.py)"
