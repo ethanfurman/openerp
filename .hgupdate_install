@@ -1,2 +1,2 @@
 addons/project/scripts/project_status
-scripts/oe-graph
+scripts/oe-graph --no-suid
