@@ -29,6 +29,8 @@ def setup():
 def ancestors(modules, output, prog='dot'):
     "show modules that depend on MODULE"
     G = DiGraph()
+    for m in modules:
+        G.add_node('m')
     get_ancestors(G, *modules)
     draw_graph(G, output, prog=prog, modules=modules)
 
@@ -40,6 +42,8 @@ def ancestors(modules, output, prog='dot'):
     )
 def centered_on(modules, output, prog='dot'):
     G = DiGraph()
+    for m in modules:
+        G.add_node(m)
     get_ancestors(G, *modules)
     get_dependents(G, *modules)
     draw_graph(G, output, prog=prog, modules=modules)
@@ -53,6 +57,8 @@ def centered_on(modules, output, prog='dot'):
 def requires(modules, output, prog='dot'):
     "show dependencies for modules"
     G = DiGraph()
+    for m in modules:
+        G.add_node('m')
     get_dependents(G, *modules)
     draw_graph(G, output, prog=prog, modules=modules)
 
@@ -129,7 +135,6 @@ def draw_graph(G, filename, prog, modules=()):
     for m in modules:
         node = G.node[m]
         node['style'] = 'filled'
-        node['fontsize'] = 14
         node['shape'] = 'box'
     A = nx.drawing.nx_agraph.to_agraph(G)
     if prog == 'dot':
@@ -168,7 +173,9 @@ def get_installed_modules():
 def get_info(module):
     "returns __openerp__ dictionary of module (taken from OpenERP 7.0://modules/module.py)"
     terp_file = VIRTUAL_ENV/'openerp/addons'/module/'__openerp__.py'
-    info = {}
+    info = {
+        'depends': [],
+        }
     if terp_file.exists():
         # default values for description
         info = {
