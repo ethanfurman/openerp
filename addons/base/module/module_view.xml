@@ -122,6 +122,10 @@
                             <label for="reports_by_module" string="Defined Reports"/>
                             <field name="reports_by_module"/>
                         </page>
+                        <page string="Dependency Graph">
+                            <button name="button_graph" string="Refresh Graph" type="object"/>
+                            <field name="dependency_graph" widget="image"/>
+                        </page>
                     </notebook>
                     </sheet>
                 </form>

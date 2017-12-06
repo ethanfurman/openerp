@@ -44,6 +44,7 @@ from openerp.modules.db import create_categories
 from openerp.tools.parse_version import parse_version
 from openerp.tools.translate import _
 from openerp.osv import fields, osv, orm
+from scription import Execute, ExecuteError
 
 _logger = logging.getLogger(__name__)
 
@@ -241,6 +242,36 @@ class module(osv.osv):
                     image_file.close()
         return res
 
+    def _get_graph(self, cr, uid, ids, field_name=None, arg=None, context=None):
+        res = dict.fromkeys(ids, '')
+        for rec in self.read(cr, uid, ids, fields=['id', 'name'], context=context):
+            fh, fn = tempfile.mkstemp(suffix='.png')
+            os.close(fh)
+            command = "%s centered-on -m %s -o %s" % (
+                        '/opt/bin/oe-graph',
+                        rec['name'],
+                        fn,
+                        )
+            _logger.info('running graph command: %r', command)
+            job = Execute(command, timeout=90, pty=True)
+            if job.returncode or job.stderr:
+                print '-' * 50
+                print job.stdout
+                print job.stderr
+                print '-' * 50
+                _logger.error(
+                        'failure while calculating dependency graph for %s [return code: %r]',
+                        rec['name'],
+                        job.returncode,
+                        )
+                if job.stderr:
+                    _logger.error('%s', job.stderr)
+                raise ExecuteError(job.stderr)
+            with open(fn, 'rb') as graph:
+                res[rec['id']] = graph.read()
+        return res
+
+
     _columns = {
         'name': fields.char("Technical Name", size=128, readonly=True, required=True, select=True),
         'category_id': fields.many2one('ir.module.category', 'Category', readonly=True, select=True),
@@ -292,6 +323,14 @@ class module(osv.osv):
         'application': fields.boolean('Application', readonly=True),
         'icon': fields.char('Icon URL', size=128),
         'icon_image': fields.function(_get_icon_image, string='Icon', type="binary"),
+        'dependency_graph': fields.function(
+            _get_graph,
+            string='Dependency Graph',
+            type='binary',
+            store={
+                'ir.module.module': (lambda s, c, u, ids, ctx: ids, [], 10),
+                }
+            ),
     }
 
     _defaults = {
@@ -384,6 +423,12 @@ class module(osv.osv):
                 self.write(cr, uid, [module.id], {'state': newstate, 'demo': mdemo})
             demo = demo or mdemo
         return demo
+
+    def button_graph(self, cr, uid, ids, context=None):
+        # get the current graph
+        res = self._get_graph(cr, uid, ids, context=context)
+        [id] = ids
+        return self.write(cr, uid, id, {'dependency_graph': res.pop(id)}, context=context)
 
     def button_install(self, cr, uid, ids, context=None):
 
