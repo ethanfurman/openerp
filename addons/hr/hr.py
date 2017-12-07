@@ -80,7 +80,7 @@ class hr_employee_category(osv.osv):
 class hr_employee_issue(osv.osv):
     _name = 'hr.employee.issue'
     _description = 'employee issue'
-    _inherit = ['pad.common']
+    _inherit = []
 
     _columns = {
         'employee_id': fields.many2one('hr.employee', 'Employee'),

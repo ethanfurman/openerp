@@ -91,8 +91,8 @@
                                                     ~group
                                                         @create_date readonly='0' viewonly='1'
                                                 ~group
-                                                    ~label for='description_pad' $Description
-                                                    @description_pad widget='pad' nolabel='1'
+                                                    ~label for='description' $Description
+                                                    @description nolabel='1'
                             // Claims will become visible when extended by other HR modules
                             ~page @Claims $Claims groups='base.group_hr_manager' invisible='1'
                             ~page @Settings $HR_Settings groups='base.group_hr_manager'
