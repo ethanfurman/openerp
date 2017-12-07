@@ -2,16 +2,6 @@
 <openerp>
     <data>
 
-        <!-- After installation of the module, open the related menu -->
-        <record id="action_client_warehouse_menu" model="ir.actions.client">
-            <field name="name">Open Warehouse Menu</field>
-            <field name="tag">reload</field>
-            <field name="params" eval="{'menu_id': ref('menu_stock_root')}"/>
-        </record>
-        <record id="base.open_menu" model="ir.actions.todo">
-            <field name="action_id" ref="action_client_warehouse_menu"/>
-            <field name="state">open</field>
-        </record>
         <record id="view_stock_config_settings" model="ir.ui.view">
             <field name="name">stock settings</field>
             <field name="model">stock.config.settings</field>
@@ -38,7 +28,7 @@
                                 <field name="group_stock_tracking_lot" class="oe_inline"/>
                                 <label for="group_stock_tracking_lot"/>
                             </div>
-                        </div>    
+                        </div>
                     </group>
                     <separator string="Accounting"/>
                     <group>
@@ -60,7 +50,7 @@
                         <div>
                             <div>
                                 <field name="group_stock_multiple_locations" class="oe_inline"/>
-                                <label for="group_stock_multiple_locations"/>  
+                                <label for="group_stock_multiple_locations"/>
                             </div>
                             <div>
                                 <field name="module_stock_location" class="oe_inline"/>
