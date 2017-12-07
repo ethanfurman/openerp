@@ -789,7 +789,9 @@ Launch Manually Once: after having been launched manually, it sets automatically
 
         # Load action
         act_type = self.pool.get('ir.actions.actions').read(cr, uid, wizard.action_id.id, ['type'], context=context)
-
+        if not act_type:
+            _logger.error('wizard.action_id of %r has no linked action', wizard.action_id.id)
+            raise ValueError('Missing action in ir.actions.todo wizard %r' % wizard.action_id.id)
         res = self.pool.get(act_type['type']).read(cr, uid, wizard.action_id.id, [], context=context)
         if act_type['type'] != 'ir.actions.act_window':
             return res
