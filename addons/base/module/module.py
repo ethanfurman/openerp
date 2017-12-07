@@ -252,7 +252,7 @@ class module(osv.osv):
                         rec['name'],
                         fn,
                         )
-            _logger.info('running graph command: %r', command)
+            _logger.debug('running graph command: %r', command)
             job = Execute(command, timeout=90, pty=True)
             if job.returncode or job.stderr:
                 print '-' * 50
@@ -270,7 +270,6 @@ class module(osv.osv):
             with open(fn, 'rb') as graph:
                 res[rec['id']] = graph.read()
         return res
-
 
     _columns = {
         'name': fields.char("Technical Name", size=128, readonly=True, required=True, select=True),
@@ -327,9 +326,7 @@ class module(osv.osv):
             _get_graph,
             string='Dependency Graph',
             type='binary',
-            store={
-                'ir.module.module': (lambda s, c, u, ids, ctx: ids, [], 10),
-                }
+            store=False
             ),
     }
 
