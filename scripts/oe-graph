@@ -113,12 +113,14 @@ def get_dependents(G, *modules):
     while True:
         if not modules_to_check:
             break
-        print('all_modules: %r' % sorted(all_modules), verbose=2)
-        print('checking:    %r' % sorted(modules_to_check), verbose=2)
+        print('all_modules: %r' % sorted(all_modules), verbose=3)
+        print('checking:    %r' % sorted(modules_to_check), verbose=3)
         for m in list(modules_to_check):
+            print('              %r' % m, end='', verbose=3)
             all_modules.add(m)
             modules_to_check.remove(m)
             deps = get_info(m)['depends']
+            print(' -> %r' % deps, verbose=3)
             for d in deps:
                 print('dependent:  %r -> %r' % (m, d))
                 if d not in all_modules:
@@ -136,6 +138,20 @@ def draw_graph(G, filename, prog, modules=()):
         node = G.node[m]
         node['style'] = 'filled'
         node['shape'] = 'box'
+    # draw any not-installed modules in red
+    installed_modules = get_installed_modules()
+    missing = set()
+    for n in G.nodes:
+        print('\nchecking node: %r...' % (n, ), end='', verbose=2)
+        if n not in installed_modules:
+            print('colorizing %s' % n, verbose=2)
+            G.node[n]['color'] = 'red'
+            missing.add(n)
+    # draw arrows to missing modules in red
+    for s, d in G.edges:
+        echo(s, d)
+        if s in missing:
+            G.edges[s, d]['color'] = 'red'
     A = nx.drawing.nx_agraph.to_agraph(G)
     if prog == 'dot':
         # dot only
