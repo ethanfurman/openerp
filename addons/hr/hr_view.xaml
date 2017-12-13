@@ -76,7 +76,7 @@
                                         ~separator $Miscellaneous colspan='2'
                                         @blueshield_id
                                         @marital
-                            ~page $Relations_Issues
+                            ~page $Relations_Issues groups='base.group_hr_manager'
                                 ~group
                                     ~group $Events
                                         @issue_ids nolabel='1' context="{'default_employee_id': active_id}" on_change="onchange_issues(issue_ids)"
