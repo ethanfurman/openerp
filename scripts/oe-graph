@@ -24,27 +24,29 @@ def setup():
 @Command(
     modules=('module', MULTI),
     output=('where graph image will be saved', OPTION),
+    complete=('include uninstalled ancestors', FLAG),
     prog=('program to create graph', OPTION),
     )
-def ancestors(modules, output, prog='dot'):
+def ancestors(modules, output, complete, prog='dot'):
     "show modules that depend on MODULE"
     G = DiGraph()
     for m in modules:
         G.add_node('m')
-    get_ancestors(G, *modules)
+    get_ancestors(G, complete, *modules)
     draw_graph(G, output, prog=prog, modules=modules)
 
 
 @Command(
     modules=('module', MULTI),
     output=('where graph image will be saved', OPTION),
+    complete=('include uninstalled ancestors', FLAG),
     prog=('program to create graph', OPTION),
     )
-def centered_on(modules, output, prog='dot'):
+def centered_on(modules, output, complete, prog='dot'):
     G = DiGraph()
     for m in modules:
         G.add_node(m)
-    get_ancestors(G, *modules)
+    get_ancestors(G, complete, *modules)
     get_dependents(G, *modules)
     draw_graph(G, output, prog=prog, modules=modules)
 
@@ -82,9 +84,19 @@ def installed_modules(output, prog='dot', list=False):
     draw_graph(G, output, prog=prog)
 
 
-def get_ancestors(G, *modules):
+def get_ancestors(G, complete, *modules):
     modules_to_check = set(modules)
-    possible_modules = set(get_installed_modules())
+    if complete:
+        possible_modules = set()
+        for d in (VIRTUAL_ENV/'openerp/addons').glob('*'):
+            print('checking "%s"...' % d, verbose=3)
+            if d.exists('__openerp__.py'):
+                print('good, adding', verbose=3)
+                possible_modules.add(d.filename)
+            else:
+                print('skipping', verbose=3)
+    else:
+        possible_modules = set(get_installed_modules())
     does_not_exist = [m for m in modules if m not in possible_modules]
     if does_not_exist:
         return
