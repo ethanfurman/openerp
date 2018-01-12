@@ -40,7 +40,6 @@
                     <field name="type" invisible="1"/>
                     <field name="variants" groups="product.group_product_variant"/>
                     <field name="uom_id" string="Unit of Measure" groups="product.group_uom"/>
-                    <field name="qty_available"/>
                     <field name="virtual_available"/>
                     <field name="lst_price"/>
                     <field name="price" invisible="not context.get('pricelist',False)"/>
@@ -692,7 +691,7 @@
                                 <field digits="(14, 3)" name="volume" attrs="{'readonly':[('type','=','service')]}"/>
                                 <field digits="(14, 3)" name="weight" attrs="{'readonly':[('type','=','service')]}"/>
                                 <field digits="(14, 3)" name="weight_net" attrs="{'readonly':[('type','=','service')]}"/>
-                            </group> 
+                            </group>
 
                             <group name="status" string="Status">
                                 <field name="categ_id"/>
