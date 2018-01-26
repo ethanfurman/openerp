@@ -1713,6 +1713,9 @@ class SelectionEnum(str, Enum):
     def __str__(self):
         return str(self.db)
 
+    def __repr__(self):
+        return '<%s.%s: %s>' % (self.__class__.__name__, self._name_, ', '.join(self._value_[1:]))
+
     def __ge__(self, other):
         if self.__class__ is other.__class__:
             return self._count >= other._count
@@ -1761,7 +1764,7 @@ class SelectionEnum(str, Enum):
         for member in cls:
             if member.db == text:
                 return member
-            elif member.db == default:
+            elif default == _raise_lookup and member.db == default:
                 default = member
         else:
             if default is not _raise_lookup:
