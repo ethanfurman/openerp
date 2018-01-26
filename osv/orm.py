@@ -1729,6 +1729,10 @@ class BaseModel(object):
         for key in context or {}:
             if key.startswith('default_') and (key[8:] in fields_list):
                 defaults[key[8:]] = context[key]
+        # finally, convert any SelectionEnum values to their db equivalents
+        for k, v in defaults.items():
+            if isinstance(v, SelectionEnum):
+                defaults[k] = v.db
         return defaults
 
     def fields_get_keys(self, cr, user, context=None):
