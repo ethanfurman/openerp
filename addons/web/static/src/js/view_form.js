@@ -5490,6 +5490,7 @@ instance.web.form.FieldStatus = instance.web.form.AbstractField.extend({
         this._super(field_manager, node);
         this.options.clickable = this.options.clickable || (this.node.attrs || {}).clickable || false;
         this.options.visible = this.options.visible || (this.node.attrs || {}).statusbar_visible || false;
+        this.options.clear_visible = (this.node.attrs || {}).statusbar_invisible || false;
         this.set({value: false});
         this.selection = [];
         this.set("selection", []);
@@ -5565,11 +5566,18 @@ instance.web.form.FieldStatus = instance.web.form.AbstractField.extend({
                 // statusbar_visible attribute of the field. For example:
                 // statusbar_visible="draft,open".
                 var select = this.field.selection;
+                var invisible = false;
                 for(var i=0; i < select.length; i++) {
                     var key = select[i][0];
                     if(key == this.get('value') || !this.options.visible || this.options.visible.indexOf(key) != -1) {
                         selection.push(select[i]);
                     }
+                    if(key == this.get('value') && this.options.clear_visible.indexOf(key) != -1) {
+                        invisible = true;
+                    }
+                }
+                if(invisible === true) {
+                    selection = [];
                 }
                 return $.when();
             }
