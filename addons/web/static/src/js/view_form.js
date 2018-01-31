@@ -5490,7 +5490,7 @@ instance.web.form.FieldStatus = instance.web.form.AbstractField.extend({
         this._super(field_manager, node);
         this.options.clickable = this.options.clickable || (this.node.attrs || {}).clickable || false;
         this.options.visible = this.options.visible || (this.node.attrs || {}).statusbar_visible || false;
-        this.options.clear_visible = (this.node.attrs || {}).statusbar_invisible || false;
+        this.options.clear_visible = (this.node.attrs || {}).statusbar_invisible || [];
         this.set({value: false});
         this.selection = [];
         this.set("selection", []);
