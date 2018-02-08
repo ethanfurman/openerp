@@ -74,7 +74,7 @@
                                             domain="[('category_id','in',[%(hr.temp_agency)d])]"
                                             )
                                         ~separator $Miscellaneous colspan='2'
-                                        @blueshield_id
+                                        @blueshield_id $Blue_Cross_No
                                         @marital
                             ~page $Employee_Relations groups='base.group_hr_manager'
                                 ~group
