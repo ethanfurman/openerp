@@ -619,7 +619,11 @@ class tracker(object):
     thread_local_storage.indent = 0
     model = False
 
-    def __init__(self, table=None, recurse=True):
+    def __init__(self, table=None, recurse=True, compress=False):
+        # table -> restrict to certain tables
+        # recurse -> show recursive calls to function
+        # compress -> show short arguments only (only include dicts with less than 7 entries)
+        self.compress = compress
         self.recurse = recurse
         self._seen = defaultdict(int)
         if table is None:
@@ -641,10 +645,10 @@ class tracker(object):
                 indent = ' . ' * cls.thread_local_storage.indent
                 new_args = []
                 for a in args:
-                    if not isinstance(a, dict) or len(a) < 7:
-                        new_args.append(a)
-                    else:
+                    if self.compress and isinstance(a, dict) and len(a) >= 7:
                         new_args.append('{...}')
+                    else:
+                        new_args.append(a)
                 print(
                     '\n{indent}{cls}.{func}(\n'
                     '{indent}    cr,\n'
@@ -1293,4 +1297,3 @@ class Period(timedelta, Enum):
         return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
 
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
