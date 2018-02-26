@@ -51,6 +51,7 @@
                                         @otherid
                                         ~separator $Contact colspan='2'
                                         @home_phone
+                                        @home_mobile
                                         @home_email
                                         ~label $Address for='home_street'
                                         ~div

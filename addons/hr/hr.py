@@ -203,6 +203,7 @@ class hr_employee(osv.osv):
         'issue_ids': fields.one2many('hr.employee.issue', 'employee_id', 'Relations Issues'),
         #'address_home_id': fields.many2one('res.partner', 'Home Address'),
         'home_phone': fields.char('Phone', size=32),
+        'home_mobile': fields.char('Mobile', size=32),
         'home_email': fields.char('Email', size=240),
         'home_street': fields.char('Street', size=128),
         'home_street2': fields.char('Street2', size=128),
