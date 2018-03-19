@@ -89,7 +89,7 @@ class Multicorn(object):
 
     def worker_pop(self, pid):
         if pid in self.workers:
-            _logger.debug("Worker (%s) unregistered",pid)
+            _logger.debug("Discarding worker (%s)",pid)
             try:
                 self.workers_http.pop(pid,None)
                 self.workers_cron.pop(pid,None)
@@ -132,7 +132,7 @@ class Multicorn(object):
         now = time.time()
         for (pid, worker) in self.workers.items():
             if now - worker.watchdog_time >= worker.watchdog_timeout:
-                _logger.error("Worker (%s) timeout", pid)
+                _logger.error("Worker timeout (%s)", pid)
                 self.worker_kill(pid, signal.SIGKILL)
 
     def process_spawn(self):
@@ -256,7 +256,7 @@ class Worker(object):
             _logger.info("Worker (%d) max request (%s) reached.", self.pid, self.request_count)
             self.alive = False
         # Reset the worker if it consumes too much memory (e.g. caused by a memory leak).
-        rss, vms = psutil.Process(os.getpid()).get_memory_info()
+        rss, vms = psutil.Process(os.getpid()).memory_info()[:2]
         if vms > config['limit_memory_soft']:
             _logger.info('Worker (%d) virtual memory limit (%s) reached.', self.pid, vms)
             self.alive = False # Commit suicide after the request.
@@ -387,7 +387,7 @@ class WorkerCron(Worker):
             self.setproctitle(db_name)
             if rpc_request_flag:
                 start_time = time.time()
-                start_rss, start_vms = psutil.Process(os.getpid()).get_memory_info()
+                start_rss, start_vms = psutil.Process(os.getpid()).memory_info()[:2]
             while True:
                 # acquired = openerp.addons.base.ir.ir_cron.ir_cron._acquire_job(db_name)
                 # TODO why isnt openerp.addons.base defined ?
@@ -401,7 +401,7 @@ class WorkerCron(Worker):
                 openerp.sql_db.close_db(db_name)
             if rpc_request_flag:
                 end_time = time.time()
-                end_rss, end_vms = psutil.Process(os.getpid()).get_memory_info()
+                end_rss, end_vms = psutil.Process(os.getpid()).memory_info()[:2]
                 logline = '%s time:%.3fs mem: %sk -> %sk (diff: %sk)' % (db_name, end_time - start_time, start_vms / 1024, end_vms / 1024, (end_vms - start_vms)/1024)
                 _logger.debug("WorkerCron (%s) %s", self.pid, logline)
 
