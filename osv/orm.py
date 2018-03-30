@@ -453,7 +453,7 @@ class browse_record(object):
             if not field_values:
                 # Where did those ids come from? Perhaps old entries in ir_model_dat?
                 _logger.warning("No field_values found for ids %s in %s", ids, self)
-                raise KeyError('Field %s not found in %s'%(name, self))
+                raise KeyError('Field %r not found in %s'%(name, self))
             # create browse records for 'remote' objects
             for result_line in field_values:
                 new_data = {}
