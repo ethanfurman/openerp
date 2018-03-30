@@ -654,34 +654,34 @@ class MetaModel(type):
 
     module_to_models = {}
 
-    def __init__(self, name, bases, attrs):
+    def __init__(cls, name, bases, attrs):
         # check for mirrored fields -- if any, fill in _mirror_source
-        for mirror in self._mirrors:
+        for mirror in cls._mirrors:
             link_field = mirror.split('.', 1)[0]
-            link_table = self._columns[link_field]._obj
-            self._mirror_source[link_field] = link_table
+            link_table = cls._columns[link_field]._obj
+            cls._mirror_source[link_field] = link_table
 
-        if not self._register:
-            self._register = True
-            super(MetaModel, self).__init__(name, bases, attrs)
+        if not cls._register:
+            cls._register = True
+            super(MetaModel, cls).__init__(name, bases, attrs)
             return
 
         # The (OpenERP) module name can be in the `openerp.addons` namespace
         # or not. For instance module `sale` can be imported as
         # `openerp.addons.sale` (the good way) or `sale` (for backward
         # compatibility).
-        module_parts = self.__module__.split('.')
+        module_parts = cls.__module__.split('.')
         if len(module_parts) > 2 and module_parts[0] == 'openerp' and \
             module_parts[1] == 'addons':
-            module_name = self.__module__.split('.')[2]
+            module_name = cls.__module__.split('.')[2]
         else:
-            module_name = self.__module__.split('.')[0]
-        if not hasattr(self, '_module'):
-            self._module = module_name
+            module_name = cls.__module__.split('.')[0]
+        if not hasattr(cls, '_module'):
+            cls._module = module_name
 
         # Remember which models to instanciate for this module.
-        if not self._custom:
-            self.module_to_models.setdefault(self._module, []).append(self)
+        if not cls._custom:
+            cls.module_to_models.setdefault(cls._module, []).append(cls)
 
 
 # Definition of log access columns, automatically added to models if
@@ -1074,6 +1074,7 @@ class BaseModel(object):
                 continue
             if not f.store:
                 continue
+
             sm = f.store
             if sm is True:
                 sm = {self._name: (lambda self, cr, uid, ids, c={}: ids, None, 10, None)}
