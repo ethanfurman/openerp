@@ -1,4 +1,4 @@
-#!/usr/local/sbin/suid-python --virtualenv
+#!/usr/local/sbin/suid-python --virtualenv=/opt/openerp
 
 from __future__ import print_function
 
@@ -43,12 +43,14 @@ def set(type, id, status, note):
 def update():
     # get primary hg info
     hg = extract_hg()
+    echo(hg)
     # get commit desriptions
     job = Execute('hg log -r%s: --template "{desc}\n-=-\n"' % hg.revision)
     if job.returncode or job.stderr:
         if job.stderr:
             error(job.stderr, end='')
         raise SystemExit(job.returncode or 1)
+    echo(job.stdout)
     commits = job.stdout.split('\n-=-\n')[:-1]
     issues = find_issues(*commits)
     for issue in issues:

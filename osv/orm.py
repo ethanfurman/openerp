@@ -4936,8 +4936,12 @@ class BaseModel(object):
                                 value = value[0]
                             except:
                                 pass
-                        cr.execute('update "' + self._table + '" set ' + \
-                            '"'+f+'"='+self._columns[f]._symbol_set[0] + ' where id = %s', (self._columns[f]._symbol_set[1](value), id))
+                        try:
+                            cr.execute('update "' + self._table + '" set ' + \
+                                '"'+f+'"='+self._columns[f]._symbol_set[0] + ' where id = %s', (self._columns[f]._symbol_set[1](value), id))
+                        except TypeError:
+                            _logger.error('Attempt to set %s.%s to %r' % (self._table, self._columns[f].string, value))
+                            raise
         return True
 
     #
