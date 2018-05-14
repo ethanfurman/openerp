@@ -19,7 +19,7 @@
 #
 ##############################################################################
 
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from lxml import etree
 from fnx import date as fnx_date
 import time
@@ -203,7 +203,13 @@ class project(osv.osv):
 
     def _task_count(self, cr, uid, ids, field_name, arg, context=None):
         res = dict.fromkeys(ids, 0)
-        task_ids = self.pool.get('project.task').search(cr, uid, [('project_id', 'in', ids)])
+        task_ids = self.pool.get('project.task').search(
+                cr, uid,
+                [
+                    ('project_id', 'in', ids),
+                    ('state','not in',['done','cancelled']),
+                    ],
+                )
         for task in self.pool.get('project.task').browse(cr, uid, task_ids, context):
             res[task.project_id.id] += 1
         return res
@@ -1006,7 +1012,6 @@ class task(base_stage, osv.osv):
         if not isinstance(ids, list): ids = [ids]
         for task in self.browse(cr, uid, ids, context=context):
             vals = {}
-            project = task.project_id
             for parent_id in task.parent_ids:
                 if parent_id.state in ('pending','draft'):
                     reopen = True
@@ -1024,7 +1029,6 @@ class task(base_stage, osv.osv):
 
     def do_reopen(self, cr, uid, ids, context=None):
         for task in self.browse(cr, uid, ids, context=context):
-            project = task.project_id
             self.case_set(cr, uid, [task.id], 'open', {}, context=context)
         return True
 
