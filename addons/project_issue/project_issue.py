@@ -25,7 +25,6 @@ from openerp.addons.crm import crm
 from datetime import datetime
 from openerp.osv import fields,osv
 from openerp.tools.translate import _
-import binascii
 import time
 from openerp import tools
 from openerp.tools import html2plaintext
@@ -137,7 +136,6 @@ class project_issue(base_stage, osv.osv):
         @param context: A standard dictionary for contextual values
         """
         cal_obj = self.pool.get('resource.calendar')
-        res_obj = self.pool.get('resource.resource')
 
         res = {}
         for issue in self.browse(cr, uid, ids, context=context):
@@ -159,7 +157,6 @@ class project_issue(base_stage, osv.osv):
                     if issue.date_open:
                         date_open = datetime.strptime(issue.date_open, "%Y-%m-%d %H:%M:%S")
                         ans = date_open - date_create
-                        date_until = issue.date_open
                         #Calculating no. of working hours to open the issue
                         hours = cal_obj._interval_hours_get(cr, uid, working_hours,
                                                            date_create,
@@ -170,7 +167,6 @@ class project_issue(base_stage, osv.osv):
                 elif field in ['working_hours_close','day_close']:
                     if issue.date_closed:
                         date_close = datetime.strptime(issue.date_closed, "%Y-%m-%d %H:%M:%S")
-                        date_until = issue.date_closed
                         ans = date_close - date_create
                         #Calculating no. of working hours to close the issue
                         hours = cal_obj._interval_hours_get(cr, uid, working_hours,
@@ -192,11 +188,6 @@ class project_issue(base_stage, osv.osv):
                         res[issue.id][field] = inactive_days.days
                     continue
                 if ans:
-                    resource_id = False
-                    if issue.user_id:
-                        resource_ids = res_obj.search(cr, uid, [('user_id','=',issue.user_id.id)])
-                        if resource_ids and len(resource_ids):
-                            resource_id = resource_ids[0]
                     duration = float(ans.days) + float(ans.seconds)/(24*3600)
 
                 if field in ['working_hours_open','working_hours_close']:
@@ -575,7 +566,12 @@ class project(osv.osv):
 
     def _issue_count(self, cr, uid, ids, field_name, arg, context=None):
         res = dict.fromkeys(ids, 0)
-        issue_ids = self.pool.get('project.issue').search(cr, uid, [('project_id', 'in', ids)])
+        issue_ids = self.pool.get('project.issue').search(
+                cr, uid,
+                [
+                    ('project_id', 'in', ids),
+                    ('state','not in',['done','cancelled']),
+                    ])
         for issue in self.pool.get('project.issue').browse(cr, uid, issue_ids, context):
             if issue.state not in ('done', 'cancelled'):
                 res[issue.project_id.id] += 1
