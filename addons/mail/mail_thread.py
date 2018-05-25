@@ -34,11 +34,12 @@ from openerp import tools
 from openerp import SUPERUSER_ID
 from openerp.addons.mail.mail_message import decode
 from openerp.osv import fields, osv
+from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
 
 _logger = logging.getLogger(__name__)
-
+UTC = pytz.timezone('UTC')
 
 def decode_header(message, header, separator=' '):
     return separator.join(map(decode, filter(None, message.get_all(header, []))))
@@ -401,6 +402,28 @@ class mail_thread(osv.AbstractModel):
                 return value[1]
             if col_info['type'] == 'selection':
                 return dict(col_info['selection'])[value]
+            if col_info['type'] == 'datetime':
+                # convert to database-local time, or stamp as UTC
+                # if no database-local timezone is set
+                try:
+                    tz_name = self.pool.get(
+                            'ir.config_parameter'
+                            ).read(
+                                cr, 1,
+                                ids=[('key','=','database.time_zone')]
+                                )[0]['value']
+                except IndexError:
+                    _logger.warning('missing system parameter: database.time_zone')
+                    tz_name = 'UTC'
+                try:
+                    tz = pytz.timezone(tz_name)
+                except Exception:
+                    _logger.warning("unknown timezone:  %r" % tz_name)
+                    tz = UTC
+                value = UTC.localize(datetime.datetime.strptime(value, DEFAULT_SERVER_DATETIME_FORMAT))
+                value = value.astimezone(tz)
+                return value.strftime('%Y-%m-%d %H:%M %%s') % value.tzname()
+
             return value
 
         def format_message(message_description, tracked_values):

@@ -127,7 +127,7 @@ class NumberedCanvas(canvas.Canvas):
             self._codeStack = code['stack']
             self.pageCount()
             canvas.Canvas.showPage(self)
-#        self.restoreState()
+        # self.restoreState()
         self._doc.SaveToFile(self._filename, self)
 
 class PageCount(platypus.Flowable):
@@ -549,7 +549,7 @@ class _rml_canvas(object):
             self.canvas.drawImage(img, **args)
         finally:
             s.close()
-#        self.canvas._doc.SaveToFile(self.canvas._filename, self.canvas)
+        # self.canvas._doc.SaveToFile(self.canvas._filename, self.canvas)
 
     def _path(self, node):
         self.path = self.canvas.beginPath()
@@ -1018,7 +1018,7 @@ class _rml_template(object):
             except Exception: # FIXME: be even more specific, perhaps?
                 gr=''
             if len(gr):
-#                self.image=[ n for n in utils._child_get(gr[0], self) if n.tag=='image' or not self.localcontext]
+                # self.image=[ n for n in utils._child_get(gr[0], self) if n.tag=='image' or not self.localcontext]
                 drw = _rml_draw(self.localcontext,gr[0], self.doc, images=images, path=self.path, title=self.title)
                 self.page_templates.append( platypus.PageTemplate(frames=frames, onPage=drw.render, **utils.attr_get(pt, [], {'id':'str'}) ))
             else:

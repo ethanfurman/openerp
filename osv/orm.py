@@ -1626,6 +1626,7 @@ class BaseModel(object):
                 )
                 self._invalids.update(fields)
         if error_msgs:
+            error_msgs.insert(0, 'All constraints:\n%sFailing constraint: %s' % ('\n'.join([str(c) for c in self._constraints]), constraint))
             raise except_orm('ValidateError', '\n'.join(error_msgs))
         else:
             self._invalids.clear()
