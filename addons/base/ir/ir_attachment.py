@@ -90,7 +90,7 @@ class ir_attachment(osv.osv):
         size = len(datas_value)
         file_hash = hashlib.sha512(datas_value).hexdigest()
         # check if file already exists
-        matches = self.search(cr, 1, [('datas_hash','=',file_hash)])
+        matches = self.browse(cr, 1, [('datas_hash','=',file_hash)])
         for m in matches:
             if m.file_size == size and m.datas == datas_value:
                 return m.datas_hash, m.store_fname
