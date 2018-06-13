@@ -1062,13 +1062,24 @@ class BaseModel(object):
             self._log_access = getattr(self, "_auto", True)
 
         self._columns = self._columns.copy()
-        for store_field in self._columns:
-            f = self._columns[store_field]
+        for column in self._columns:
+            f = self._columns[column]
             if hasattr(f, 'digits_change'):
                 f.digits_change(cr)
+            if hasattr(f, '_domain') and not isinstance(f._domain, basestring) and not callable(f._domain) and f._domain:
+                new_domain = []
+                for arg in f._domain:
+                    if isinstance(arg, basestring):
+                        new_domain.append(arg)
+                        continue
+                    field, op, value = arg
+                    if callable(value):
+                        value = value(pool, cr)
+                    new_domain.append((field, op, value))
+                f._domain = new_domain
             def not_this_field(stored_func):
                 x, y, z, e, f, l = stored_func
-                return x != self._name or y != store_field
+                return x != self._name or y != column
             self.pool._store_function[self._name] = filter(not_this_field, self.pool._store_function.get(self._name, []))
             if not isinstance(f, fields.function):
                 continue
@@ -1086,9 +1097,9 @@ class BaseModel(object):
                     length = None
                 else:
                     raise except_orm('Error',
-                        ('Invalid function definition %s in object %s !\nYou must use the definition: store={object:(fnct, fields, priority, time length)}.' % (store_field, self._name)))
+                        ('Invalid function definition %s in object %s !\nYou must use the definition: store={object:(fnct, fields, priority, time length)}.' % (column, self._name)))
                 self.pool._store_function.setdefault(object, [])
-                self.pool._store_function[object].append((self._name, store_field, fnct, tuple(fields2) if fields2 else None, order, length))
+                self.pool._store_function[object].append((self._name, column, fnct, tuple(fields2) if fields2 else None, order, length))
                 self.pool._store_function[object].sort(lambda x, y: cmp(x[4], y[4]))
 
         for (key, __, msg) in self._sql_constraints:

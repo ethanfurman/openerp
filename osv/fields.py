@@ -45,6 +45,7 @@ from psycopg2 import Binary
 
 import openerp
 import openerp.tools as tools
+from openerp.exceptions import ERPError
 from openerp.tools.translate import _
 from openerp.tools import Enum, issubclass, Sentinel, EnumAutoValue
 from openerp.tools import float_round, float_repr
@@ -1604,6 +1605,35 @@ class property(function):
 
     def restart(self):
         self.field_id = {}
+
+class ref(object):
+    def __init__(self, xml_id):
+        self.xml_id = xml_id
+    def __call__(self, pool, cr):
+        ir_model_data = pool.get('ir.model.data')
+        name = xml_id = self.xml_id
+        module = False
+        if '.' in xml_id:
+            if xml_id.count('.') > 1:
+                raise ERPError('Bad Reference', 'reference must be either <module>.<name> or <name>, not %r' % xml_id)
+            module, name = xml_id.split('.')
+        if module:
+            found = ir_model_data.read(
+                    cr, SUPERUSER_ID,
+                    [('module','=',module),('name','=',name)],
+                    fields=['res_id'],
+                    )
+        else:
+            found = ir_model_data.read(
+                    cr, SUPERUSER_ID,
+                    [('name','=',name)],
+                    fields=['res_id'],
+                    )
+        if not found:
+            raise ERPError('Bad Reference', 'unable to find match for %r' % self.xml_id)
+        elif len(found) > 1:
+            raise ERPError('Bad Reference', 'too many matches for %r' % self.xml_id)
+        return found[0]['res_id']
 
 def field_to_dict(model, cr, user, field, context=None):
     """ Return a dictionary representation of a field.
