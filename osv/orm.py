@@ -5586,6 +5586,18 @@ class BaseModel(object):
         """ stuff to do right after the registry is built """
         pass
 
+    def _get_vars_(self, cr, uid, context=None):
+        if uid != SUPERUSER_ID:
+            raise Exception('_get_vars_ is only accessible to admin')
+        res = {}
+        for name in dir(self):
+            if name.isupper():
+                continue
+            obj = getattr(self, name)
+            if isinstance(obj, (bool, int, float, long, bytes, str, unicode, tuple)):
+                res[name] = obj
+        return res
+
 # keep this import here, at top it will cause dependency cycle errors
 import expression
 

@@ -201,7 +201,7 @@ class object_proxy(object):
         cr = pooler.get_db(db).cursor()
         try:
             try:
-                if method.startswith('_'):
+                if method.startswith('_') and not _is_sunder(method):
                     raise except_osv('Access Denied', 'Private methods (such as %s) cannot be called remotely.' % (method,))
                 res = self.execute_cr(cr, uid, obj, method, *args, **kw)
                 if res is None:
@@ -234,6 +234,14 @@ class object_proxy(object):
         finally:
             cr.close()
         return res
+
+def _is_sunder(name):
+    """Returns True if a _sunder_ name, False otherwise."""
+    # taken from aenum
+    return (name[0] == name[-1] == '_' and
+            name[1:2] != '_' and
+            name[-2:-1] != '_' and
+            len(name) > 2)
 
 # deprecated - for backward compatibility.
 osv = Model
