@@ -32,6 +32,7 @@ import orm
 import openerp.netsvc as netsvc
 import openerp.pooler as pooler
 import openerp.sql_db as sql_db
+from openerp import SUPERUSER_ID
 from openerp.tools.translate import translate
 from openerp.osv.orm import Model, TransientModel, AbstractModel
 from openerp.exceptions import ERPError as except_osv
@@ -201,7 +202,7 @@ class object_proxy(object):
         cr = pooler.get_db(db).cursor()
         try:
             try:
-                if method.startswith('_') and not _is_sunder(method):
+                if method.startswith('_') and not _is_sunder(method) and uid != SUPERUSER_ID:
                     raise except_osv('Access Denied', 'Private methods (such as %s) cannot be called remotely.' % (method,))
                 res = self.execute_cr(cr, uid, obj, method, *args, **kw)
                 if res is None:
