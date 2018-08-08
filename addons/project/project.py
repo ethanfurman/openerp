@@ -34,7 +34,7 @@ from openerp.exceptions import ERPError
 from openerp.addons.base_status.base_stage import base_stage
 from openerp.addons.resource.faces import task as Task
 
-_TASK_STATE = [('draft', 'New'),('open', 'In Progress'),('pending', 'Pending'), ('done', 'Done'), ('cancelled', 'Cancelled')]
+_TASK_STATE = [('draft', 'New'), ('pending', 'Pending'), ('open', 'In Progress'), ('done', 'Done'), ('cancelled', 'Cancelled')]
 
 class project_task_type(osv.osv):
     _name = 'project.task.type'
@@ -590,9 +590,6 @@ class task(base_stage, osv.osv):
         'stage_id': {
             'project.mt_task_stage': lambda self, cr, uid, obj, ctx=None: obj['state'] not in ['new', 'done', 'open'],
         },
-        'kanban_state': {  # kanban state: tracked, but only block subtype
-            'project.mt_task_blocked': lambda self, cr, uid, obj, ctx=None: obj['kanban_state'] == 'blocked',
-        },
     }
 
     def _get_default_project_id(self, cr, uid, context=None):
@@ -790,12 +787,11 @@ class task(base_stage, osv.osv):
                       If the case needs to be reviewed then the status is \
                       set to \'Pending\'.'),
         'categ_ids': fields.many2many('project.category', string='Tags'),
-        'kanban_state': fields.selection([('normal', 'Normal'),('blocked', 'Blocked'),('done', 'Ready for next stage')], 'Kanban State',
-                                         track_visibility='onchange',
+        'kanban_state': fields.selection([('normal', 'Queued'),('blocked', 'Blocked'),('active', 'In Progress')], 'Kanban State',
                                          help="A task's kanban state indicates special situations affecting it:\n"
-                                              " * Normal is the default situation\n"
+                                              " * Queued is waiting\n"
                                               " * Blocked indicates something is preventing the progress of this task\n"
-                                              " * Ready for next stage indicates the task is ready to be pulled to the next stage",
+                                              " * In Progress indicates the task is currently being worked on",
                                          readonly=True, required=False),
         'create_date': fields.datetime('Create Date', readonly=True,select=True),
         'date_start': fields.datetime('Starting Date',select=True),
@@ -1049,7 +1045,7 @@ class task(base_stage, osv.osv):
 
     def case_open(self, cr, uid, ids, context=None):
         if not isinstance(ids,list): ids = [ids]
-        return self.case_set(cr, uid, ids, 'open', {'date_start': fields.datetime.now(self, cr)}, context=context)
+        return self.case_set(cr, uid, ids, 'open', {'kanban_state': 'active', 'date_start': fields.datetime.now(self, cr)}, context=context)
 
     def do_draft(self, cr, uid, ids, context=None):
         """ Compatibility when changing to case_draft. """
@@ -1131,8 +1127,8 @@ class task(base_stage, osv.osv):
     def set_kanban_state_normal(self, cr, uid, ids, context=None):
         return self.write(cr, uid, ids, {'kanban_state': 'normal'}, context=context)
 
-    def set_kanban_state_done(self, cr, uid, ids, context=None):
-        self.write(cr, uid, ids, {'kanban_state': 'done'}, context=context)
+    def set_kanban_state_active(self, cr, uid, ids, context=None):
+        self.write(cr, uid, ids, {'kanban_state': 'active'}, context=context)
         return False
 
     def _store_history(self, cr, uid, ids, context=None):
@@ -1432,7 +1428,7 @@ class project_task_history(osv.osv):
         'task_id': fields.many2one('project.task', 'Task', ondelete='cascade', required=True, select=True),
         'type_id': fields.many2one('project.task.type', 'Stage'),
         'state': fields.selection([('draft', 'New'), ('cancelled', 'Cancelled'),('open', 'In Progress'),('pending', 'Pending'), ('done', 'Done')], 'Status'),
-        'kanban_state': fields.selection([('normal', 'Normal'),('blocked', 'Blocked'),('done', 'Ready for next stage')], 'Kanban State', required=False),
+        'kanban_state': fields.selection([('normal', 'Queued'),('blocked', 'Blocked'),('active', 'In Progress')], 'Kanban State', required=False),
         'date': fields.date('Date', select=True),
         'end_date': fields.function(_get_date, string='End Date', type="date", store={
             'project.task.history': (_get_related_date, None, 20)

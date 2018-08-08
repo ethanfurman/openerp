@@ -358,9 +358,9 @@
             <field name="arch" type="xml">
                 <form string="Project" version="7.0">
                     <header>
-                        <!--
                         <button name="do_open" string="Start Task" type="object"
                                 states="draft,pending" class="oe_highlight"/>
+                        <!--
                         <button name="do_draft" string="Draft" type="object"
                                 states="cancel,done"/>
                         -->
@@ -384,6 +384,7 @@
                             <field name="planned_hours" widget="float_time"
                                     groups="project.group_time_work_estimation_tasks"
                                     on_change="onchange_planned(planned_hours, effective_hours)"/>
+                            <field name="kanban_state" string="Activity Level" states="draft,pending,open" widget="radio"/>
                         </group>
                         <group>
                             <field name="date_deadline" attrs="{'readonly':[('state','in',['done', 'cancelled'])]}"/>
@@ -512,8 +513,8 @@
                                 </div>
                                 <div class="oe_kanban_bottom_right">
                                     <t groups="base.group_user">
-                                        <a t-if="record.kanban_state.raw_value === 'normal'" type="object" string="In Progress" name="set_kanban_state_done" class="oe_kanban_status"> </a>
-                                        <a t-if="record.kanban_state.raw_value === 'done'" type="object" string="Ready for next stage" name="set_kanban_state_blocked" class="oe_kanban_status oe_kanban_status_green"> </a>
+                                        <a t-if="record.kanban_state.raw_value === 'normal'" type="object" string="Queued" name="set_kanban_state_active" class="oe_kanban_status"> </a>
+                                        <a t-if="record.kanban_state.raw_value === 'active'" type="object" string="In Progress" name="set_kanban_state_blocked" class="oe_kanban_status oe_kanban_status_green"> </a>
                                         <a t-if="record.kanban_state.raw_value === 'blocked'" type="object" string="Blocked" name="set_kanban_state_normal" class="oe_kanban_status oe_kanban_status_red"> </a>
                                         <t t-set="priority" t-value="record.priority.raw_value || 4"/>
                                         <a type="object" name="set_priority" args="['2']" t-if="priority gt 2" title="Normal Priority">

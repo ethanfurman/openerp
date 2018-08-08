@@ -56,9 +56,6 @@ class project_issue(base_stage, osv.osv):
         'stage_id': {
             'project_issue.mt_issue_stage': lambda self, cr, uid, obj, ctx=None: obj['state'] not in ['new', 'done', 'open'],
         },
-        'kanban_state': {
-            'project_issue.mt_issue_blocked': lambda self, cr, uid, obj, ctx=None: obj['kanban_state'] == 'blocked',
-        },
     }
 
     def create(self, cr, uid, vals, context=None):
@@ -247,13 +244,12 @@ class project_issue(base_stage, osv.osv):
                       When the case is over, the status is set to \'Done\'.\
                       If the case needs to be reviewed then the status is \
                       set to \'Pending\'.'),
-        'kanban_state': fields.selection([('normal', 'Normal'),('blocked', 'Blocked'),('done', 'Ready for next stage')], 'Kanban State',
-                                         track_visibility='onchange',
+        'kanban_state': fields.selection([('normal', 'Queued'),('blocked', 'Blocked'),('active', 'In Progress')], 'Kanban State',
                                          help="A Issue's kanban state indicates special situations affecting it:\n"
-                                              " * Normal is the default situation\n"
+                                              " * Queued is waiting\n"
                                               " * Blocked indicates something is preventing the progress of this issue\n"
-                                              " * Ready for next stage indicates the issue is ready to be pulled to the next stage",
-                                         readonly=True, required=False),
+                                              " * In Progress indicates the issue is currently being worked on",
+                                         readonly=False, required=False),
         'email_from': fields.char('Email', size=128, help="These people will receive email.", select=1),
         'email_cc': fields.char('Watchers Emails', size=256, help="These email addresses will be added to the CC field of all inbound and outbound emails for this record before being sent. Separate multiple email addresses with a comma"),
         'date_open': fields.datetime('Opened', readonly=True,select=True),
@@ -408,7 +404,7 @@ class project_issue(base_stage, osv.osv):
         """Resets case as draft
         """
         res = super(project_issue, self).case_reset(cr, uid, ids, context)
-        self.write(cr, uid, ids, {'date_open': False, 'date_closed': False})
+        self.write(cr, uid, ids, {'date_open': False, 'date_closed': False, 'kanban_state': 'normal'})
         return res
 
     # -------------------------------------------------------
@@ -421,8 +417,8 @@ class project_issue(base_stage, osv.osv):
     def set_kanban_state_normal(self, cr, uid, ids, context=None):
         return self.write(cr, uid, ids, {'kanban_state': 'normal'}, context=context)
 
-    def set_kanban_state_done(self, cr, uid, ids, context=None):
-        return self.write(cr, uid, ids, {'kanban_state': 'done'}, context=context)
+    def set_kanban_state_active(self, cr, uid, ids, context=None):
+        return self.write(cr, uid, ids, {'kanban_state': 'active'}, context=context)
 
     def stage_find(self, cr, uid, cases, section_id, domain=[], order='sequence', context=None):
         """ Override of the base.stage method
@@ -455,8 +451,12 @@ class project_issue(base_stage, osv.osv):
 
     def case_cancel(self, cr, uid, ids, context=None):
         """ Cancels case """
-        self.case_set(cr, uid, ids, 'cancelled', {'active': True}, context=context)
+        self.case_set(cr, uid, ids, 'cancelled', {'active': True, 'kanban_state': 'normal'}, context=context)
         return True
+
+    def case_close(self, cr, uid, ids, context=None):
+        """ Closes case """
+        return self.case_set(cr, uid, ids, 'done', {'active': True, 'kanban_state': 'normal', 'date_closed': fields.datetime.now(self, cr)}, context=context)
 
     def case_escalate(self, cr, uid, ids, context=None):
         cases = self.browse(cr, uid, ids)
@@ -472,6 +472,11 @@ class project_issue(base_stage, osv.osv):
                 raise osv.except_osv(_('Warning!'), _('You cannot escalate this issue.\nThe relevant Project has not configured the Escalation Project!'))
             self.case_set(cr, uid, ids, 'draft', data, context=context)
         return True
+
+    def do_open(self, cr, uid, ids, context=None):
+        if not isinstance(ids,list):
+            ids = [ids]
+        return self.case_set(cr, uid, ids, 'open', {'kanban_state': 'active',}, context=context)
 
     # -------------------------------------------------------
     # Mail gateway
