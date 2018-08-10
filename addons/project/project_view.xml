@@ -21,9 +21,10 @@
                     <separator/>
                     <filter icon="terp-mail-message-new" string="Unread Messages" name="message_unread" domain="[('message_unread','=',True)]"/>
                     <separator/>
-                    <filter name="draft" string="New" domain="[('state','=','draft')]" help="New Tasks" icon="terp-check"/>
-                    <filter name="open" string="In Progress" domain="[('state','=','open')]" help="In Progress Tasks" icon="terp-camera_test"/>
-                    <filter name="pending" string="Pending" domain="[('state','=','pending')]" context="{'show_delegated':False}" help="Pending Tasks" icon="terp-gtk-media-pause"/>
+                    <filter name="draft" string="New" domain="[('state','in',['draft','pending'])]" help="New Tasks" icon="terp-check"/>
+                    <filter name="to_do" string="To Do" domain="[('state','=','open')]" help="To Do Tasks" icon="terp-check"/>
+                    <filter name="open" string="In Progress" domain="[('kanban_state','=','active')]" help="In Progress Tasks" icon="terp-camera_test"/>
+                    <filter name="blocked" string="Blocked" domain="[('kanban_state','=','blocked')]" help="Blocked Tasks" icon="terp-gtk-media-pause"/>
                     <separator/>
                     <filter name="my_project" string="My Projects" domain="[('project_id.user_id','=',uid)]" help="Projects assigned to me." icon="terp-check"/>
                     <filter name="my_task" string="My Tasks" domain="[('user_id','=',uid)]"  help="Tasks assigned to me." icon="terp-personal"/>

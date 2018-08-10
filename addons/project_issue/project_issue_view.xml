@@ -144,8 +144,10 @@
                     <field name="id"/>
                     <filter icon="terp-mail-message-new" string="Unread Messages" name="message_unread" domain="[('message_unread','=',True)]"/>
                     <separator/>
-                    <filter string="New" icon="terp-document-new" domain="[('state','=','draft')]" help="New Issues"/>
-                    <filter string="To Do" domain="[('state','=','open')]" help="To Do Issues" icon="terp-check"/>
+                    <filter name="draft" string="New" icon="terp-document-new" domain="[('state','=','draft')]" help="New Issues"/>
+                    <filter name="to_do" string="To Do" domain="[('state','=','open')]" help="To Do Issues" icon="terp-check"/>
+                    <filter name="open" string="In Progress" domain="[('kanban_state','=','active')]" help="In Progress Tasks" icon="terp-camera_test"/>
+                    <filter name="blocked" string="Blocked" domain="[('kanban_state','=','blocked')]" help="Blocked Tasks" icon="terp-gtk-media-pause"/>
                     <separator/>
                     <filter string="Unassigned Issues" domain="[('user_id','=',False)]"  help="Unassigned Issues" icon="terp-personal-"/>
                     <field name="user_id"/>

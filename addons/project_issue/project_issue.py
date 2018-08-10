@@ -351,6 +351,7 @@ class project_issue(base_stage, osv.osv):
             vals = {
                 'task_id': new_task_id,
                 'stage_id': self.stage_find(cr, uid, [bug], bug.project_id.id, [('state', '=', 'pending')], context=context),
+                'kanban_state': 'blocked',
             }
             message = _("Project issue <b>converted</b> to task.")
             self.message_post(cr, uid, [bug.id], body=message, context=context)
