@@ -2116,7 +2116,7 @@ instance.web.form.AbstractField = instance.web.form.FormWidget.extend(instance.w
      * @param node
      */
     init: function(field_manager, node) {
-        var self = this
+        var self = this;
         this._super(field_manager, node);
         this.name = this.node.attrs.name;
         this.field = this.field_manager.get_field_desc(this.name);
@@ -2138,8 +2138,8 @@ instance.web.form.AbstractField = instance.web.form.FormWidget.extend(instance.w
             this.$el.find('.oe_field_translate').click(this.on_translate);
         }
         this.$label = this.view ? this.view.$el.find('label[for=' + this.id_for_label + ']') : $();
+        this.do_attach_tooltip(this, this.$label[0] || this.$el);
         if (instance.session.debug) {
-            this.do_attach_tooltip(this, this.$label[0] || this.$el);
             this.$label.off('dblclick').on('dblclick', function() {
                 console.log("Field '%s' of type '%s' in View: %o", self.name, (self.node.attrs.widget || self.field.type), self.view);
                 window.w = self;
@@ -2191,7 +2191,7 @@ instance.web.form.AbstractField = instance.web.form.FormWidget.extend(instance.w
     */
     render_value: function() {},
     is_valid: function() {
-        return this.is_syntax_valid() && !(this.get('required') && this.is_false() && !this.get('invisible'));
+        return this.is_syntax_valid() && !(this.get('required') && this.is_false());
     },
     is_syntax_valid: function() {
         return true;
@@ -2284,7 +2284,7 @@ instance.web.form.ReinitializeFieldMixin =  _.extend({}, instance.web.form.Reini
 /**
     Some hack to make placeholders work in ie9.
 */
-if ($.browser.msie && $.browser.version === "9.0") {
+if (!('placeholder' in document.createElement('input'))) {    
     document.addEventListener("DOMNodeInserted",function(event){
         var nodename =  event.target.nodeName.toLowerCase();
         if ( nodename === "input" || nodename == "textarea" ) {
@@ -2307,7 +2307,8 @@ instance.web.form.FieldChar = instance.web.form.AbstractField.extend(instance.we
         this.setupFocus(this.$('input'));
     },
     store_dom_value: function () {
-        if (this.$('input').length
+        if (!this.get('effective_readonly')
+                && this.$('input').length
                 && this.is_syntax_valid()) {
             this.internal_set_value(
                 this.parse_value(
@@ -2330,7 +2331,7 @@ instance.web.form.FieldChar = instance.web.form.AbstractField.extend(instance.we
         }
     },
     is_syntax_valid: function() {
-        if (this.$("input").size() > 0) {
+        if (!this.get("effective_readonly") && this.$("input").size() > 0) {
             try {
                 this.parse_value(this.$('input').val(), '');
                 return true;
@@ -2905,6 +2906,95 @@ instance.web.form.FieldSelection = instance.web.form.AbstractField.extend(instan
             height: height,
             width: width
         });
+    }
+});
+
+instance.web.form.FieldRadio = instance.web.form.AbstractField.extend(instance.web.form.ReinitializeFieldMixin, {
+    template: 'FieldRadio',
+    events: {
+        'click input': 'click_change_value'
+    },
+    init: function(field_manager, node) {
+        /* Radio button widget: Attributes options:
+        * - "horizontal" to display in column
+        * - "no_radiolabel" don't display text values
+        */
+        this._super(field_manager, node);
+        this.selection = _.clone(this.field.selection) || [];
+        this.domain = false;
+    },
+    initialize_content: function () {
+        this.uniqueId = _.uniqueId("radio");
+        this.on("change:effective_readonly", this, this.render_value);
+        this.field_manager.on("view_content_has_changed", this, this.get_selection);
+        this.get_selection();
+    },
+    click_change_value: function (event) {
+        var val = $(event.target).val();
+        val = this.field.type == "selection" ? val : +val;
+        if (val !== this.get_value()) {
+            this.set_value(val);
+        }
+    },
+    /** Get the selection and render it
+     *  selection: [[identifier, value_to_display], ...]
+     *  For selection fields: this is directly given by this.field.selection
+     *  For many2one fields:  perform a search on the relation of the many2one field
+     */
+    get_selection: function() {
+        var self = this;
+        var selection = [];
+        var def = $.Deferred();
+        if (self.field.type == "many2one") {
+            var domain = instance.web.pyeval.eval('domain', this.build_domain()) || [];
+            if (! _.isEqual(self.domain, domain)) {
+                self.domain = domain;
+                var ds = new instance.web.DataSetStatic(self, self.field.relation, self.build_context());
+                ds.call('search', [self.domain])
+                    .then(function (records) {
+                        ds.name_get(records).then(function (records) {
+                            selection = records;
+                            def.resolve();
+                        });
+                    });
+            } else {
+                selection = self.selection;
+                def.resolve();
+            }
+        }
+        else if (self.field.type == "selection") {
+            selection = self.field.selection || [];
+            def.resolve();
+        }
+        return def.then(function () {
+            if (! _.isEqual(selection, self.selection)) {
+                self.selection = _.clone(selection);
+                self.renderElement();
+                self.render_value();
+            }
+        });
+    },
+    set_value: function (value_) {
+        if (value_) {
+            if (this.field.type == "selection") {
+                value_ = _.find(this.field.selection, function (sel) { return sel[0] == value_;});
+            }
+            else if (!this.selection.length) {
+                this.selection = [value_];
+            }
+        }
+        this._super(value_);
+    },
+    get_value: function () {
+        var value = this.get('value');
+        return value instanceof Array ? value[0] : value;
+    },
+    render_value: function () {
+        var self = this;
+        this.$el.toggleClass("oe_readonly", this.get('effective_readonly'));
+        this.$("input:checked").prop("checked", false);
+        this.$("input").filter(function () {return this.value == self.get_value();}).prop("checked", true);
+        this.$(".oe_radio_readonly").text(this.get('value') ? this.get('value')[1] : "");
     }
 });
 
@@ -5649,99 +5739,95 @@ instance.web.form.FieldMonetary = instance.web.form.FieldFloat.extend({
     },
 });
 
-
-instance.web.form.FieldRadio = instance.web.form.AbstractField.extend(instance.web.form.ReinitializeFieldMixin, {
-    template: 'FieldRadio',
-    events: {
-        'click input': 'click_change_value'
-    },
-    init: function(field_manager, node) {
-        /* Radio button widget: Attributes options:
-        * - "horizontal" to display in column
-        * - "no_radiolabel" don't display text values
-        */
-        this._super(field_manager, node);
-        this.selection = _.clone(this.field.selection) || [];
-        this.domain = false;
-        this.uniqueId = _.uniqueId("radio");
-    },
-    initialize_content: function () {
-        this.on("change:effective_readonly", this, this.render_value);
-        this.field_manager.on("view_content_has_changed", this, this.get_selection);
-        this.get_selection();
-    },
-    click_change_value: function (event) {
-        var val = $(event.target).val();
-        val = this.field.type == "selection" ? val : +val;
-        if (val == this.get_value()) {
-            this.set_value(false);
-        } else {
-            this.set_value(val);
-        }
-    },
-    /** Get the selection and render it
-     *  selection: [[identifier, value_to_display], ...]
-     *  For selection fields: this is directly given by this.field.selection
-     *  For many2one fields:  perform a search on the relation of the many2one field
-     */
-    get_selection: function() {
-        var self = this;
-        var selection = [];
-        var def = $.Deferred();
-        if (self.field.type == "many2one") {
+/*
+    This type of field display a list of checkboxes. It works only with m2ms. This field will display one checkbox for each
+    record existing in the model targeted by the relation, according to the given domain if one is specified. Checked records
+    will be added to the relation.
+*/
+instance.web.form.FieldMany2ManyCheckBoxes = instance.web.form.AbstractField.extend(instance.web.form.ReinitializeFieldMixin, {
+    className: "oe_form_many2many_checkboxes",
+    init: function() {
+        this._super.apply(this, arguments);
+        this.set("value", {});
+        this.set("records", []);
+        this.field_manager.on("view_content_has_changed", this, function() {
             var domain = instance.web.pyeval.eval('domain', this.build_domain()) || [];
-            if (! _.isEqual(self.domain, domain)) {
-                self.domain = domain;
-                var ds = new instance.web.DataSetStatic(self, self.field.relation, self.build_context());
-                ds.call('search', [self.domain])
-                    .then(function (records) {
-                        ds.name_get(records).then(function (records) {
-                            selection = records;
-                            def.resolve();
-                        });
-                    });
-            } else {
-                selection = self.selection;
-                def.resolve();
-            }
-        }
-        else if (self.field.type == "selection") {
-            selection = self.field.selection || [];
-            def.resolve();
-        }
-        return def.then(function () {
-            if (! _.isEqual(selection, self.selection)) {
-                self.selection = _.clone(selection);
-                self.renderElement();
-                self.render_value();
+            // var domain = new instance.web.CompoundDomain(this.build_domain()).eval();
+            if (! _.isEqual(domain, this.get("domain"))) {
+                this.set("domain", domain);
             }
         });
+        this.records_orderer = new instance.web.DropMisordered();
     },
-    set_value: function (value_) {
-        if (value_) {
-            if (this.field.type == "selection") {
-                value_ = _.find(this.field.selection, function (sel) { return sel[0] == value_;});
-            }
-            else if (!this.selection.length) {
-                this.selection = [value_];
-            }
-        }
-        this._super(value_);
+    initialize_field: function() {
+        instance.web.form.ReinitializeFieldMixin.initialize_field.call(this);
+        this.on("change:domain", this, this.query_records);
+        //this.set("domain", new instance.web.CompoundDomain(this.build_domain()).eval());
+        this.set("domain", instance.web.pyeval.eval('domain', this.build_domain()) || []);
+        this.on("change:records", this, this.render_value);
     },
-    get_value: function () {
-        var value = this.get('value');
-        return value instanceof Array ? value[0] : value;
-    },
-    render_value: function () {
+    query_records: function() {
+        console.log('query_records');
         var self = this;
-        this.$el.toggleClass("oe_readonly", this.get('effective_readonly'));
-        this.$("input:checked").prop("checked", false);
-        if (this.get_value()) {
-            this.$("input").filter(function () {return this.value == self.get_value();}).prop("checked", true);
-            this.$(".oe_radio_readonly").text(this.get('value') ? this.get('value')[1] : "");
+        //var model = new instance.web.Model(instance.session, this.field.relation);
+        var model = new instance.web.Model(this.field.relation);
+        this.records_orderer.add(model.call("search", [this.get("domain")], {"context": this.build_context()}).then(function(record_ids) {
+            return model.call("name_get", [record_ids] , {"context": self.build_context()});
+        })).then(function(res) {
+            console.log(res);
+            self.set("records", res);
+        });
+    },
+    render_value: function() {
+        this.$().html(QWeb.render("FieldMany2ManyCheckBoxes", {widget: this, selected: this.get("value")}));
+        var inputs = this.$("input");
+        inputs.change(_.bind(this.from_dom, this));
+        if (this.get("effective_readonly"))
+            inputs.attr("disabled", "true");
+    },
+    from_dom: function() {
+        var new_value = {};
+        this.$("input").each(function() {
+            var elem = $(this);
+            new_value[elem.data("record-id")] = elem.attr("checked") ? true : undefined;
+        });
+        if (! _.isEqual(new_value, this.get("value")))
+            this.internal_set_value(new_value);
+    },
+    // WARNING: (mostly) duplicated in 4 other M2M widgets
+    set_value: function(value_) {
+        value_ = value_ || [];
+        if (value_.length >= 1 && value_[0] instanceof Array) {
+            // value_ is a list of m2m commands. We only process
+            // LINK_TO and REPLACE_WITH in this context
+            var val = [];
+            _.each(value_, function (command) {
+                if (command[0] === commands.LINK_TO) {
+                    val.push(command[1]);                   // (4, id[, _])
+                } else if (command[0] === commands.REPLACE_WITH) {
+                    val = command[2];                       // (6, _, ids)
+                }
+            });
+            value_ = val;
         }
-    }
+        var formatted = {};
+        _.each(value_, function(el) {
+            formatted[JSON.stringify(el)] = true;
+        });
+        this._super(formatted);
+    },
+    get_value: function() {
+        var value = _.filter(_.keys(this.get("value")), function(el) {
+            return this.get("value")[el];
+        }, this);
+        value = _.map(value, function(el) {
+            return JSON.parse(el);
+        });
+        return [commands.replace_with(value)];
+    },
 });
+
+
 
 /**
  * Registry of form fields, called by :js:`instance.web.FormView`.
@@ -5762,6 +5848,7 @@ instance.web.form.widgets = new instance.web.Registry({
     'many2one' : 'instance.web.form.FieldMany2One',
     'many2onebutton' : 'instance.web.form.Many2OneButton',
     'many2many' : 'instance.web.form.FieldMany2Many',
+    'many2many_checkboxes' : 'instance.web.form.FieldMany2ManyCheckBoxes',
     'many2many_tags' : 'instance.web.form.FieldMany2ManyTags',
     'many2many_kanban' : 'instance.web.form.FieldMany2ManyKanban',
     'one2many' : 'instance.web.form.FieldOne2Many',

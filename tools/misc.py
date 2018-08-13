@@ -671,7 +671,7 @@ class tracker(object):
                 else:
                     formatted_result = (
                         cls
-                        .pformat(result, indent=2, depth=2, width=10240)
+                        .pformat(result, indent=2, depth=2 if self.compress else None, width=10240)
                         .replace('\n','\n%*s' % (cls.thread_local_storage.indent*3, ' '))
                         )
                 print('\n%s<-- %s\n' % (indent, formatted_result))

@@ -1160,8 +1160,15 @@ class function(_column):
 
         if fnct_inv is True:
             if fnct_inv_arg:
-                raise ValueError('Cannot use inverse function arguments with simple_set [fnct_inv_arg=%r]' % (fnct_inv_arg, ))
-            self.simple_set = {'many2one': many2one.set, 'many2many': many2many.set, 'one2many': one2many.set}.get(type, _column.set)
+                raise ValueError(
+                        'Cannot use inverse function arguments with simple_set [fnct_inv_arg=%r]'
+                        % (fnct_inv_arg, )
+                        )
+            self.simple_set = {
+                    'many2one': many2one.set,
+                    'many2many': many2many.set,
+                    'one2many': one2many.set,
+                    }.get(type, _column.set)
 
         if store:
             if self._type != 'many2one':

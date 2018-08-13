@@ -493,17 +493,18 @@ class actions_server(osv.osv):
         'condition': 'True',
         'type': 'ir.actions.server',
         'sequence': 5,
-        'code': """# You can use the following variables:
-#  - self: ORM model of the record on which the action is triggered
-#  - object: browse_record of the record on which the action is triggered if there is one, otherwise None
-#  - pool: ORM model pool (i.e. self.pool)
-#  - time: Python time module
-#  - cr: database cursor
-#  - uid: current user id
-#  - context: current context
-# If you plan to return an action, assign: action = {...}
-""",
-    }
+        'code': '\n'.join([
+            '# You can use the following variables:',
+            '#  - self: ORM model of the record on which the action is triggered',
+            '#  - object: browse_record of the record on which the action is triggered if there is one, otherwise None',
+            '#  - pool: ORM model pool (i.e. self.pool)',
+            '#  - time: Python time module',
+            '#  - cr: database cursor',
+            '#  - uid: current user id',
+            '#  - context: current context',
+            '# If you plan to return an action, assign: action = {...}',
+            ]),
+        }
 
     def get_email(self, cr, uid, action, context):
         obj_pool = self.pool.get(action.model_id.model)
@@ -877,8 +878,8 @@ class act_client(osv.osv):
         'name': fields.char('Action Name', required=True, size=64, translate=True),
         'tag': fields.char('Client action tag', size=64, required=True,
                            help="An arbitrary string, interpreted by the client"
-                                " according to its own needs and wishes. There "
-                                "is no central tag repository across clients."),
+                                " according to its own needs and wishes. There"
+                                " is no central tag repository across clients."),
         'res_model': fields.char('Destination Model', size=64,
             help="Optional model, mostly used for needactions."),
         'context': fields.char('Context Value', size=250, required=True,

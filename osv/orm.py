@@ -68,7 +68,7 @@ import openerp
 import openerp.netsvc as netsvc
 import openerp.tools as tools
 from openerp.tools.config import config
-from openerp.tools.misc import CountingStream, issubclass
+from openerp.tools.misc import CountingStream, issubclass, tracker
 from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
 from openerp import SUPERUSER_ID
@@ -2589,6 +2589,7 @@ class BaseModel(object):
                 raise ValueError('unable to process domain: %r' % arg)
         return self._search(cr, user, new_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
+    @tracker('product.supplierinfo')
     def name_get(self, cr, user, ids, context=None):
         """
         Returns the preferred display value (text representation) for the records with the
@@ -2634,6 +2635,7 @@ class BaseModel(object):
         """
         return self._name_search(cr, user, name, args, operator, context, limit)
 
+    @tracker('product.supplierinfo')
     def name_create(self, cr, uid, name, context=None):
         """
         Creates a new record by calling :meth:`~.create` with only one
@@ -2649,7 +2651,9 @@ class BaseModel(object):
            :rtype: tuple
            :return: the :meth:`~.name_get` pair value for the newly-created record.
         """
+        print 'creating record for %r' % (name, )
         rec_id = self.create(cr, uid, {self._rec_name: name}, context)
+        print '  received id: %r' % (rec_id, )
         return self.name_get(cr, uid, [rec_id], context)[0]
 
     # private implementation of name_search, allows passing a dedicated user for the name_get part to
@@ -4579,6 +4583,7 @@ class BaseModel(object):
     #
     # TODO: Should set perm to user.xxx
     #
+    @tracker('product.supplierinfo')
     def create(self, cr, user, vals, context=None):
         """
         Create a new record for the model.

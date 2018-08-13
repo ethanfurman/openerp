@@ -573,6 +573,17 @@
   font-style: italic;
   text-decoration: none;
 }
+.openerp .oe_checkbox {
+  padding: 7px 0 0 5px;
+  background: transparent;
+  display: inline-block;
+  vertical-align: sub;
+}
+/*div.oe_checkbox {
+  > input + span {
+    display: none;
+  }
+} */
 .openerp.oe_tooltip {
   font-size: 12px;
 }
