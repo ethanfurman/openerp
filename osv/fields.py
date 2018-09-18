@@ -89,6 +89,9 @@ class _column(object):
     # used to hide a certain field type in the list of field types
     _deprecated = False
 
+    # used to set name of field
+    _field_name = None
+
     def __init__(
             self, string='unknown', required=False, readonly=False, domain=None,
             context=None, states=None, priority=0, change_default=False, size=None,

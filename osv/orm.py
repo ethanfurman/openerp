@@ -655,6 +655,9 @@ class MetaModel(type):
     module_to_models = {}
 
     def __init__(cls, name, bases, attrs):
+        # set field names on columns
+        for field_name, column in cls._columns.items():
+            column._field_name = field_name
         # check for mirrored fields -- if any, fill in _mirror_source
         for mirror in cls._mirrors:
             link_field = mirror.split('.', 1)[0]
