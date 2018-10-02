@@ -295,7 +295,7 @@
             @arch type='xml'
                 ~form $Job version='7.0'
                     ~header
-                        ~button @job_recruitement $Launch_Recruitement .oe_highlight groups='base.group_hr_officer' states='open' type='object'
+                        ~button @job_recruitment $Launch_Recruitment .oe_highlight groups='base.group_hr_officer' states='open' type='object'
                         ~button @job_open $Stop_Recruitment .oe_highlight groups='base.group_hr_officer' states='recruit' type='object'
                         @state statusbar_visible='recruit,open' widget='statusbar'
                     ~sheet
