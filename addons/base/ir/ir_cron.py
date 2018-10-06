@@ -26,9 +26,13 @@ import traceback
 import psycopg2
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from antipathy import Path
+from scription import Execute
+import shlex
 
 import openerp
 from openerp import netsvc
+from openerp.exceptions import ERPError
 from openerp.osv import fields, osv
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from openerp.tools.safe_eval import safe_eval as eval
@@ -63,6 +67,15 @@ class ir_cron(osv.osv):
     _order = 'name'
     _columns = {
         'name': fields.char('Name', size=60, required=True),
+        'type': fields.selection((
+            ('internal', 'OpenERP'),
+            ('external', 'O/S'),
+            ),
+            'Job Type',
+            sort_order='definition',
+            required=True,
+            ),
+        'timeout': fields.integer('Time-out', help='Maximum time, in minutes, to run'),
         'user_id': fields.many2one('res.users', 'User', required=True),
         'active': fields.boolean('Active'),
         'interval_number': fields.integer('Interval Number',help="Repeat every x."),
@@ -98,10 +111,11 @@ class ir_cron(osv.osv):
         'doall' : 1,
         'partial' : False,
         'state' : 'waiting',
+        'type' : 'internal',
     }
 
     def __init__(self, pool, cr):
-        "make sure state is set approppiately"
+        "make sure state is set approppriately"
         global _ir_cron_inited
         super(ir_cron, self).__init__(pool, cr)
         if not _ir_cron_inited:
@@ -112,7 +126,8 @@ class ir_cron(osv.osv):
     def _check_args(self, cr, uid, ids, context=None):
         try:
             for this in self.browse(cr, uid, ids, context):
-                str2tuple(this.args)
+                if this.type != 'external':
+                    str2tuple(this.args)
         except Exception:
             return False
         return True
@@ -121,7 +136,7 @@ class ir_cron(osv.osv):
         (_check_args, 'Invalid arguments', ['args']),
     ]
 
-    def _handle_callback_exception(self, cr, uid, model_name, method_name, args, job_id, job_name, job_exception):
+    def _handle_callback_exception(self, cr, uid, model_name, method_name, args, job_id, job_name, job_type, job_exception):
         """ Method called when an exception is raised by a job.
 
         Simply logs the exception and rollback the transaction.
@@ -134,9 +149,12 @@ class ir_cron(osv.osv):
 
         """
         cr.rollback()
-        _logger.exception("Call of self.pool.get('%s').%s(cr, uid, *%r) failed in Job %s" % (model_name, method_name, args, job_id))
+        if job_type == 'external':
+            _logger.exception('Call of %r failed in Job %s' % (args, job_id))
+        else:
+            _logger.exception("Call of self.pool.get('%s').%s(cr, uid, *%r) failed in Job %s" % (model_name, method_name, args, job_id))
 
-    def _callback(self, cr, uid, model_name, method_name, args, job_id, job_name):
+    def _callback(self, cr, uid, model_name, method_name, args, job_id, job_name, job_type, job_timeout):
         """ Run the method associated to a given job
 
         It takes care of logging and exception handling.
@@ -146,35 +164,52 @@ class ir_cron(osv.osv):
         :param args: arguments of the method (without the usual self, cr, uid).
         :param job_id: job id.
         """
-        args = str2tuple(args)
-        model = self.pool.get(model_name)
-        result = None
-        if model is None:
-            raise ERPError('Invalid Model', 'model %r does not exist' % model_name)
-        method = getattr(model, method_name)
-        if method is None:
-            raise ERPError('Invalid Method', 'model %r has no method %r' % (model_name, method_name))
+        _logger.debug('job_type: %r', job_type)
+        _logger.debug('model_name: %r', model_name)
+        _logger.debug('args: %r', args)
+        _logger.debug('job_timeout: %r', job_timeout)
+        _logger.debug('job id: %r   job name: %r', job_id, job_name)
+        if job_type == 'external':
+            model = self.pool.get('ir.cron')
+            method = model.external_job
+        else:
+            args = str2tuple(args)
+            model = self.pool.get(model_name)
+            result = None
+            if model is None:
+                _logger.error('model %r does not exist', model_name)
+                raise ERPError('Invalid Model', 'model %r does not exist' % model_name)
+            method = getattr(model, method_name)
+            if method is None:
+                _logger.error('method %r does not exist on model %r', method_name, model_name)
+                raise ERPError('Invalid Method', 'model %r has no method %r' % (model_name, method_name))
         try:
             log_depth = (None if _logger.isEnabledFor(logging.DEBUG) else 1)
             netsvc.log(_logger, logging.DEBUG, 'cron.object.execute', (cr.dbname,uid,'*',model_name,method_name)+tuple(args), depth=log_depth)
             start_dt = fields.datetime.now(self, cr, localtime=True)
             start_time = time.time()
-            result = method(cr, uid, *args)
+            if job_type == 'internal':
+                result = method(cr, uid, *args)
+            elif job_type == 'external':
+               result = method(cr, uid, args, job_timeout)
+            else:
+               _logger.error('unknown job type for job %d: %r' % (job_id, job_type))
+               raise ERPError('Invalid Type', 'unknown job type: %r' % job_type)
             end_time = time.time()
             end_dt = fields.datetime.now(self, cr, localtime=True)
             if result in (None, True, False):
                 result = 'Job Start: %s\nJob End: %s' % (start_dt, end_dt)
             else:
                 # better be a string
-                result = result.strip() + '\n\nJob Start: %s\nJob End: %s' % (start_dt, end_dt)
+                result = 'Job Start: %s\nJob End: %s\n\n' % (start_dt, end_dt) + result.strip()
             _logger.debug('%.3fs (%s, %s)' % (end_time - start_time, model_name, method_name))
             return result
         except Exception, e:
             end_time = time.time()
-            end_dt = fields.datetime.now(self, cr)
+            end_dt = fields.datetime.now(self, cr, localtime=True)
             cls, exc, tb = sys.exc_info()
-            self._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, job_name, e)
-            return '\n'.join(traceback.format_exception(cls, exc,tb)) + '\n\nJob Start: %s\nJob End: %s' % (start_dt, end_dt)
+            self._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, job_name, job_type, e)
+            return 'Job Start: %s\nJob End: %s\n\n%s' % (start_dt, end_dt, '\n'.join(traceback.format_exception(cls, exc,tb)))
 
     def _process_job(self, job_cr, job, cron_cr, force=False):
         """ Run a given job taking care of the repetition.
@@ -192,7 +227,7 @@ class ir_cron(osv.osv):
             ok = False
             while nextcall < now and numbercall or force:
                 if not ok or job['doall']:
-                    result = self._callback(job_cr, job['user_id'], job['model'], job['function'], job['args'], job['id'], job['name'])
+                    result = self._callback(job_cr, job['user_id'], job['model'], job['function'], job['args'], job['id'], job['name'], job['type'], job['timeout'])
                 if force:
                     break
                 if numbercall > 0:
@@ -249,6 +284,35 @@ class ir_cron(osv.osv):
             finally:
                 button_cr.close()
             return True
+
+    def external_job(self, cr, uid, args, timeout):
+        "Runs the external job given in args"
+        args = shlex.split(args)
+        tmp = Path('/tmp/oe-cron-jobs/%s' % args[0])
+        tmp.makedirs()
+        job = Execute(args, cwd=tmp, timeout=timeout)
+        result = []
+        if job.returncode:
+            result.append('script exited with: %s\n' % job.returncode)
+        if job.stdout:
+            result.append('------')
+            result.append('stdout')
+            result.append('------')
+            result.append(job.stdout.strip())
+        if job.stderr:
+            result.append('------')
+            result.append('stderr')
+            result.append('------')
+            result.append(job.stderr.strip())
+        try:
+            tmp.rmtree()
+        except Exception:
+            cls, exc, tb = sys.exc_info()
+            result.append('------')
+            result.append('rmtree')
+            result.append('------')
+            result.append('\n'.join(traceback.format_exception(cls, exc,tb)))
+        return '\n'.join(result)
 
     @classmethod
     def _acquire_job(cls, db_name, job_id=None):

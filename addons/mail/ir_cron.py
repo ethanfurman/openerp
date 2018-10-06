@@ -1,17 +1,8 @@
 import logging
-import threading
-import time
-import psycopg2
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
 import traceback
 
-import openerp
-from openerp import netsvc
 from openerp.osv import fields, osv
-from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT, SUPERUSER_ID
-from openerp.tools.safe_eval import safe_eval as eval
-from openerp.tools.translate import _
+from openerp.tools import SUPERUSER_ID
 
 _logger = logging.getLogger(__name__)
 
@@ -30,18 +21,18 @@ class ir_cron(osv.Model):
             ),
         }
 
-    def _handle_callback_exception(self, cr, uid, model_name, method_name, args, job_id, job_name, job_exception):
+    def _handle_callback_exception(self, cr, uid, model_name, method_name, args, job_id, job_name, job_type, job_exception):
         """
         After super logs the exception and rollsback, send an email to anyone in notify_ids.
         """
-        super(ir_cron, self)._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, job_name, job_exception)
+        super(ir_cron, self)._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, job_name, job_type, job_exception)
         cr.execute("SELECT user_id FROM cron_notify_rel WHERE job_id=%s", (job_id, ))
         notify_ids = [r[0] for r in cr.fetchall()]
         if notify_ids:
             subject = 'Failed Job: ' + job_name
             message = '\n'.join(['<pre>%s</pre>' % line for line in traceback.format_exc(job_exception).split('\n')])
             res_users = self.pool.get('res.users')
-            res_users.message_notify(cr, SUPERUSER_ID, notify_ids, message=message, model=self._name, res_id=job_id)
+            res_users.message_notify(cr, SUPERUSER_ID, notify_ids, subject=subject, message=message, model=self._name, res_id=job_id)
 
     def onchange_user_ids(self, cr, uid, ids, value, context=None):
         """
