@@ -792,7 +792,7 @@ class task(base_stage, osv.osv):
                                               " * Queued is waiting\n"
                                               " * Blocked indicates something is preventing the progress of this task\n"
                                               " * In Progress indicates the task is currently being worked on",
-                                         readonly=True, required=False),
+                                         readonly=False, required=False),
         'create_date': fields.datetime('Create Date', readonly=True,select=True),
         'date_start': fields.datetime('Starting Date',select=True),
         'date_end': fields.datetime('Ending Date',select=True),
