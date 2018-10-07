@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+
+# imports
 ##############################################################################
 #
 #    OpenERP, Open Source Management Solution
@@ -26,6 +28,8 @@ from openerp.osv.osv import except_osv
 from openerp import tools, SUPERUSER_ID
 from selections import *
 _logger = logging.getLogger(__name__)
+
+# tables
 
 class hr_employee_category(osv.osv):
 
