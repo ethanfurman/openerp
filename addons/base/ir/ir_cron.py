@@ -164,10 +164,12 @@ class ir_cron(osv.osv):
         :param args: arguments of the method (without the usual self, cr, uid).
         :param job_id: job id.
         """
+        # convert job_timeout from minutes to seconds
+        job_timeout *= 60
         _logger.debug('job_type: %r', job_type)
         _logger.debug('model_name: %r', model_name)
         _logger.debug('args: %r', args)
-        _logger.debug('job_timeout: %r', job_timeout)
+        _logger.debug('job_timeout: %r seconds', job_timeout)
         _logger.debug('job id: %r   job name: %r', job_id, job_name)
         if job_type == 'external':
             model = self.pool.get('ir.cron')
