@@ -20,6 +20,8 @@
                             ~label .oe_edit_only for='name'
                             ~h1
                                 @name
+                            ~label .oe_edit_only for='identification_id'
+                            @identification_id groups='base.group_hr_manager'
                             ~label .oe_edit_only for='category_ids' groups='base.group_hr_officer'
                             @category_ids groups='base.group_hr_user' placeholder='e.g. Part Time' widget='many2many_tags' nolabel='1'
                         ~div @button_box class='oe_right oe_button_box'
@@ -66,7 +68,6 @@
                                         @emergency_contact $Name
                                         @emergency_number $Phone
                                     ~group $Status
-                                        @identification_id $Employee_No
                                         @employment_type
                                         @employment_agency_id (
                                             attrs="{'invisible': [('employment_type','!=','temporary')]}"
