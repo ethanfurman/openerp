@@ -5644,11 +5644,22 @@ instance.web.form.FieldStatus = instance.web.form.AbstractField.extend({
         var calculation = _.bind(function() {
             if (this.field.type == "many2one") {
                 var domain = [];
+                var invisible = false;
                 var ds = new instance.web.DataSetSearch(this, this.field.relation,
                     self.build_context(), this.get("evaluated_selection_domain"));
-                return ds.read_slice(['name'], {}).then(function (records) {
+                return ds.read_slice(['id', 'name'], {}).then(function (records) {
                     for(var i = 0; i < records.length; i++) {
-                        selection.push([records[i].id, records[i].name]);
+                        var id = records[i].id;
+                        var name = records[i].name
+                        if(id == self.get('value') || !self.options.visible || self.options.visible.indexOf(name) != -1) {
+                            selection.push([records[i].id, records[i].name]);
+                        }
+                        if(id == self.get('value') && self.options.clear_visible.indexOf(name) != -1) {
+                            invisible = true;
+                        }
+                    if(invisible === true) {
+                        selection = [];
+                }
                     }
                 });
             } else {
