@@ -12,7 +12,7 @@ class Marital(SelectionEnum):
 
 class JobState(SelectionEnum):
     open = 'No Recruitment'
-    recruit = 'Recruitement in Progress'
+    recruit = 'Recruitment in Progress'
 
 class EmploymentType(SelectionEnum):
     standard = "Permanent"

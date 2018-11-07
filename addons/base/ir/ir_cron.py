@@ -165,7 +165,7 @@ class ir_cron(osv.osv):
         :param job_id: job id.
         """
         # convert job_timeout from minutes to seconds
-        job_timeout *= 60
+        job_timeout = (job_timeout or 0) * 60
         _logger.debug('job_type: %r', job_type)
         _logger.debug('model_name: %r', model_name)
         _logger.debug('args: %r', args)
