@@ -98,6 +98,9 @@
   background-image: -o-linear-gradient(top, #eeeeee, #dedede);
   background-image: linear-gradient(to bottom, #eeeeee, #dedede);
 }
+.openerp .oe_monospace {
+  font-family: monospace,monospace;
+}
 .openerp input, .openerp textarea, .openerp select {
   padding: 2px 4px;
   border: 1px solid #cccccc;
