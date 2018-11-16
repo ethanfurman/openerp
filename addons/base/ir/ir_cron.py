@@ -236,7 +236,7 @@ class ir_cron(osv.osv):
                 raise ERPError('Invalid Method', 'model %r has no method %r' % (model_name, method_name))
         try:
             log_depth = (None if _logger.isEnabledFor(logging.DEBUG) else 1)
-            netsvc.log(_logger, logging.DEBUG, 'cron.object.execute', (cr.dbname,uid,'*',model_name,method_name)+tuple(args), depth=log_depth)
+            netsvc.log(_logger, logging.DEBUG, 'cron.object.execute', (cr.dbname,uid,'*',model_name,method_name)+(args,), depth=log_depth)
             start_dt = fields.datetime.now(self, cr, localtime=True)
             start_time = time.time()
             if job_type == 'internal':
