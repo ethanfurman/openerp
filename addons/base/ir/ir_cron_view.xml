@@ -39,7 +39,7 @@
                         <label for="args"/>
                         <field name="args" class="oe_monospace"/>
                         <group>
-                            <field name="timeout" attrs="{'invisible': [('type','!=','external')]}"/>
+                            <field name="timeout_display" attrs="{'invisible': [('type','!=','external')]}"/>
                         </group>
                     </page>
                     <page string="Last Results" groups="base.group_no_one">

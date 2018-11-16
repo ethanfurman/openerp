@@ -65,6 +65,46 @@ class ir_cron(osv.osv):
 
     _name = "ir.cron"
     _order = 'name'
+
+    def _calc_timeout(self, cr, uid, ids, field_name, arg, context=None):
+        "convert time to seconds (e.g. 2m -> 120)"
+        res = {}
+        if field_name != 'timeout':
+            return res
+        # get changed records
+        for rec in self.read(cr, uid, ids, fields=['id', 'timeout_display'], context=context):
+            id = rec['id']
+            time = rec['timeout_display']
+            if not time:
+                res[id] = 0
+            text = time
+            if text[0] == '-':
+                raise ERPError('Field Error', 'invalid wait time: <%s>' % time)
+            wait_time = 0
+            digits = []
+            for c in text:
+                # anything after a time is found is an error
+                if c.isdigit():
+                    digits.append(c)
+                    continue
+                if c == ' ':
+                    if not digits:
+                        continue
+                    else:
+                        raise ERPError('Field Error', 'invalid wait time: <%s>' % time)
+                number = int(''.join(digits))
+                c = c.lower()
+                if c not in ('hms'):
+                    raise ERPError('Field Error', 'invalid wait time: <%s>' % time)
+                wait_time += {'h':3600, 'm':60, 's':1}[c] * number
+                digits = []
+            else:
+                if digits:
+                    # didn't specify a unit, abort
+                    raise ERPError('Field Error', 'missing trailing time unit of h, m, or s in <%s>' % time)
+            res[id] = wait_time
+        return res
+
     _columns = {
         'name': fields.char('Name', size=60, required=True),
         'type': fields.selection((
@@ -75,7 +115,16 @@ class ir_cron(osv.osv):
             sort_order='definition',
             required=True,
             ),
-        'timeout': fields.integer('Time-out', help='Maximum time, in minutes, to run'),
+        'timeout_display': fields.char('Time-out', size=20, help='maximum time to run'),
+        'timeout': fields.function(
+            _calc_timeout,
+            type='integer',
+            string='Time-out in seconds',
+            help='Maximum time, in seconds, to run',
+            store={
+                'ir.cron': (lambda s, c, u, ids, ctx: ids, ['timeout_display'], 10)
+                },
+            ),
         'user_id': fields.many2one('res.users', 'User', required=True),
         'active': fields.boolean('Active'),
         'interval_number': fields.integer('Interval Number',help="Repeat every x."),
