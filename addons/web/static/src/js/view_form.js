@@ -2806,7 +2806,7 @@ instance.web.form.FieldBoolean = instance.web.form.AbstractField.extend(instance
         if (!this.get("effective_readonly")) {
             this.$checkbox[0].checked = value;
         } else {
-            this.$("span").text(value ? "\u2714" : "");
+            this.$("span").text(value ? "\u2714" : "\u2610");
         };
     },
     focus: function() {
