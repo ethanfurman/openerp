@@ -787,12 +787,17 @@ class task(base_stage, osv.osv):
                       If the case needs to be reviewed then the status is \
                       set to \'Pending\'.'),
         'categ_ids': fields.many2many('project.category', string='Tags'),
-        'kanban_state': fields.selection([('normal', 'Queued'),('blocked', 'Blocked'),('active', 'In Progress')], 'Kanban State',
-                                         help="A task's kanban state indicates special situations affecting it:\n"
-                                              " * Queued is waiting\n"
-                                              " * Blocked indicates something is preventing the progress of this task\n"
-                                              " * In Progress indicates the task is currently being worked on",
-                                         readonly=False, required=False),
+        'kanban_state': fields.selection([
+                ('normal', 'Queued'),
+                ('blocked', 'Blocked'),
+                ('active', 'In Progress'),
+                ],
+            string='Kanban State',
+            help="A task's kanban state indicates special situations affecting it:\n"
+                " * Queued is waiting\n"
+                " * Blocked indicates something is preventing the progress of this task\n"
+                " * In Progress indicates the task is currently being worked on",
+            readonly=False, required=False),
         'create_date': fields.datetime('Create Date', readonly=True,select=True),
         'date_start': fields.datetime('Starting Date',select=True),
         'date_end': fields.datetime('Ending Date',select=True),
