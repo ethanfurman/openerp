@@ -800,6 +800,10 @@
         </record>
         <menuitem action="project_category_action" id="menu_project_category_act" parent="base.menu_definitions" groups="base.group_no_one"/>
 
+    </data>
+
+    <data noupdate="1">
+
         <record model="ir.cron" id="awaken_sleeping_tasks_update">
             <field name="name">Awaken Sleeping Tasks</field>
             <field name="interval_number">1</field>
