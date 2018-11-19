@@ -791,13 +791,16 @@ class task(base_stage, osv.osv):
                 ('normal', 'Queued'),
                 ('blocked', 'Blocked'),
                 ('active', 'In Progress'),
+                ('sleeping', 'Sleeping'),
                 ],
             string='Kanban State',
             help="A task's kanban state indicates special situations affecting it:\n"
                 " * Queued is waiting\n"
                 " * Blocked indicates something is preventing the progress of this task\n"
-                " * In Progress indicates the task is currently being worked on",
+                " * In Progress indicates the task is currently being worked on\n"
+                " * Sleeping indicates task is inactive until a certain date",
             readonly=False, required=False),
+        'awake_date': fields.date('Awake Date', help='Date to move from Sleeping to In Progress'),
         'create_date': fields.datetime('Create Date', readonly=True,select=True),
         'date_start': fields.datetime('Starting Date',select=True),
         'date_end': fields.datetime('Ending Date',select=True),
@@ -1136,6 +1139,12 @@ class task(base_stage, osv.osv):
         self.write(cr, uid, ids, {'kanban_state': 'active'}, context=context)
         return False
 
+    def awaken_sleeping_tasks(self, cr, uid, ids=None, arg=None, context=None):
+        today = fields.date.today(self, cr, uid, localtime=True, context=context)
+        if ids is None:
+            ids = self.search(cr, uid, [('awake_date','<=',today)], context=context)
+        return self.write(cr, uid, ids, {'awake_date':False, 'kanban_state':'active'}, context=context)
+
     def _store_history(self, cr, uid, ids, context=None):
         for task in self.browse(cr, uid, ids, context=context):
             self.pool.get('project.task.history').create(cr, uid, {
@@ -1433,7 +1442,7 @@ class project_task_history(osv.osv):
         'task_id': fields.many2one('project.task', 'Task', ondelete='cascade', required=True, select=True),
         'type_id': fields.many2one('project.task.type', 'Stage'),
         'state': fields.selection([('draft', 'New'), ('cancelled', 'Cancelled'),('open', 'In Progress'),('pending', 'Pending'), ('done', 'Done')], 'Status'),
-        'kanban_state': fields.selection([('normal', 'Queued'),('blocked', 'Blocked'),('active', 'In Progress')], 'Kanban State', required=False),
+        'kanban_state': fields.selection([('normal', 'Queued'),('blocked', 'Blocked'),('active', 'In Progress'),('sleeping','Sleeping')], 'Kanban State', required=False),
         'date': fields.date('Date', select=True),
         'end_date': fields.function(_get_date, string='End Date', type="date", store={
             'project.task.history': (_get_related_date, None, 20)
