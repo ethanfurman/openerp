@@ -72,6 +72,7 @@
                                 <button name="case_escalate" string="⇒ Escalate" type="object" states="draft,open,pending" class="oe_link"/>
                             </div>
                             <field name="kanban_state" string="Activity Level" states="draft,open,pending" widget="radio"/>
+                            <field name="awake_date" string="Sleep until" attrs="{'invisible': [('kanban_state','!=','sleeping')], 'required': [('kanban_state','=','sleeping')]}"/>
                         </group>
                         <group>
                             <field name="id"/>
@@ -222,6 +223,7 @@
                                                 <a t-if="record.kanban_state.raw_value === 'normal'" type="object" string="Queued" name="set_kanban_state_active" class="oe_kanban_status"> </a>
                                                 <a t-if="record.kanban_state.raw_value === 'active'" type="object" string="In Progress" name="set_kanban_state_blocked" class="oe_kanban_status oe_kanban_status_green"> </a>
                                                 <a t-if="record.kanban_state.raw_value === 'blocked'" type="object" string="Blocked" name="set_kanban_state_normal" class="oe_kanban_status oe_kanban_status_red"> </a>
+                                                <a t-if="record.kanban_state.raw_value === 'sleeping'" type="object" string="Sleeping" name="set_kanban_state_normal" class="oe_kanban_status oe_kanban_status_blue"> </a>
                                                 <t t-set="priority" t-value="record.priority.raw_value || 5"/>
                                                 <a type="object" name="set_priority" args="['3']" t-if="priority gt 3" title="Normal Priority">
                                                    <img src="/web/static/src/img/icons/star-off.png" width="16" height="16"/>
@@ -353,6 +355,19 @@
                     <label for="use_issues"/>
                 </xpath>
             </field>
+        </record>
+
+        <record model="ir.cron" id="awaken_sleeping_issues_update">
+            <field name="name">Awaken Sleeping Issues</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="doall" eval="False"/>
+            <field name="model" eval="'project.issue'"/>
+            <field name="function" eval="'awaken_sleeping_issues'"/>
+            <field name="args" eval="'()'"/>
+            <field name="nextcall" eval="'2018-11-18 00:00:01'"/>
+            <field name="priority">100</field>
         </record>
 
     </data>

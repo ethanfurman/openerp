@@ -244,12 +244,21 @@ class project_issue(base_stage, osv.osv):
                       When the case is over, the status is set to \'Done\'.\
                       If the case needs to be reviewed then the status is \
                       set to \'Pending\'.'),
-        'kanban_state': fields.selection([('normal', 'Queued'),('blocked', 'Blocked'),('active', 'In Progress')], 'Kanban State',
-                                         help="A Issue's kanban state indicates special situations affecting it:\n"
-                                              " * Queued is waiting\n"
-                                              " * Blocked indicates something is preventing the progress of this issue\n"
-                                              " * In Progress indicates the issue is currently being worked on",
-                                         readonly=False, required=False),
+        'kanban_state': fields.selection([
+                ('normal', 'Queued'),
+                ('blocked', 'Blocked'),
+                ('active', 'In Progress'),
+                ('sleeping', 'Sleeping'),
+                ],
+            string='Kanban State',
+            help="A Issue's kanban state indicates special situations affecting it:\n"
+                 " * Queued is waiting\n"
+                 " * Blocked indicates something is preventing the progress of this issue\n"
+                 " * In Progress indicates the issue is currently being worked on\n"
+                 " * Sleeping indicates task is inactive until a certain date",
+            readonly=False, required=False,
+            ),
+        'awake_date': fields.date('Awake Date', help='Date to move from Sleeping to In Progress'),
         'email_from': fields.char('Email', size=128, help="These people will receive email.", select=1),
         'email_cc': fields.char('Watchers Emails', size=256, help="These email addresses will be added to the CC field of all inbound and outbound emails for this record before being sent. Separate multiple email addresses with a comma"),
         'date_open': fields.datetime('Opened', readonly=True,select=True),
@@ -478,6 +487,12 @@ class project_issue(base_stage, osv.osv):
         if not isinstance(ids,list):
             ids = [ids]
         return self.case_set(cr, uid, ids, 'open', {'kanban_state': 'active',}, context=context)
+
+    def awaken_sleeping_issues(self, cr, uid, ids=None, arg=None, context=None):
+        today = fields.date.today(self, cr, uid, localtime=True, context=context)
+        if ids is None:
+            ids = self.search(cr, uid, [('awake_date','<=',today)], context=context)
+        return self.write(cr, uid, ids, {'awake_date':False, 'kanban_state':'active'}, context=context)
 
     # -------------------------------------------------------
     # Mail gateway
