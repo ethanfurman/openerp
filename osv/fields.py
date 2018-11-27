@@ -1618,31 +1618,20 @@ class property(function):
 
 class ref(object):
     def __init__(self, xml_id):
-        self.xml_id = xml_id
+        if xml_id.count('.') != 1:
+            raise ERPError('Bad Reference', 'reference must be <module>.<name>, not %r' % xml_id)
+        self.module, self.name = xml_id.split('.')
     def __call__(self, pool, cr):
         ir_model_data = pool.get('ir.model.data')
-        name = xml_id = self.xml_id
-        module = False
-        if '.' in xml_id:
-            if xml_id.count('.') > 1:
-                raise ERPError('Bad Reference', 'reference must be either <module>.<name> or <name>, not %r' % xml_id)
-            module, name = xml_id.split('.')
-        if module:
-            found = ir_model_data.read(
-                    cr, SUPERUSER_ID,
-                    [('module','=',module),('name','=',name)],
-                    fields=['res_id'],
-                    )
-        else:
-            found = ir_model_data.read(
-                    cr, SUPERUSER_ID,
-                    [('name','=',name)],
-                    fields=['res_id'],
-                    )
+        found = ir_model_data.read(
+                cr, SUPERUSER_ID,
+                [('module','=',self.module),('name','=',self.name)],
+                fields=['res_id'],
+                )
         if not found:
-            raise ERPError('Bad Reference', 'unable to find match for %r' % self.xml_id)
+            raise ERPError('Bad Reference', 'unable to find match for <%s.%s>' % (self.module, self.name))
         elif len(found) > 1:
-            raise ERPError('Bad Reference', 'too many matches for %r' % self.xml_id)
+            raise ERPError('Bad Reference', 'too many matches for <%s.%s>' % (self.module, self.name))
         return found[0]['res_id']
 
 def field_to_dict(model, cr, user, field, context=None):
