@@ -5004,6 +5004,10 @@ instance.web.form.SelectCreatePopup = instance.web.form.AbstractFormPopup.extend
             contexts: contexts || [],
             group_by_seq: groupbys || []
         }).done(function (results) {
+            if(results.error !== undefined) {
+                error = results.error;
+                throw _.str.sprintf("\ncode: %s\nmessage: %s\ndata: %s", error.code, error.message, error.data.debug);
+            };
             self.view_list.do_search(results.domain, results.context, results.group_by);
         });
     },
