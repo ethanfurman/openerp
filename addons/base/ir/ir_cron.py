@@ -301,40 +301,32 @@ class ir_cron(osv.osv):
         if isinstance(ids, (int, long)):
             ids = [ids]
         db_name = threading.current_thread().dbname
-        if context.get('wait', False):
-            # run the job in this thread (ties up the client as well)
+        # set the next scheduled event to the last one
+        # but use our own cursor
+        db = openerp.sql_db.db_connect(db_name)
+        button_cr = db.cursor()
+        try:
             for id in ids:
-                self._acquire_job(db_name, id)
-            threading.current_thread().dbname = db_name
-            time.sleep(0.1)
-            return {'type': 'ir.actions.client', 'tag': 'reload'}
-        else:
-            # set the next scheduled event to the last one
-            # but use our own cursor
-            db = openerp.sql_db.db_connect(db_name)
-            button_cr = db.cursor()
-            try:
-                for id in ids:
-                    button_cr.execute(
-                            "SELECT id, nextcall, interval_type, interval_number"
-                            " FROM ir_cron"
-                            " WHERE id=%s",
-                            (id, ),
-                            )
-                    [cron_job] = button_cr.dictfetchall()
-                    nextcall = datetime.strptime(cron_job['nextcall'], DEFAULT_SERVER_DATETIME_FORMAT)
-                    while nextcall > datetime.now():
-                        nextcall -= _intervalTypes[cron_job['interval_type']](cron_job['interval_number'])
-                    button_cr.execute(
-                            "UPDATE ir_cron"
-                            " SET nextcall=%s"
-                            " WHERE id=%s",
-                            (nextcall.strftime(DEFAULT_SERVER_DATETIME_FORMAT), id),
-                            )
-                    button_cr.commit()
-            finally:
-                button_cr.close()
-            return True
+                button_cr.execute(
+                        "SELECT id, nextcall, interval_type, interval_number"
+                        " FROM ir_cron"
+                        " WHERE id=%s",
+                        (id, ),
+                        )
+                [cron_job] = button_cr.dictfetchall()
+                nextcall = datetime.strptime(cron_job['nextcall'], DEFAULT_SERVER_DATETIME_FORMAT)
+                while nextcall > datetime.now():
+                    nextcall -= _intervalTypes[cron_job['interval_type']](cron_job['interval_number'])
+                button_cr.execute(
+                        "UPDATE ir_cron"
+                        " SET nextcall=%s"
+                        " WHERE id=%s",
+                        (nextcall.strftime(DEFAULT_SERVER_DATETIME_FORMAT), id),
+                        )
+                button_cr.commit()
+        finally:
+            button_cr.close()
+        return True
 
     def external_job(self, cr, uid, args, timeout):
         "Runs the external job given in args"

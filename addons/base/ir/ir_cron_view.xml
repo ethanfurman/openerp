@@ -7,8 +7,7 @@
             <field name="arch" type="xml">
                 <form string="Scheduled Actions" version="7.0">
                     <header>
-                        <button name="button_submit" string="Submit to Background" class="oe_edit_hide" type="object" context="{'wait': False}" />
-                        <button name="button_submit" string="Run &amp; Wait" class="oe_edit_hide" type="object" context="{'wait': True}" />
+                        <button name="button_submit" string="Submit to Background" class="oe_edit_hide" type="object" />
                         <field name="state" widget="statusbar" statusbar_visible='waiting,running'/>
                     </header>
                     <sheet>
