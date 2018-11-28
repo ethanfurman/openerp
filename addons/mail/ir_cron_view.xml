@@ -7,16 +7,24 @@
             <field name="model">ir.cron</field>
             <field name="inherit_id" ref="base.ir_cron_view"/>
             <field name="arch" type="xml">
+                <xpath expr="//button[@name='button_submit']" position="before">
+                    <button name='button_pause' string="Pause job" class="oe_edit_hide" type="object" attrs="{'invisible': ['|',('mail_paused','!=',False),('active','=',False)]}"/>
+                    <button name='button_resume' string="Resume job" class="oe_edit_hide" type="object" attrs="{'invisible': [('mail_paused','=',False)]}"/>
+                </xpath>
+                <xpath expr="//button[@name='button_submit']" position="replace">
+                    <button name="button_submit" string="Submit to Background" class="oe_edit_hide" type="object" attrs="{'invisible': [('active','=',False)]}"/>
+                </xpath>
                 <xpath expr="//field[@name='user_id']" position="replace">
                     <field name="user_id" string="Run as"/>
                 </xpath>
                 <xpath expr="//field[@name='priority']" position="after">
-                    <field name="notify_ids" on_change="onchange_user_ids(notify_ids)">
+                    <field name="mail_notify_ids">
                         <tree>
                             <field name="name"/>
                             <field name="login"/>
                         </tree>
                     </field>
+                    <field name="mail_paused" invisible='1'/>
                 </xpath>
             </field>
         </record>
