@@ -33,10 +33,16 @@ def set(type, id, status, note):
         get_records(model, ids=id)
     except MissingRecord:
         abort('record not found in %r' % models[type].model_name)
-    if note:
-        model.write([id], {'stage_id': stage.id, 'message_body': note})
+    if status == 'test':
+        k_state = 'active'
+    elif status == 'install':
+        k_state = 'blocked'
     else:
-        model.write([id], {'stage_id': stage.id})
+        abort('unknown status: %r' % (status, ))
+    if note:
+        model.write([id], {'stage_id': stage.id, 'message_body': note, 'kanban_state': k_state})
+    else:
+        model.write([id], {'stage_id': stage.id, 'kanban_state': k_state})
 
 
 @Command()
