@@ -26,21 +26,18 @@ class ir_cron(osv.Model):
         """
         After super logs the exception and rollsback, send an email to anyone in notify_ids.
         """
-        super(ir_cron, self)._handle_callback_exception(cr, uid, model_name, method_name, args, job_id, job_name, job_type, job_exception)
-        cr.execute("SELECT user_id FROM cron_notify_rel WHERE job_id=%s", (job_id, ))
-        notify_ids = [r[0] for r in cr.fetchall()]
-        if notify_ids:
-            subject = 'Failed Job: ' + job_name
-            message = '\n'.join(['<pre>%s</pre>' % line for line in traceback.format_exc(job_exception).split('\n')])
-            res_users = self.pool.get('res.users')
-            res_users.message_notify(cr, SUPERUSER_ID, notify_ids, subject=subject, message=message, model=self._name, res_id=job_id)
+        super(ir_cron, self)._handle_callback_exception(cr, SUPERUSER_ID, model_name, method_name, args, job_id, job_name, job_type, job_exception)
+        body = '\n'.join([
+            '<pre>\n%s\n</pre>' % line
+            for line in traceback.format_exc(
+                job_exception
+                ).split('\n')
+            ])
+        self._mail_cron_results(cr, SUPERUSER_ID, job_id, 'Failed job', body)
 
     def _check_paused_jobs(self, cr, uid, arg=None, context=None):
         """Send reminder for paused jobs."""
         try:
-            # get web url
-            cr.execute("SELECT value FROM ir_config_parameter WHERE key='web.base.url'")
-            web_url = cr.dictfetchall()[0]['value']
             # check for inactive jobs that require a reminder
             cr.execute("""SELECT id FROM ir_cron
                           WHERE numbercall != 0
@@ -48,31 +45,20 @@ class ir_cron(osv.Model):
                           ORDER BY priority""")
             reminder_job_ids = [d['id'] for d in cr.dictfetchall()]
             reminder_jobs = self.read(
-                    cr, uid,
+                    cr, SUPERUSER_ID,
                     reminder_job_ids,
-                    fields=['id','mail_notify_ids','mail_inactive_start','name'],
+                    fields=['id','mail_inactive_start','name'],
                     context=context,
                     )
-        except Exception:
-            _logger.error('Exception in cron:', exc_info=True)
-            raise
-        # send in-system emails
-        mail_message = self.pool.get('mail.message')
-        res_users = self.pool.get('res.users')
-        if mail_message is None or res_users is None:
-            return False
-        result = []
-        for inactive_job in reminder_jobs:
-            result.append('%s - %s' % (inactive_job['id'], inactive_job['name']))
-            # transform user-based notify_ids to partner ids
-            notify_ids = [
-                    r['partner_id'][0]
-                    for r in res_users.read(
-                            cr, uid,
-                            inactive_job['mail_notify_ids'],
-                            context=context,
-                            )]
-            try:
+            result = ['Paused jobs:', '-----------']
+            for inactive_job in reminder_jobs:
+                result.append('%4d:  %s' % (inactive_job['id'], inactive_job['name']))
+                pause_date = fields.datetime.context_timestamp(
+                        cr, SUPERUSER_ID,
+                        timestamp=inactive_job['mail_inactive_start'],
+                        context=context,
+                        )
+                body = 'This job has been paused since %s' % pause_date
                 # Try to grab an exclusive lock on the job row from within the task transaction
                 cr.execute("""SELECT id, name
                                    FROM ir_cron
@@ -81,32 +67,49 @@ class ir_cron(osv.Model):
                                (inactive_job['id'],),
                                log_exceptions=False,
                                )
-                # send email
-                values = {
-                    'type': 'email',
-                    'email_from': 'Cron Scheduler',
-                    'author_id': 1,
-                    'model': 'ir.cron',
-                    'res_id': inactive_job['id'],
-                    'partner_ids': [(6, 0, notify_ids)],
-                    'subject': 'Inactive job',
-                    'body': 'Job %s (%s/#model=ir.cron&id=%s) has been paused since %s'
-                            % (
-                                inactive_job['name'],
-                                web_url,
-                                inactive_job['id'],
-                                fields.datetime.context_timestamp(
-                                    cr, uid,
-                                    timestamp=inactive_job['mail_inactive_start'],
-                                    context=context,
-                                    ),
-                                ),
-                    }
-                mail_message.create(cr, 1, values, context=context)
-            except Exception:
-                _logger.error('Exception in cron:', exc_info=True)
-                raise
+                self._mail_cron_results(cr, SUPERUSER_ID, inactive_job['id'], 'Inactive job', body, context=context)
+        except Exception:
+            _logger.error('Exception in cron:', exc_info=True)
+            raise
+
+        if len(result) == 2:
+            result = []
         return '\n'.join(result)
+
+
+    def _mail_cron_results(self, cr, uid, job_id, subject, body, context=None):
+        # get needed tables and job
+        mail_message = self.pool.get('mail.message')
+        res_users = self.pool.get('res.users')
+        job = self.read(cr, uid, job_id, fields=['id','mail_notify_ids'], context=context)
+        # send in-system emails
+        if mail_message is None or res_users is None:
+            return False
+        # transform user-based notify_ids to partner ids
+        notify_ids = [
+                r['partner_id'][0]
+                for r in res_users.read(
+                        cr, uid,
+                        job['mail_notify_ids'],
+                        context=context,
+                        )]
+        if not notify_ids:
+            # nobody listed?  log an error
+            _logger.error('no recipients listed for job %s:\n\tsubject: %s\n\t%s', job_id, subject, body)
+            return False
+        else:
+            # send email
+            values = {
+                'type': 'email',
+                'email_from': 'Cron Scheduler',
+                'author_id': 1,
+                'model': 'ir.cron',
+                'res_id': job_id,
+                'partner_ids': [(6, 0, notify_ids)],
+                'subject': subject,
+                'body': body,
+                }
+            return mail_message.create(cr, 1, values, context=context)
 
     def button_pause(self, cr, uid, ids, context=None):
         return self.write(
