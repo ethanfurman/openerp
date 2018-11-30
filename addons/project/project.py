@@ -1171,8 +1171,6 @@ class task(base_stage, osv.osv):
         self._store_history(cr, uid, [task_id], context=context)
         return task_id
 
-    # Overridden to reset the kanban_state to normal whenever
-    # the stage (stage_id) of the task changes.
     def write(self, cr, uid, ids, vals, context=None):
         if isinstance(ids, (int, long)):
             ids = [ids]
@@ -1181,19 +1179,7 @@ class task(base_stage, osv.osv):
             if project_id:
                 vals.setdefault('message_follower_ids', [])
                 vals['message_follower_ids'] += [(6, 0,[follower.id]) for follower in project_id.message_follower_ids]
-        if vals and not 'kanban_state' in vals and 'stage_id' in vals:
-            new_stage = vals.get('stage_id')
-            vals_reset_kstate = dict(vals, kanban_state='normal')
-            for t in self.browse(cr, uid, ids, context=context):
-                #TO FIX:Kanban view doesn't raise warning
-                #stages = [stage.id for stage in t.project_id.type_ids]
-                #if new_stage not in stages:
-                    #raise osv.except_osv(_('Warning!'), _('Stage is not defined in the project.'))
-                write_vals = vals_reset_kstate if t.stage_id != new_stage else vals
-                super(task, self).write(cr, uid, [t.id], write_vals, context=context)
-            result = True
-        else:
-            result = super(task, self).write(cr, uid, ids, vals, context=context)
+        result = super(task, self).write(cr, uid, ids, vals, context=context)
         if ('stage_id' in vals) or ('remaining_hours' in vals) or ('user_id' in vals) or ('state' in vals) or ('kanban_state' in vals):
             self._store_history(cr, uid, ids, context=context)
         return result
