@@ -338,22 +338,22 @@ class ir_cron(osv.osv):
         if job.returncode:
             result.append('script exited with: %s\n' % job.returncode)
         if job.stdout:
-            result.append('------')
+            result.append('======')
             result.append('stdout')
-            result.append('------')
+            result.append('======')
             result.append(job.stdout.strip())
         if job.stderr:
-            result.append('------')
+            result.append('======')
             result.append('stderr')
-            result.append('------')
+            result.append('======')
             result.append(job.stderr.strip())
         try:
             tmp.rmtree()
         except Exception:
             cls, exc, tb = sys.exc_info()
-            result.append('------')
+            result.append('======')
             result.append('rmtree')
-            result.append('------')
+            result.append('======')
             result.append('\n'.join(traceback.format_exception(cls, exc,tb)))
         return '\n'.join(result)
 
