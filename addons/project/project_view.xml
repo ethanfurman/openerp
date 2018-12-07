@@ -377,7 +377,7 @@
                     <h1>
                         <field name="name" placeholder="Task summary..."/>
                     </h1>
-                    <span class="oe_right oe_italic">ID: <field name="id" class="oe_inline"/></span>
+                    <span class="oe_right oe_italic">ID: t-<field name="id" class="oe_inline"/></span>
                     <group>
                         <group>
                             <field name="project_id"  on_change="onchange_project(project_id)" context="{'default_use_tasks':1}"/>

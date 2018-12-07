@@ -61,6 +61,7 @@
                     <h1><field name="name"/></h1>
                     <label for="categ_ids" class="oe_edit_only"/>
                     <field name="categ_ids" widget="many2many_tags"/>
+                    <span class="oe_right oe_italic">ID: i-<field name="id" class="oe_inline"/></span>
                     <group>
                         <group groups="base.group_user">
                             <field name="user_id"/>
@@ -75,7 +76,6 @@
                             <field name="awake_date" string="Sleep until" attrs="{'invisible': [('kanban_state','!=','sleeping')], 'required': [('kanban_state','=','sleeping')]}"/>
                         </group>
                         <group>
-                            <field name="id"/>
                             <field name="version_id" groups="base.group_user"/>
                             <field name="priority" groups="base.group_user"/>
                             <label for="task_id" groups="base.group_user"/>
