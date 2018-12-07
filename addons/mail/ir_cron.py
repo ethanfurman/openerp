@@ -27,13 +27,28 @@ class ir_cron(osv.Model):
         After super logs the exception and rollsback, send an email to anyone in notify_ids.
         """
         super(ir_cron, self)._handle_callback_exception(cr, SUPERUSER_ID, model_name, method_name, args, job_id, job_name, job_type, job_exception)
-        body = '\n'.join([
-            '<pre>\n%s\n</pre>' % line
-            for line in traceback.format_exc(
-                job_exception
-                ).split('\n')
-            ])
+        exc_lines = traceback.format_exc(job_exception).split('\n')
+        exc_lines[1:-2] = ['...']
+        body = '\n'.join(exc_lines)
         self._mail_cron_results(cr, SUPERUSER_ID, job_id, 'Failed job', body)
+
+    def _callback(self, cr, uid, model_name, method_name, args, job_id, job_name, job_type, job_timeout):
+        "mail job report if error detected in results"
+        result = super(ir_cron, self)._callback(
+                cr, uid,
+                model_name, method_name,
+                args, job_id, job_name, job_type, job_timeout,
+                )
+        lines = result.split('\n')
+        if len(lines) > 2:
+            # look for error output
+            if (
+                       '======\nstderr\n======' in result
+                    or '======\nrmtree\n======' in result
+                    or 'TIMEOUT' in result
+                ):
+                self._mail_cron_results(cr, SUPERUSER_ID, job_id, "Job errors", '\n'.join(lines[5:]))
+        return result
 
     def _check_paused_jobs(self, cr, uid, arg=None, context=None):
         """Send reminder for paused jobs."""
@@ -50,7 +65,7 @@ class ir_cron(osv.Model):
                     fields=['id','mail_inactive_start','name'],
                     context=context,
                     )
-            result = ['Paused jobs:', '-----------']
+            result = ['Paused jobs:', '===========']
             for inactive_job in reminder_jobs:
                 result.append('%4d:  %s' % (inactive_job['id'], inactive_job['name']))
                 pause_date = fields.datetime.context_timestamp(
@@ -99,6 +114,7 @@ class ir_cron(osv.Model):
             return False
         else:
             # send email
+            body = '<pre>' + body + '</pre>'
             values = {
                 'type': 'email',
                 'email_from': 'Cron Scheduler',
