@@ -28,6 +28,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from antipathy import Path
 from scription import Execute
+from tempfile import mkdtemp
 import shlex
 
 import openerp
@@ -331,8 +332,7 @@ class ir_cron(osv.osv):
     def external_job(self, cr, uid, args, timeout):
         "Runs the external job given in args"
         args = shlex.split(args)
-        tmp = Path('/tmp/oe-cron-jobs/%s' % args[0])
-        tmp.makedirs()
+        tmp = Path(mkdtemp(prefix='oe_cron_job-%s' % args[0]))
         job = Execute(args, cwd=tmp, timeout=timeout)
         result = []
         if job.returncode:
