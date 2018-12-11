@@ -333,7 +333,7 @@ class ir_cron(osv.osv):
         "Runs the external job given in args"
         args = shlex.split(args)
         tmp = Path(mkdtemp(prefix='oe_cron_job-%s' % args[0]))
-        job = Execute(args, cwd=tmp, timeout=timeout)
+        job = Execute(args, cwd=tmp, timeout=timeout or None)
         result = []
         if job.returncode:
             result.append('script exited with: %s\n' % job.returncode)
