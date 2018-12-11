@@ -47,7 +47,12 @@ class ir_cron(osv.Model):
                     or '======\nrmtree\n======' in result
                     or 'TIMEOUT' in result
                 ):
-                self._mail_cron_results(cr, SUPERUSER_ID, job_id, "Job errors", '\n'.join(lines[5:]))
+                self._mail_cron_results(
+                        cr, SUPERUSER_ID,
+                        job_id,
+                        "Errors in < %s >" % (job_name, ),
+                        ' '.join(args) + '\n'.join(lines[4:]),
+                        )
         return result
 
     def _check_paused_jobs(self, cr, uid, arg=None, context=None):
