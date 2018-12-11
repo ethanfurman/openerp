@@ -332,7 +332,7 @@ class ir_cron(osv.osv):
     def external_job(self, cr, uid, args, timeout):
         "Runs the external job given in args"
         args = shlex.split(args)
-        tmp = Path(mkdtemp(prefix='oe_cron_job-%s' % args[0]))
+        tmp = Path(mkdtemp(prefix='oe_cron_job-%s' % Path(args[0]).filename))
         job = Execute(args, cwd=tmp, timeout=timeout or None)
         result = []
         if job.returncode:
