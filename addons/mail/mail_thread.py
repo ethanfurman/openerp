@@ -456,7 +456,7 @@ class mail_thread(osv.AbstractModel):
             #
             # meanings of 'track_visibility':
             # - 'always' --> show current and (if possible) old value
-            # - 'on_change' --> show old and new value (only if value changed)
+            # - 'onchange' --> show old and new value (only if value changed)
             # - 'change_only' --> show new value (only if value changed)
 
             for col_name, col_info in tracked_fields.items():
