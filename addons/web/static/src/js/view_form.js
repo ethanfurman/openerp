@@ -1820,12 +1820,20 @@ instance.web.form.FormWidget = instance.web.Widget.extend(instance.web.form.Invi
      * @param node
      */
     init: function(field_manager, node) {
+        self = this;
         this._super(field_manager);
         this.field_manager = field_manager;
         if (this.field_manager instanceof instance.web.FormView)
             this.view = this.field_manager;
         this.node = node;
         this.modifiers = JSON.parse(this.node.attrs.modifiers || '{}');
+        if (this.modifiers.required) {
+            if (this.modifiers.required === true) {
+                this.modifiers.required = Array([node.attrs.name, '=', false]);
+            } else {
+                this.modifiers.required.splice(0, 0, [node.attrs.name, '=', false]);
+            };
+        };
         instance.web.form.InvisibilityChangerMixin.init.call(this, this.field_manager, this.modifiers.invisible);
 
         this.field_manager.on("view_content_has_changed", this, this.process_modifiers);
@@ -2168,7 +2176,7 @@ instance.web.form.AbstractField = instance.web.form.FormWidget.extend(instance.w
      * Private. Do not use.
      */
     _set_required: function() {
-        this.$el.toggleClass('oe_form_required', this.get("required"));
+        this.$el.toggleClass('oe_form_required', (this.get("required") && this.is_false()));
     },
     set_value: function(value_) {
         this.set({'value': value_});
