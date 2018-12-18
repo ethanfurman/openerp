@@ -1820,7 +1820,6 @@ instance.web.form.FormWidget = instance.web.Widget.extend(instance.web.form.Invi
      * @param node
      */
     init: function(field_manager, node) {
-        self = this;
         this._super(field_manager);
         this.field_manager = field_manager;
         if (this.field_manager instanceof instance.web.FormView)
