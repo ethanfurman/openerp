@@ -1181,6 +1181,10 @@ class CountingStream(object):
             raise StopIteration()
         return val
 
+def Singleton(cls):
+    "transforms class into a Singleton object"
+    return cls()
+
 class Sentinel(object):
     "provides better help for sentinels"
 
@@ -1188,11 +1192,22 @@ class Sentinel(object):
         self.text = text
 
     def __repr__(self):
-        return '<%s>' % self.text
+        return "<%s: %s>" % (self.__class__.__name__, self.text)
 
     def __str__(self):
-        return "Sentinel: <%s>" % self.text
+        return '<%s>' % self.text
 
+@Singleton
+class UnInit(Sentinel):
+    "a value that hasn't been assigned"
+
+    def __init__(self):
+        super(UnInit, self).__init__('???')
+
+    def __nonzero__(self):
+        return False
+
+    __bool__ = __nonzero__
 
 # periods for domain searches
 class Period(timedelta, Enum):
