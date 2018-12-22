@@ -116,7 +116,7 @@ class report_aged_receivable(osv.osv):
 
     _columns = {
         'name': fields.char('Month Range', size=7, readonly=True),
-        'balance': fields.function(_calc_bal, string='Balance', readonly=True),
+        'balance': fields.function(_calc_bal, string='Balance', type='float', digits=(16,2), readonly=True),
     }
 
     def init(self, cr, uid=1):

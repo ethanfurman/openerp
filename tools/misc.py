@@ -1202,12 +1202,40 @@ class UnInit(Sentinel):
     "a value that hasn't been assigned"
 
     def __init__(self):
-        super(UnInit, self).__init__('???')
+        Sentinel.__init__(self, '???')
 
     def __nonzero__(self):
         return False
 
     __bool__ = __nonzero__
+
+class default(object):
+    "provides ability to know when a user provides a value"
+
+    def __init__(self, value):
+        self._value = value
+
+    def __nonzero__(self):
+        return bool(self._value)
+    __bool__ = __nonzero__
+
+    def __repr__(self):
+        return "<default: %r>" % (self._value, )
+
+    def __str__(self):
+        return str(self._value)
+
+    @property
+    def value(self):
+        return self._value
+
+default_dict = default(dict())
+default_list = default(list())
+default_tuple = default(tuple())
+default_none = default(None)
+default_true = default(True)
+default_false = default(False)
+default_uninit = default(UnInit)
 
 # periods for domain searches
 class Period(timedelta, Enum):

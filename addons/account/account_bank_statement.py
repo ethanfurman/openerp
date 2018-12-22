@@ -107,7 +107,7 @@ class account_bank_statement(osv.osv):
             states={'confirm':[('readonly',True)]}),
         'balance_end_real': fields.float('Ending Balance', digits_compute=dp.get_precision('Account'),
             states={'confirm': [('readonly', True)]}),
-        'balance_end': fields.function(_end_balance,
+        'balance_end': fields.function(_end_balance, type='float', digits=(16,2),
             store = {
                 'account.bank.statement': (lambda self, cr, uid, ids, c={}: ids, ['line_ids','move_line_ids','balance_start'], 10),
                 'account.bank.statement.line': (_get_statement, ['amount'], 10),

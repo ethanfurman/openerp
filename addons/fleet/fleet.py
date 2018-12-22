@@ -83,7 +83,7 @@ class fleet_vehicle_cost(osv.Model):
         'parent_id': fields.many2one('fleet.vehicle.cost', 'Parent', help='Parent cost to this current cost'),
         'cost_ids': fields.one2many('fleet.vehicle.cost', 'parent_id', 'Included Services'),
         'odometer_id': fields.many2one('fleet.vehicle.odometer', 'Odometer', help='Odometer measure of the vehicle at the moment of this log'),
-        'odometer': fields.function(_get_odometer, fnct_inv=_set_odometer, type='float', string='Odometer Value', help='Odometer measure of the vehicle at the moment of this log'),
+        'odometer': fields.function(_get_odometer, fnct_inv=_set_odometer, type='float', digits=(16,2), string='Odometer Value', help='Odometer measure of the vehicle at the moment of this log'),
         'odometer_unit': fields.related('vehicle_id', 'odometer_unit', type="char", string="Unit", readonly=True),
         'date' :fields.date('Date',help='Date when the cost has been executed'),
         'contract_id': fields.many2one('fleet.vehicle.log.contract', 'Contract', help='Contract attached to this cost'),
@@ -383,7 +383,7 @@ class fleet_vehicle(osv.Model):
         'seats': fields.integer('Asset #', help='Used for depreciation schedules'),
         'doors': fields.integer('Equipment #', help='Printed on vehicle'),
         'tag_ids' :fields.many2many('fleet.vehicle.tag', 'fleet_vehicle_vehicle_tag_rel', 'vehicle_tag_id','tag_id', 'Tags'),
-        'odometer': fields.function(_get_odometer, fnct_inv=_set_odometer, type='float', string='Last Odometer', help='Odometer measure of the vehicle at the moment of this log'),
+        'odometer': fields.function(_get_odometer, fnct_inv=_set_odometer, type='float', string='Last Odometer', digits=(16,2), help='Odometer measure of the vehicle at the moment of this log'),
         'odometer_unit': fields.selection([('kilometers', 'Kilometers'),('miles','Miles')], 'Odometer Unit', help='Unit of the odometer ',required=True),
         'transmission': fields.selection([('manual', 'Manual'), ('automatic', 'Automatic')], 'Transmission', help='Transmission Used by the vehicle'),
         'fuel_type': fields.selection([('gasoline', 'Gasoline'), ('diesel', 'Diesel'), ('electric', 'Electric'), ('hybrid', 'Hybrid')], 'Fuel Type', help='Fuel Used by the vehicle'),
@@ -670,7 +670,7 @@ class fleet_vehicle_log_fuel(osv.Model):
         'inv_ref': fields.char('Invoice Reference', size=64),
         'vendor_id': fields.many2one('res.partner', 'Supplier', domain="[('supplier','=',True)]"),
         'notes': fields.text('Notes'),
-        'cost_amount': fields.related('cost_id', 'amount', string='Amount', type='float', store=True), #we need to keep this field as a related with store=True because the graph view doesn't support (1) to address fields from inherited table and (2) fields that aren't stored in database
+        'cost_amount': fields.related('cost_id', 'amount', string='Amount', type='float', digits=(16,2), store=True), #we need to keep this field as a related with store=True because the graph view doesn't support (1) to address fields from inherited table and (2) fields that aren't stored in database
         #'mpg': fields.boolean('MPG coming soon...'),
         'mpg': fields.float('mpg'),
     }
@@ -710,7 +710,7 @@ class fleet_vehicle_log_services(osv.Model):
         'purchaser_id': fields.many2one('res.partner', 'Purchaser', domain="['|',('customer','=',True),('employee','=',True)]"),
         'inv_ref': fields.char('Invoice Reference', size=64),
         'vendor_id': fields.many2one('res.partner', 'Supplier', domain="[('supplier','=',True)]"),
-        'cost_amount': fields.related('cost_id', 'amount', string='Amount', type='float', store=True), #we need to keep this field as a related with store=True because the graph view doesn't support (1) to address fields from inherited table and (2) fields that aren't stored in database
+        'cost_amount': fields.related('cost_id', 'amount', string='Amount', type='float', digits=(16,2), store=True), #we need to keep this field as a related with store=True because the graph view doesn't support (1) to address fields from inherited table and (2) fields that aren't stored in database
         'notes': fields.text('Notes'),
         'next_service': fields.char('Next service', size=32),
     }
@@ -910,8 +910,8 @@ class fleet_vehicle_log_contract(osv.Model):
         'cost_generated': fields.float('Recurring Cost Amount', help="Costs paid at regular intervals, depending on the cost frequency. If the cost frequency is set to unique, the cost will be logged at the start date"),
         'cost_frequency': fields.selection([('no','No'), ('daily', 'Daily'), ('weekly','Weekly'), ('monthly','Monthly'), ('yearly','Yearly')], 'Recurring Cost Frequency', help='Frequency of the recuring cost', required=True),
         'generated_cost_ids': fields.one2many('fleet.vehicle.cost', 'contract_id', 'Generated Costs', ondelete='cascade'),
-        'sum_cost': fields.function(_get_sum_cost, type='float', string='Indicative Costs Total'),
-        'cost_amount': fields.related('cost_id', 'amount', string='Amount', type='float', store=True), #we need to keep this field as a related with store=True because the graph view doesn't support (1) to address fields from inherited table and (2) fields that aren't stored in database
+        'sum_cost': fields.function(_get_sum_cost, type='float', digits=(16,2), string='Indicative Costs Total'),
+        'cost_amount': fields.related('cost_id', 'amount', string='Amount', type='float', digits=(16,2), store=True), #we need to keep this field as a related with store=True because the graph view doesn't support (1) to address fields from inherited table and (2) fields that aren't stored in database
     }
     _defaults = {
         'purchaser_id': lambda self, cr, uid, ctx: self.pool.get('res.users').browse(cr, uid, uid, context=ctx).partner_id.id or False,

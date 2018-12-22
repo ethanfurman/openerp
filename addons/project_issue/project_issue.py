@@ -276,21 +276,21 @@ class project_issue(base_stage, osv.osv):
         'duration': fields.float('Duration'),
         'task_id': fields.many2one('project.task', 'Task', domain="[('project_id','=',project_id)]"),
         'day_open': fields.function(_compute_day, string='Days to Open', \
-                                multi='compute_day', type="float", store=True),
+                                multi='compute_day', type="float", digits=(16,2), store=True),
         'day_close': fields.function(_compute_day, string='Days to Close', \
-                                multi='compute_day', type="float", store=True),
+                                multi='compute_day', type="float", digits=(16,2), store=True),
         'user_id': fields.many2one('res.users', 'Assigned to', required=False, select=1, track_visibility='onchange'),
         'working_hours_open': fields.function(_compute_day, string='Working Hours to Open the Issue', \
-                                multi='compute_day', type="float", store=True),
+                                multi='compute_day', type="float", digits=(16,2), store=True),
         'working_hours_close': fields.function(_compute_day, string='Working Hours to Close the Issue', \
-                                multi='compute_day', type="float", store=True),
+                                multi='compute_day', type="float", digits=(16,2), store=True),
         'inactivity_days': fields.function(_compute_day, string='Days since last action', \
                                 multi='compute_day', type="integer", help="Difference in days between last action and current date"),
         'color': fields.integer('Color Index'),
         'user_email': fields.related('user_id', 'email', type='char', string='User Email', readonly=True),
         'date_action_last': fields.datetime('Last Action', readonly=1),
         'date_action_next': fields.datetime('Next Action', readonly=1),
-        'progress': fields.function(_hours_get, string='Progress (%)', multi='hours', group_operator="avg", help="Computed as: Time Spent / Total Time.",
+        'progress': fields.function(_hours_get, string='Progress (%)', multi='hours', group_operator="avg", type='float', digits=(16,2), help="Computed as: Time Spent / Total Time.",
             store = {
                 'project.issue': (lambda self, cr, uid, ids, c={}: ids, ['task_id'], 10),
                 'project.task': (_get_issue_task, ['progress'], 10),

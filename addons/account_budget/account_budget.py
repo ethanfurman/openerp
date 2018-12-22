@@ -198,7 +198,7 @@ class crossovered_budget_lines(osv.osv):
         'planned_amount':fields.float('Planned Amount', required=True, digits_compute=dp.get_precision('Account')),
         'practical_amount':fields.function(_prac, string='Practical Amount', type='float', digits_compute=dp.get_precision('Account')),
         'theoritical_amount':fields.function(_theo, string='Theoretical Amount', type='float', digits_compute=dp.get_precision('Account')),
-        'percentage':fields.function(_perc, string='Percentage', type='float'),
+        'percentage':fields.function(_perc, string='Percentage', type='float', digits=(16,2)),
         'company_id': fields.related('crossovered_budget_id', 'company_id', type='many2one', relation='res.company', string='Company', store=True, readonly=True)
     }
 

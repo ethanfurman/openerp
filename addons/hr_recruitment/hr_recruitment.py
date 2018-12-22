@@ -230,9 +230,9 @@ class hr_applicant(base_stage, osv.Model):
         'reference': fields.char('Referred By', size=128),
         'source_id': fields.many2one('hr.recruitment.source', 'Source'),
         'day_open': fields.function(_compute_day, string='Days to Open', \
-                                multi='day_open', type="float", store=True),
+                                multi='day_open', type="float", digits=(16,2), store=True),
         'day_close': fields.function(_compute_day, string='Days to Close', \
-                                multi='day_close', type="float", store=True),
+                                multi='day_close', type="float", digits=(16,2), store=True),
         'color': fields.integer('Color Index'),
         'emp_id': fields.many2one('hr.employee', 'employee'),
         'user_email': fields.related('user_id', 'email', type='char', string='User Email', readonly=True),

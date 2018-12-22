@@ -272,9 +272,9 @@ class crm_lead(base_stage, format_address, osv.osv):
         'referred': fields.char('Referred By', size=64),
         'date_open': fields.datetime('Opened', readonly=True),
         'day_open': fields.function(_compute_day, string='Days to Open', \
-                                multi='day_open', type="float", store=True),
+                                multi='day_open', type="float", digits=(16,2), store=True),
         'day_close': fields.function(_compute_day, string='Days to Close', \
-                                multi='day_close', type="float", store=True),
+                                multi='day_close', type="float", digits=(16,2), store=True),
         'state': fields.related('stage_id', 'state', type="selection", store=True,
                 selection=crm.AVAILABLE_STATES, string="Status", readonly=True,
                 help='The Status is set to \'Draft\', when a case is created. If the case is in progress the Status is set to \'Open\'. When the case is over, the Status is set to \'Done\'. If the case needs to be reviewed then the Status is  set to \'Pending\'.'),

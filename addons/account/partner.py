@@ -188,8 +188,8 @@ class res_partner(osv.osv):
 
     _columns = {
         'credit': fields.function(_credit_debit_get,
-            fnct_search=_credit_search, string='Total Receivable', multi='dc', help="Total amount this customer owes you."),
-        'debit': fields.function(_credit_debit_get, fnct_search=_debit_search, string='Total Payable', multi='dc', help="Total amount you have to pay to this supplier."),
+            fnct_search=_credit_search, string='Total Receivable', type='float', digits=(16,2), multi='dc', help="Total amount this customer owes you."),
+        'debit': fields.function(_credit_debit_get, fnct_search=_debit_search, string='Total Payable', type='float', digits=(16,2), multi='dc', help="Total amount you have to pay to this supplier."),
         'debit_limit': fields.float('Payable Limit'),
         'property_account_payable': fields.property(
             'account.account',

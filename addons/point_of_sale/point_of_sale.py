@@ -241,6 +241,7 @@ class pos_session(osv.osv):
                 readonly=True),
         'cash_register_difference' : fields.related('cash_register_id', 'difference',
                 type='float',
+                digits=(16,2),
                 string='Difference',
                 help="Difference between the counted cash control at the closing and the computed balance.",
                 readonly=True),

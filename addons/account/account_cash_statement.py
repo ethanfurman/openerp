@@ -169,7 +169,7 @@ class account_cash_statement(osv.osv):
         return result
 
     _columns = {
-        'total_entry_encoding': fields.function(_get_sum_entry_encoding, string="Total Transactions",
+        'total_entry_encoding': fields.function(_get_sum_entry_encoding, string="Total Transactions", type='float', digits=(16,2),
             store = {
                 'account.bank.statement': (lambda self, cr, uid, ids, context=None: ids, ['line_ids','move_line_ids'], 10),
                 'account.bank.statement.line': (_get_statement_from_line, ['amount'], 10),
@@ -179,8 +179,8 @@ class account_cash_statement(osv.osv):
         'opening_details_ids' : fields.one2many('account.cashbox.line', 'bank_statement_id', string='Opening Cashbox Lines'),
         'closing_details_ids' : fields.one2many('account.cashbox.line', 'bank_statement_id', string='Closing Cashbox Lines'),
         'user_id': fields.many2one('res.users', 'Responsible', required=False),
-        'difference' : fields.function(_compute_difference, method=True, string="Difference", type="float"),
-        'last_closing_balance' : fields.function(_compute_last_closing_balance, method=True, string='Last Closing Balance', type='float'),
+        'difference' : fields.function(_compute_difference, method=True, string="Difference", type="float", digits=(16,2)),
+        'last_closing_balance' : fields.function(_compute_last_closing_balance, method=True, string='Last Closing Balance', type='float', digits=(16,2)),
     }
     _defaults = {
         'state': 'draft',

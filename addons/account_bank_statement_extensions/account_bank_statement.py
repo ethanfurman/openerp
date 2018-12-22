@@ -109,7 +109,7 @@ class account_bank_statement_line(osv.osv):
         'globalisation_id': fields.many2one('account.bank.statement.line.global', 'Globalisation ID',
             states={'confirm': [('readonly', True)]},
             help="Code to identify transactions belonging to the same globalisation level within a batch payment"),
-        'globalisation_amount': fields.related('globalisation_id', 'amount', type='float',
+        'globalisation_amount': fields.related('globalisation_id', 'amount', type='float', digits=(16,2),
             relation='account.bank.statement.line.global', string='Glob. Amount', readonly=True),
         'state': fields.selection([('draft', 'Draft'), ('confirm', 'Confirmed')],
             'Status', required=True, readonly=True),

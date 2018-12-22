@@ -162,8 +162,8 @@ class stock_location(osv.osv):
         'complete_name': fields.function(_complete_name, type='char', size=256, string="Location Name",
                             store={'stock.location': (_get_sublocations, ['name', 'location_id'], 10)}),
 
-        'stock_real': fields.function(_product_value, type='float', string='Real Stock', multi="stock"),
-        'stock_virtual': fields.function(_product_value, type='float', string='Virtual Stock', multi="stock"),
+        'stock_real': fields.function(_product_value, type='float', digits=(16,2), string='Real Stock', multi="stock"),
+        'stock_virtual': fields.function(_product_value, type='float', digits=(16,2), string='Virtual Stock', multi="stock"),
 
         'location_id': fields.many2one('stock.location', 'Parent Location', select=True, ondelete='cascade'),
         'child_ids': fields.one2many('stock.location', 'location_id', 'Contains'),

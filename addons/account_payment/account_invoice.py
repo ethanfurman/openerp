@@ -46,7 +46,7 @@ class Invoice(osv.osv):
 
     _columns = {
         'amount_to_pay': fields.related('residual',
-            type='float', string='Amount to be paid',
+            type='float', digits=(16,2), string='Amount to be paid',
             help='The amount which should be paid at the current date. '),
     }
 

@@ -63,12 +63,12 @@ from lxml import etree
 from lxml.etree import XPathEvalError
 
 import fields
-from fields import SelectionEnum
+from fields import SelectionEnum, Sentinel, default
 import openerp
 import openerp.netsvc as netsvc
 import openerp.tools as tools
 from openerp.tools.config import config
-from openerp.tools.misc import CountingStream, issubclass, tracker
+from openerp.tools.misc import CountingStream, issubclass
 from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
 from openerp import SUPERUSER_ID
@@ -641,6 +641,8 @@ def get_pg_type(f, type_override=None):
     return pg_type
 
 
+Missing = Sentinel('value not in object')
+
 class MetaModel(type):
     """
     Metaclass for the Model.
@@ -836,6 +838,7 @@ class BaseModel(object):
 
         cr.commit()
 
+        # update postgres (maybe)
         cr.execute("SELECT * FROM ir_model_fields WHERE model=%s", (self._name,))
         cols = {}
         for rec in cr.dictfetchall():
@@ -916,6 +919,29 @@ class BaseModel(object):
                         break
         cr.commit()
 
+    @classmethod
+    def _field_finalize(cls, field_name, new_field, parent_field):
+        # new_field may have defaults, but parent field should be finalized already
+        # verify that parent field is final
+        for name, parent_setting in parent_field.__dict__.items():
+            column_name_printed = False
+            new_setting = getattr(new_field, name, Missing)
+            if new_setting is Missing:
+                if not column_name_printed:
+                    column_name_printed = True
+                setattr(new_field, name, parent_setting)
+            elif isinstance(new_setting, default):
+                if parent_setting != new_setting.value:
+                    if not column_name_printed:
+                        column_name_printed = True
+                setattr(new_field, name, parent_setting)
+            elif new_setting is parent_setting or new_setting == parent_setting:
+                pass
+            else:
+                if not column_name_printed:
+                    column_name_printed = True
+        new_field._finalize(cls, field_name)
+
     #
     # Goal: try to apply inheritance at the instanciation level and
     #       put objects in the pool var
@@ -941,7 +967,9 @@ class BaseModel(object):
             '_sql_constraints']
 
         parent_names = getattr(cls, '_inherit', None)
+        original_cls = cls
         if parent_names:
+            _columns = getattr(cls, '_columns', {})
             if isinstance(parent_names, (str, unicode)):
                 name = cls._name or parent_names
                 parent_names = [parent_names]
@@ -962,10 +990,17 @@ class BaseModel(object):
                 for s in attributes:
                     new = copy.copy(getattr(parent_model, s, {}))
                     if s == '_columns':
-                        # Don't _inherit custom fields.
                         for c in new.keys():
                             if new[c].manual:
+                                # Don't _inherit custom fields.
                                 del new[c]
+                                continue
+                            if name in parent_names:
+                                # modifying existing table
+                                # bring parent settings forward, unless overridden
+                                f = _columns.get(c)
+                                if f is not None:
+                                    cls._field_finalize(c, f, new[c])
                         # Duplicate float fields because they have a .digits
                         # cache (which must be per-registry, not server-wide).
                         for c in new.keys():
@@ -1002,6 +1037,10 @@ class BaseModel(object):
         else:
             cls._local_constraints = getattr(cls, '_constraints', [])
             cls._local_sql_constraints = getattr(cls, '_sql_constraints', [])
+
+        # finish finalize all fields
+        for name, field in cls._columns.items():
+            field._finalize(original_cls, name)
 
         if not getattr(cls, '_original_module', None):
             cls._original_module = cls._module
@@ -2592,7 +2631,6 @@ class BaseModel(object):
                 raise ValueError('unable to process domain: %r' % arg)
         return self._search(cr, user, new_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
-    @tracker('product.supplierinfo')
     def name_get(self, cr, user, ids, context=None):
         """
         Returns the preferred display value (text representation) for the records with the
@@ -2638,7 +2676,6 @@ class BaseModel(object):
         """
         return self._name_search(cr, user, name, args, operator, context, limit)
 
-    @tracker('product.supplierinfo')
     def name_create(self, cr, uid, name, context=None):
         """
         Creates a new record by calling :meth:`~.create` with only one
@@ -2654,9 +2691,7 @@ class BaseModel(object):
            :rtype: tuple
            :return: the :meth:`~.name_get` pair value for the newly-created record.
         """
-        print 'creating record for %r' % (name, )
         rec_id = self.create(cr, uid, {self._rec_name: name}, context)
-        print '  received id: %r' % (rec_id, )
         return self.name_get(cr, uid, [rec_id], context)[0]
 
     # private implementation of name_search, allows passing a dedicated user for the name_get part to
@@ -4586,7 +4621,6 @@ class BaseModel(object):
     #
     # TODO: Should set perm to user.xxx
     #
-    @tracker('product.supplierinfo')
     def create(self, cr, user, vals, context=None):
         """
         Create a new record for the model.

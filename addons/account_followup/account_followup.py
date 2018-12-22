@@ -108,7 +108,7 @@ class account_move_line(osv.osv):
         'followup_line_id': fields.many2one('account_followup.followup.line', 'Follow-up Level',
                                         ondelete='restrict'), #restrict deletion of the followup line
         'followup_date': fields.date('Latest Follow-up', select=True),
-        'result':fields.function(_get_result, type='float', method=True,
+        'result':fields.function(_get_result, type='float', digits=(16,2), method=True,
                                 string="Balance") #'balance' field is not the same
     }
 
@@ -454,11 +454,11 @@ class res_partner(osv.osv):
             store=False,
             multi="latest"),
         'payment_amount_due':fields.function(_get_amounts_and_date,
-                                                 type='float', string="Amount Due",
+                                                 type='float', digits=(16,2), string="Amount Due",
                                                  store = False, multi="followup",
                                                  fnct_search=_payment_due_search),
         'payment_amount_overdue':fields.function(_get_amounts_and_date,
-                                                 type='float', string="Amount Overdue",
+                                                 type='float', digits=(16,2), string="Amount Overdue",
                                                  store = False, multi="followup",
                                                  fnct_search = _payment_overdue_search),
         'payment_earliest_due_date':fields.function(_get_amounts_and_date,

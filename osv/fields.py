@@ -50,6 +50,9 @@ from openerp.tools.translate import _
 from openerp.tools import Enum, issubclass, Sentinel, EnumAutoValue
 from openerp.tools import float_round, float_repr
 from openerp.tools import html_sanitize
+from openerp.tools import default, default_uninit, UnInit
+from openerp.tools import default_dict, default_list
+from openerp.tools import default_none, default_true, default_false
 import simplejson
 from openerp import SUPERUSER_ID
 import osv
@@ -93,9 +96,9 @@ class _column(object):
     _field_name = None
 
     def __init__(
-            self, string='unknown', required=False, readonly=False, domain=None,
-            context=None, states=None, priority=0, change_default=False, size=None,
-            ondelete=None, translate=False, select=False, manual=False, **args
+            self, string=default('???'), required=default_false, readonly=default_false, domain=default_list,
+            context=default_dict, states=default_dict, priority=default(0), change_default=default_false, size=default_none,
+            ondelete=default_none, translate=default_false, select=default_false, manual=default_false, **args
             ):
         """
 
@@ -103,34 +106,38 @@ class _column(object):
         It corresponds to the 'state' column in ir_model_fields.
 
         """
-        if domain is None:
-            domain = []
-        if context is None:
-            context = {}
-        self.states = states or {}
+        self.states = states
         self.string = string
         self.readonly = readonly
         self.required = required
         self.size = size
-        self.help = args.get('help', '')
+        self.help = args.pop('help', default(''))
         self.priority = priority
         self.change_default = change_default
-        self.ondelete = ondelete.lower() if ondelete else None # defaults to 'set null' in ORM
+        if isinstance(ondelete, basestring):
+            ondelete = ondelete.lower()
+        self.ondelete = ondelete
         self.translate = translate
         self._domain = domain
         self._context = context
-        self.write = False
-        self.read = False
-        self.view_load = 0
+        self.write = default_false
+        self.read = default_false
+        self.view_load = default(0)
         self.select = select
         self.manual = manual
-        self.selectable = True
-        self.group_operator = args.get('group_operator', False)
-        self.groups = False  # CSV list of ext IDs of groups that can access this field
-        self.deprecated = False # Optional deprecation warning
-        for a in args:
-            if args[a]:
-                setattr(self, a, args[a])
+        self.selectable = default_true
+        self.group_operator = args.get('group_operator', default_false)
+        self.groups = default_false  # CSV list of ext IDs of groups that can access this field
+        self.deprecated = default_false # Optional deprecation warning
+        for a, v in args.items():
+            setattr(self, a, v)
+
+    def _finalize(self, cls, name):
+        for a, v in self.__dict__.items():
+            if isinstance(v, default):
+                if v.value is UnInit:
+                    raise ValueError("%s.%s:%s -- %r is a required field" % (cls.__module__, cls.__name__, name, a))
+                setattr(self, a, v.value)
 
     def restart(self):
         pass
@@ -173,7 +180,7 @@ class boolean(_column):
     _symbol_f = lambda x: x and 'True' or 'False'
     _symbol_set = (_symbol_c, _symbol_f)
 
-    def __init__(self, string='unknown', required=False, choice=(u'No', u'Yes'), **args):
+    def __init__(self, string=default('???'), required=default_false, choice=default((u'No', u'Yes')), **args):
         super(boolean, self).__init__(string=string, required=required, **args)
         self.choice = choice
         if required:
@@ -189,14 +196,14 @@ class integer(_column):
     _symbol_set = (_symbol_c, _symbol_f)
     _symbol_get = lambda self,x: x or 0
 
-    def __init__(self, string='unknown', required=False, **args):
+    def __init__(self, string=default('???'), required=default_false, **args):
         super(integer, self).__init__(string=string, required=required, **args)
 
 class reference(_column):
     _type = 'reference'
     _classic_read = False # post-process to handle missing target
 
-    def __init__(self, string, selection, size, **args):
+    def __init__(self, string=default('???'), selection=default_uninit, size=default_uninit, **args):
         _column.__init__(self, string=string, size=size, selection=selection, **args)
 
     def get(self, cr, obj, ids, name, uid=None, context=None, values=None):
@@ -224,8 +231,8 @@ class reference(_column):
 class char(_column):
     _type = 'char'
 
-    def __init__(self, string="unknown", size=None, **args):
-        _column.__init__(self, string=string, size=size or None, **args)
+    def __init__(self, string=default('???'), size=default_none, **args):
+        _column.__init__(self, string=string, size=size, **args)
         self._symbol_set = (self._symbol_c, self._symbol_set_char)
 
     # takes a string (encoded in utf8) and returns a string (encoded in utf8)
@@ -266,7 +273,7 @@ class float(_column):
     _symbol_set = (_symbol_c, _symbol_f)
     _symbol_get = lambda self,x: x or 0.0
 
-    def __init__(self, string='unknown', digits=None, digits_compute=None, required=False, **args):
+    def __init__(self, string=default('???'), digits=default_none, digits_compute=default_none, required=default_false, **args):
         _column.__init__(self, string=string, required=required, **args)
         self.digits = digits
         # synopsis: digits_compute(cr) ->  (precision, scale)
@@ -449,7 +456,7 @@ class binary(_column):
     _classic_read = False
     _prefetch = False
 
-    def __init__(self, string='unknown', filters=None, **args):
+    def __init__(self, string=default('???'), filters=default_none, **args):
         _column.__init__(self, string=string, **args)
         self.filters = filters
 
@@ -487,18 +494,21 @@ class binaryname(char):
 class selection(_column):
     _type = 'selection'
 
-    def __init__(self, selection, string='unknown', sort_order=None, **args):
+    def __init__(self, selection=default_uninit, string=default('???'), sort_order=default_none, **args):
         # selection -> [('internal_name', 'User Presentable Name') [, ...]]
         _column.__init__(self, string=string, **args)
         self.selection = selection
+        self.sort_order = sort_order
+
+    def _finalize(self, cls, name):
         # sort_order allows different sorting of this field; default is
         # alphabetical by internal_name; other options are:
         # - definition (definition order); and
         # - user_name (alpha by User Presentable Name)
-        if sort_order is None and issubclass(selection, SelectionEnum):
-            self.sort_order = 'definition'
-        else:
-            self.sort_order = sort_order
+        if self.selection is not default_uninit and self.sort_order is default_none:
+            if issubclass(self.selection, SelectionEnum):
+                self.sort_order = 'definition'
+        _column._finalize(self, cls, name)
 
 # ---------------------------------------------------------
 # Relationals fields
@@ -521,7 +531,7 @@ class many2one(_column):
     _symbol_f = lambda x: x or None
     _symbol_set = (_symbol_c, _symbol_f)
 
-    def __init__(self, obj, string='unknown', auto_join=False, **args):
+    def __init__(self, obj=default_uninit, string=default('???'), auto_join=default_false, **args):
         _column.__init__(self, string=string, **args)
         self._obj = obj
         self._auto_join = auto_join
@@ -592,7 +602,7 @@ class one2many(_column):
     _prefetch = False
     _type = 'one2many'
 
-    def __init__(self, obj, fields_id, string='unknown', limit=None, auto_join=False, order=None, **args):
+    def __init__(self, obj=default_uninit, fields_id=default_uninit, string=default('???'), limit=default_none, auto_join=default_false, order=default_none, **args):
         _column.__init__(self, string=string, **args)
         self._obj = obj
         self._fields_id = fields_id
@@ -600,7 +610,7 @@ class one2many(_column):
         self._auto_join = auto_join
         self._order = order
         #one2many can't be used as condition for defaults
-        assert(self.change_default != True)
+        assert(not self.change_default)
 
     def get(self, cr, obj, ids, name, user=None, offset=0, context=None, values=None):
         if context is None:
@@ -728,19 +738,26 @@ class many2many(_column):
     _prefetch = False
     _type = 'many2many'
 
-    def __init__(self, obj, rel=None, id1=None, id2=None, string='unknown', limit=None, order=None, **args):
+    def __init__(self, obj=default_uninit, rel=default_none, id1=default_none, id2=default_none, string=default('???'), limit=default_none, order=default_none, **args):
         """
         """
         _column.__init__(self, string=string, **args)
         self._obj = obj
-        if rel and '.' in rel:
-            raise ValueError(_('The second argument of the many2many field %s must be a SQL table !'\
-                'You used %s, which is not a valid SQL table name.')% (string,rel))
         self._rel = rel
         self._id1 = id1
         self._id2 = id2
         self._limit = limit
         self._order = order
+
+    def _finalize(self, cls, name):
+        _column._finalize(self, cls, name)
+        rel = self._rel
+        if rel and '.' in rel:
+            raise ValueError(_(
+            "The 'rel' argument of a many2many field must be None or an SQL table, not %r.  "
+            "Field: %s.%s.%s" % (
+                rel, cls.__module__, cls.__name__, name,
+                )))
 
     def _sql_names(self, source_model):
         """Return the SQL names defining the structure of the m2m relationship table
@@ -1136,10 +1153,12 @@ class function(_column):
     # multi: compute several fields in one call
     #
     def __init__(
-            self, fnct, arg=None, fnct_inv=None, fnct_inv_arg=None, type='float',
-            fnct_search=None, obj=None, store=False, multi=False, **args
+            self, fnct=default_uninit, arg=default_none, fnct_inv=default_none, fnct_inv_arg=default_none, type=default_uninit,
+            fnct_search=default_none, obj=default_none, store=default_false, multi=default_false, **args
             ):
+        #
         _column.__init__(self, **args)
+        #
         self._obj = obj
         self._fnct = fnct
         self._fnct_inv = fnct_inv
@@ -1148,18 +1167,10 @@ class function(_column):
         if 'relation' in args:
             self._obj = args['relation']
 
-        self.digits = args.get('digits', (16,2))
-        self.digits_compute = args.get('digits_compute', None)
-
         self._fnct_inv_arg = fnct_inv_arg
-        if not fnct_inv:
-            self.readonly = 1
         self._type = type
         self._fnct_search = fnct_search
         self.store = store
-
-        if not fnct_search and not store:
-            self.selectable = False
 
         if fnct_inv is True:
             if fnct_inv_arg:
@@ -1173,24 +1184,27 @@ class function(_column):
                     'one2many': one2many.set,
                     }.get(type, _column.set)
 
-        if store:
-            if self._type != 'many2one':
-                # m2o fields need to return tuples with name_get, not just foreign keys
-                self._classic_read = True
+        if self.store:
             self._classic_write = True
-            if type=='binary':
-                self._symbol_get=lambda x:x and str(x)
 
         if type == 'float':
             self._symbol_c = float._symbol_c
             self._symbol_f = float._symbol_f
             self._symbol_set = float._symbol_set
+            # self.digits = args.get('digits', default((16,2)))
+            if not args.get('digits_compute'):
+                self.digits_compute = default_none
+            if not args.get('digits'):
+                if self.digits_compute:
+                    self.digits = args.get('digits', default_none)
+                else:
+                    self.digits = args.get('digits', default_uninit)
 
         if type == 'boolean':
             self._symbol_c = boolean._symbol_c
             self._symbol_f = boolean._symbol_f
             self._symbol_set = boolean._symbol_set
-            self.choice = args.pop('choice', (u'No', u'Yes'))
+            self.choice = args.pop('choice', default((u'No', u'Yes')))
 
         if type == 'integer':
             self._symbol_c = integer._symbol_c
@@ -1209,19 +1223,41 @@ class function(_column):
 
         if type in ('many2one', 'many2many', 'one2many'):
             if self._obj is None:
-                _logger.error('%s field %r does not have target model defined', type, args.get('string', 'unknown'))
+                _logger.error('%s field %r does not have target model defined', type, args.get('string', '???'))
             if type is 'one2many' and 'fields_id' not in args:
-                _logger.warning('%s field %r does not have the target field defined', type, args.get('string', 'unknown'))
+                _logger.warning('%s field %r does not have the target field defined', type, args.get('string', '???'))
 
-    def digits_change(self, cr):
+    def _finalize(self, cls, name):
+        # TODO: remove below once all float function fields are explicitly typed
+        # if isinstance(self._type, default) and self._type.value == 'float':
+        #     self._symbol_c = float._symbol_c
+        #     self._symbol_f = float._symbol_f
+        #     self._symbol_set = float._symbol_set
+
+        _column._finalize(self, cls, name)
+
+        if not self._fnct_inv:
+            self.readonly = 1
+
+        if not self._fnct_search and not self.store:
+            self.selectable = False
+
+        if self.store:
+            if self._type != 'many2one':
+                # m2o fields need to return tuples with name_get, not just foreign keys
+                self._classic_read = True
+            if self._type == 'binary':
+                self._symbol_get=lambda x:x and str(x)
+
         if self._type == 'float':
-            if self.digits_compute:
-                self.digits = self.digits_compute(cr)
-            if self.digits:
-                precision, scale = self.digits
-                self._symbol_set = ('%s', lambda x: float_repr(float_round(__builtin__.float(x or 0.0),
-                                                                           precision_digits=scale),
-                                                               precision_digits=scale))
+            def digits_change(self, cr):
+                if self.digits_compute:
+                    self.digits = self.digits_compute(cr)
+                if self.digits:
+                    precision, scale = self.digits
+                    self._symbol_set = ('%s', lambda x: float_repr(float_round(__builtin__.float(x or 0.0),
+                                                                               precision_digits=scale),
+                                                                   precision_digits=scale))
 
     def search(self, cr, uid, obj, name, args, context=None):
         if not self._fnct_search:
@@ -1442,7 +1478,7 @@ class sparse(function):
                 results[record.id][field_name] = value
         return results
 
-    def __init__(self, serialization_field, **kwargs):
+    def __init__(self, serialization_field=default_uninit, **kwargs):
         self.serialization_field = serialization_field
         super(sparse, self).__init__(self._fnct_read, fnct_inv=self._fnct_write, multi='__sparse_multi', **kwargs)
 
@@ -1808,7 +1844,11 @@ def apply_groups(columns, groups):
             for field in all_columns:
                 if re.match(spec, field):
                     column = columns[field]
-                    all_groups = column.groups and column.groups.split(',') or []
+                    all_groups = column.groups
+                    if isinstance(all_groups, default):
+                        all_groups = []
+                    elif isinstance(all_groups, basestring):
+                        all_groups = all_groups.split(',')
                     all_groups.append(group)
                     column.groups = ','.join(set(all_groups))
 

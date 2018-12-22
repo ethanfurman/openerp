@@ -134,9 +134,11 @@ class product_uom(osv.osv):
         'factor': fields.float('Ratio', required=True,digits=(12, 12),
             help='How much bigger or smaller this unit is compared to the reference Unit of Measure for this category:\n'\
                     '1 * (reference unit) = ratio * (this unit)'),
-        'factor_inv': fields.function(_factor_inv, digits=(12,12),
+        'factor_inv': fields.function(_factor_inv,
             fnct_inv=_factor_inv_write,
             string='Ratio',
+            type='float',
+            digits=(16,2),
             help='How many times this Unit of Measure is bigger than the reference Unit of Measure in this category:\n'\
                     '1 * (this unit) = ratio * (reference unit)', required=True),
         'rounding': fields.float('Rounding Precision', digits_compute=dp.get_precision('Product Unit of Measure'), required=True,
@@ -541,10 +543,10 @@ class product_product(osv.osv):
     _order = 'default_code,name_template'
     _mirrors = {'seller_id': ['phone',]}
     _columns = {
-        'qty_available': fields.function(_product_qty_available, type='float', string='Quantity On Hand'),
-        'virtual_available': fields.function(_product_virtual_available, type='float', string='Quantity Available'),
-        'incoming_qty': fields.function(_product_incoming_qty, type='float', string='Incoming'),
-        'outgoing_qty': fields.function(_product_outgoing_qty, type='float', string='Outgoing'),
+        'qty_available': fields.function(_product_qty_available, type='float', digits=(16,2), string='Quantity On Hand'),
+        'virtual_available': fields.function(_product_virtual_available, type='float', digits=(16,2), string='Quantity Available'),
+        'incoming_qty': fields.function(_product_incoming_qty, type='float', digits=(16,2), string='Incoming'),
+        'outgoing_qty': fields.function(_product_outgoing_qty, type='float', digits=(16,2), string='Outgoing'),
         'price': fields.function(_product_price, type='float', string='Price', digits_compute=dp.get_precision('Product Price')),
         'lst_price' : fields.function(_product_lst_price, type='float', string='Public Price', digits_compute=dp.get_precision('Product Price')),
         'code': fields.function(_product_code, type='char', string='Internal Reference'),
@@ -581,7 +583,7 @@ class product_product(osv.osv):
                  "Use this field anywhere a small image is required."),
         'seller_info_id': fields.function(_calc_seller, type='many2one', relation="product.supplierinfo", string="Supplier Info", multi="seller_info"),
         'seller_delay': fields.function(_calc_seller, type='integer', string='Supplier Lead Time', multi="seller_info", help="This is the average delay in days between the purchase order confirmation and the reception of goods for this product and for the default supplier. It is used by the scheduler to order requests based on reordering delays."),
-        'seller_qty': fields.function(_calc_seller, type='float', string='Supplier Quantity', multi="seller_info", help="This is minimum quantity to purchase from Main Supplier."),
+        'seller_qty': fields.function(_calc_seller, type='float', digits=(16,2), string='Supplier Quantity', multi="seller_info", help="This is minimum quantity to purchase from Main Supplier."),
         'seller_id': fields.function(_calc_seller, type='many2one', relation="res.partner", string='Main Supplier', help="Main Supplier who has highest priority in Supplier List.", multi="seller_info"),
     }
     def unlink(self, cr, uid, ids, context=None):
@@ -846,7 +848,7 @@ class product_supplierinfo(osv.osv):
         'sequence' : fields.integer('Sequence', help="Assigns the priority to the list of product supplier. (smaller number = higher priority"),
         'product_uom': fields.related('product_id', 'uom_po_id', type='many2one', relation='product.uom', string="Supplier Unit of Measure", readonly="1", help="This comes from the product form."),
         'min_qty': fields.float('Minimal Quantity', required=True, help="The minimal quantity to purchase to this supplier, expressed in the supplier Product Unit of Measure if not empty, in the default unit of measure of the product otherwise."),
-        'qty': fields.function(_calc_qty, store=True, type='float', string='Quantity', multi="qty", help="This is a quantity which is converted into Default Unit of Measure."),
+        'qty': fields.function(_calc_qty, store=True, type='float', digits=(16,2), string='Quantity', multi="qty", help="This is a quantity which is converted into Default Unit of Measure."),
         'product_id' : fields.many2one('product.template', 'Product', required=True, ondelete='cascade', select=True),
         'delay' : fields.integer('Delivery Lead Time', required=True, help="Lead time in days between the confirmation of the purchase order and the reception of the products in your warehouse. Used by the scheduler for automatic computation of the purchase order planning."),
         'pricelist_ids': fields.one2many('pricelist.partnerinfo', 'suppinfo_id', 'Supplier Pricelist'),

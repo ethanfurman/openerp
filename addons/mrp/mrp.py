@@ -468,8 +468,8 @@ class mrp_production(osv.osv):
                 If the stock is available then the status is set to 'Ready to Produce'.\n\
                 When the production gets started then the status is set to 'In Production'.\n\
                 When the production is over, the status is set to 'Done'."),
-        'hour_total': fields.function(_production_calc, type='float', string='Total Hours', multi='workorder', store=True),
-        'cycle_total': fields.function(_production_calc, type='float', string='Total Cycles', multi='workorder', store=True),
+        'hour_total': fields.function(_production_calc, type='float', digits=(16,2), string='Total Hours', multi='workorder', store=True),
+        'cycle_total': fields.function(_production_calc, type='float', digits=(16,2), string='Total Cycles', multi='workorder', store=True),
         'user_id':fields.many2one('res.users', 'Responsible'),
         'company_id': fields.many2one('res.company','Company',required=True),
     }
