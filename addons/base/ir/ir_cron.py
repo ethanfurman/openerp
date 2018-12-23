@@ -78,6 +78,7 @@ class ir_cron(osv.osv):
             time = rec['timeout_display']
             if not time:
                 res[id] = 0
+                return res
             text = time
             if text[0] == '-':
                 raise ERPError('Field Error', 'invalid wait time: <%s>' % time)
@@ -332,7 +333,7 @@ class ir_cron(osv.osv):
     def external_job(self, cr, uid, args, timeout):
         "Runs the external job given in args"
         args = shlex.split(args)
-        tmp = Path(mkdtemp(prefix='oe_cron_job-%s' % Path(args[0]).filename))
+        tmp = Path(mkdtemp(prefix='oe_cron_job-%s-' % Path(args[0]).filename))
         job = Execute(args, cwd=tmp, timeout=timeout or None)
         result = []
         if job.returncode:
@@ -407,7 +408,7 @@ class ir_cron(osv.osv):
                                (job['id'],), log_exceptions=False)
                 # pause so other cron threads bypass this row
                 time.sleep(0.1)
-            	# update and relock row
+                # update and relock row
                 lock_cr.execute("UPDATE ir_cron SET state='running', results='' WHERE id=%s", (job['id'], ))
                 lock_cr.commit()
                 lock_cr.execute("""SELECT *
