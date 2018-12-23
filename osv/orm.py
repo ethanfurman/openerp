@@ -1038,14 +1038,13 @@ class BaseModel(object):
             cls._local_constraints = getattr(cls, '_constraints', [])
             cls._local_sql_constraints = getattr(cls, '_sql_constraints', [])
 
-        # finish finalize all fields
-        for name, field in cls._columns.items():
-            field._finalize(original_cls, name)
-
         if not getattr(cls, '_original_module', None):
             cls._original_module = cls._module
         obj = object.__new__(cls)
         obj.__init__(pool, cr)
+        # finish finalize all fields
+        for n, f in obj._columns.items():
+            f._finalize(original_cls, n)
         return obj
 
     def __new__(cls):
