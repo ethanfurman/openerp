@@ -451,6 +451,7 @@ class mail_thread(osv.AbstractModel):
             changes = []
             tracked_values = {}
             partner_ids = notify_ids
+            subtypes = set()
 
             # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
             #
@@ -461,6 +462,7 @@ class mail_thread(osv.AbstractModel):
 
             for col_name, col_info in tracked_fields.items():
                 tracking = getattr(self._all_columns[col_name].column, 'track_visibility', None)
+                subtype = getattr(self._all_columns[col_name].column, 'track_subtype', None)
                 if record[col_name] == initial[col_name] and tracking == 'always':
                     tracked_values[col_name] = dict(
                             col_info=col_info['string'],
@@ -475,6 +477,7 @@ class mail_thread(osv.AbstractModel):
                         tracked_values[col_name] = tracking_info
                     if col_name in tracked_fields:
                         changes.append(col_name)
+                        subtypes.add(subtype)
             if not (changes or body):
                 continue
 
@@ -483,7 +486,6 @@ class mail_thread(osv.AbstractModel):
             # notification type  /   field type                       /   sent to users
             # Discussion        -->  all non-field-tracked items     -->  who follow Discussions
             # Field-Tracked     -->  toggled-on field-tracked items  -->  who follow that field change
-            subtypes = []
             if self._track:
                 # we have tracking -- does this change qualify?
                 for field, track_info in self._track.items():
@@ -491,7 +493,7 @@ class mail_thread(osv.AbstractModel):
                         continue
                     for subtype, method in track_info.items():
                         if method(self, cr, uid, record, context):
-                            subtypes.append(subtype)
+                            subtypes.add(subtype)
 
             if subtypes:
                 if track_only:
