@@ -924,22 +924,9 @@ class BaseModel(object):
         # new_field may have defaults, but parent field should be finalized already
         # verify that parent field is final
         for name, parent_setting in parent_field.__dict__.items():
-            column_name_printed = False
             new_setting = getattr(new_field, name, Missing)
-            if new_setting is Missing:
-                if not column_name_printed:
-                    column_name_printed = True
+            if new_setting is Missing or isinstance(new_setting, default):
                 setattr(new_field, name, parent_setting)
-            elif isinstance(new_setting, default):
-                if parent_setting != new_setting.value:
-                    if not column_name_printed:
-                        column_name_printed = True
-                setattr(new_field, name, parent_setting)
-            elif new_setting is parent_setting or new_setting == parent_setting:
-                pass
-            else:
-                if not column_name_printed:
-                    column_name_printed = True
         new_field._finalize(cls, field_name)
 
     #
