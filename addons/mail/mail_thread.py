@@ -278,12 +278,14 @@ class mail_thread(osv.AbstractModel):
         followers = values.pop('message_follower_ids', [])
         notify_ids = values.pop('message_notify_ids', [])
         message_body = values.pop('message_body', _('Document created'))
+        tracking_needed = not context.get('mail_create_nolog')
         thread_id = super(mail_thread, self).create(cr, uid, values, context=context)
-        initial_values = {thread_id: {'id':thread_id}}
-        track_only = not context.get('mail_track_initial', False)
-        tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context, track_only=track_only)
-        for field_name in tracked_fields:
-            initial_values[thread_id][field_name] = False
+        if tracking_needed:
+            track_only = not context.get('mail_track_initial', False)
+            initial_values = {thread_id: {'id':thread_id}}
+            tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context, track_only=track_only)
+            for field_name in tracked_fields:
+                initial_values[thread_id][field_name] = False
 
         # do not track intermediate writes
         context['message_track'] = False
@@ -297,7 +299,7 @@ class mail_thread(osv.AbstractModel):
         del context['message_track']
 
         # automatic logging unless asked not to (mainly for various testing purpose)
-        if not context.get('mail_create_nolog'):
+        if tracking_needed:
             self.message_track(
                     cr, uid, [thread_id],
                     tracked_fields, initial_values,
@@ -313,12 +315,11 @@ class mail_thread(osv.AbstractModel):
             ids = [ids]
         notify_ids = values.pop('message_notify_ids', [])
         message_body = values.pop('message_body', '')
-        # Track initial values of tracked fields
-        tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context)
-        if tracked_fields:
-            initial = self.read(cr, uid, ids, tracked_fields.keys(), context=context)
-            initial_values = dict((item['id'], item) for item in initial)
-
+        tracking_needed = context.get('message_track', True) or message_body
+        if tracking_needed:
+            # Track initial values of tracked fields
+            tracked_fields = self._get_tracked_fields(cr, uid, values.keys(), context=context)
+            initial_values = self._get_current_values(cr, uid, ids, tracked_fields, context=context)
         # Perform write, update followers
         result = super(mail_thread, self).write(cr, uid, ids, values, context=context)
         if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
@@ -326,13 +327,12 @@ class mail_thread(osv.AbstractModel):
         self.message_auto_subscribe(cr, uid, ids, values.keys(), context=context)
 
         # Perform the tracking
-        if context.get('message_track', True) or message_body:
-            if tracked_fields:
-                self.message_track(
-                        cr, uid, ids,
-                        tracked_fields, initial_values,
-                        body=message_body,
-                        notify_ids=notify_ids, context=context)
+        if tracking_needed and tracked_fields:
+            self.message_track(
+                    cr, uid, ids,
+                    tracked_fields, initial_values,
+                    body=message_body,
+                    notify_ids=notify_ids, context=context)
         return result
 
     def unlink(self, cr, uid, ids, context=None):
@@ -364,25 +364,40 @@ class mail_thread(osv.AbstractModel):
 
     def _get_tracked_fields(self, cr, uid, updated_fields, context=None, track_only=False):
         """ Return a structure of tracked fields for the current model.
-            :param list updated_fields: modified field names
+            :param list updated_fields: modified field names (no longer used as it does not
+                                        include function fields)
             :return dict: a dict of {field_name: column_info_obj), containing
                 always tracked fields and modified on_change fields
         """
         lst = []
         for name, column_info in self._all_columns.items():
             visibility = getattr(column_info.column, 'track_visibility', False)
-            if track_only:
-                if name in self._track:
-                    lst.append(name)
-            elif (
-                    visibility == 'always'
-                    or (visibility in ('onchange', 'change_only') and name in updated_fields)
-                    or name in self._track
-                    ):
+            if name in self._track:
+                lst.append(name)
+            elif visibility and not track_only:
                 lst.append(name)
         if not lst:
             return {}
         return self.fields_get(cr, uid, lst, context=context)
+
+    def _get_current_values(self, cr, uid, ids, tracked_fields, context=None):
+        res = {}
+        many_fields = [n for n, f in tracked_fields.items() if f['type'] in ('one2many','many2many')]
+        for rec in self.read(cr, uid, ids, tracked_fields.keys(), context=context):
+            id = rec['id']
+            res[id] = values = {}
+            for field_name in tracked_fields:
+                field_info = tracked_fields[field_name]
+                value = rec[field_name]
+                if field_name in many_fields:
+                    model = self.pool.get(field_info['relation'])
+                    value = [
+                        id_name
+                        for id_name in
+                            model.name_get(cr, uid, value, context=context)
+                            ]
+                values[field_name] = value
+        return res
 
     def message_track(
             self, cr, uid, ids,
@@ -392,7 +407,6 @@ class mail_thread(osv.AbstractModel):
             notify_ids=[],
             track_only=False,
             ):
-
         def convert_for_display(value, col_info):
             if not value and col_info['type'] == 'boolean':
                 return 'False'
@@ -423,7 +437,6 @@ class mail_thread(osv.AbstractModel):
                 value = UTC.localize(datetime.datetime.strptime(value, DEFAULT_SERVER_DATETIME_FORMAT))
                 value = value.astimezone(tz)
                 return value.strftime('%Y-%m-%d %H:%M %%s') % value.tzname()
-
             return value
 
         def format_message(message_description, tracked_values):
@@ -431,10 +444,39 @@ class mail_thread(osv.AbstractModel):
             if message_description:
                 message = '<span>%s</span>' % message_description
             for name, change in tracked_values.items():
-                message += '<div> &nbsp; &nbsp; &bull; <b>%s</b>: ' % change.get('col_info')
-                if change.get('old_value'):
-                    message += '%s &rarr; ' % change.get('old_value')
-                message += '%s</div>' % change.get('new_value')
+                old_value = change.get('old_value')
+                new_value = change.get('new_value')
+                if not isinstance(new_value, list):
+                    # "normal" fields
+                    message += '<div> &nbsp; &nbsp; &bull; <b>%s</b>: ' % change.get('col_info')
+                    if old_value is not None:
+                        message += '%s &rarr; ' % (old_value, )
+                    message += '%s</div>' % (new_value, )
+                else:
+                    # handle 2many fields
+                    if old_value is None:
+                        old_value = []
+                    old_ids = set([t[0] for t in old_value])
+                    new_ids = set([t[0] for t in new_value])
+                    lost = old_ids - new_ids
+                    found = new_ids - old_ids
+                    removed = sorted([t[1] for t in old_value if t[0] in lost])
+                    added = sorted([t[1] for t in new_value if t[0] in found])
+                    message += '<div> &nbsp; &nbsp; &bull; <b>%s</b>:' % change.get('col_info')
+                    if removed:
+                        message += '<br>'
+                        message += '<br> '.join([
+                            '&nbsp; &nbsp; &nbsp; &nbsp; &rarr; removed %s' % r
+                            for r in removed
+                            ])
+                    if added:
+                        # message += '<br>Removed:<br>'
+                        message += '<br>'
+                        message += '<br> '.join([
+                            '&nbsp; &nbsp; &nbsp; &nbsp; &rarr; added %s' % a
+                            for a in added
+                            ])
+                    message += '</div>'
             return message
 
         if context is None:
@@ -446,40 +488,50 @@ class mail_thread(osv.AbstractModel):
         if isinstance(ids, (int, long)):
             ids = [ids]
 
-        for record in self.read(cr, uid, ids, tracked_fields.keys(), context=context):
-            initial = initial_values[record['id']]
+        current_values = self._get_current_values(cr, uid, ids, tracked_fields, context=context)
+        for id in ids:
+            initial = initial_values[id]
+            current = current_values[id]
             changes = []
             tracked_values = {}
             partner_ids = notify_ids
             subtypes = set()
+            for field_name, field_info in tracked_fields.items():
+                initial_field_value = initial[field_name]
+                current_field_value = current[field_name]
+                is_many_field = field_info['type'] in ('one2many','many2many')
+                # generate tracked_values data structure: {'field_name': {field_info, new_value, old_value}}
+                #
+                # meanings of 'track_visibility':
+                # - 'always' --> show current and (if possible) old value
+                # - 'onchange' --> show old and new value (only if value changed)
+                # - 'change_only' --> show new value (only if value changed)
 
-            # generate tracked_values data structure: {'col_name': {col_info, new_value, old_value}}
-            #
-            # meanings of 'track_visibility':
-            # - 'always' --> show current and (if possible) old value
-            # - 'onchange' --> show old and new value (only if value changed)
-            # - 'change_only' --> show new value (only if value changed)
-
-            for col_name, col_info in tracked_fields.items():
-                tracking = getattr(self._all_columns[col_name].column, 'track_visibility', None)
-                subtype = getattr(self._all_columns[col_name].column, 'track_subtype', None)
-                if record[col_name] == initial[col_name] and tracking == 'always':
-                    tracked_values[col_name] = dict(
-                            col_info=col_info['string'],
-                            new_value=convert_for_display(record[col_name], col_info),
-                            )
-                elif record[col_name] != initial[col_name]:
+                tracking = getattr(self._all_columns[field_name].column, 'track_visibility', None)
+                subtype = getattr(self._all_columns[field_name].column, 'track_subtype', None)
+                if current_field_value == initial_field_value and tracking == 'always':
+                    tracked_values[field_name] = {
+                            'id': id,
+                            'col_info': field_info['string'],
+                            'new_value': convert_for_display(current_field_value, field_info),
+                            }
+                    if is_many_field:
+                        tracked_values['old_value'] = convert_for_display(initial_field_value, field_info)
+                elif current_field_value != initial_field_value:
                     if tracking: # in ['always', 'onchange', 'change_only']:
-                        tracking_info = {'col_info': col_info['string']}
-                        if tracking in ('always', 'onchange'):
-                            tracking_info['old_value'] = convert_for_display(initial[col_name], col_info)
-                        tracking_info['new_value'] = convert_for_display(record[col_name], col_info)
-                        tracked_values[col_name] = tracking_info
-                    if col_name in tracked_fields:
-                        changes.append(col_name)
-                        subtypes.add(subtype)
-            if not (changes or body):
-                continue
+                        tracking_info = {'col_info': field_info['string']}
+                        if tracking in ('always', 'onchange') or is_many_field:
+                            tracking_info['old_value'] = convert_for_display(initial_field_value, field_info)
+                        tracking_info['new_value'] = convert_for_display(current_field_value, field_info)
+                        tracking_info['id'] = id
+                        tracked_values[field_name] = tracking_info
+                    if field_name in tracked_fields:
+                        changes.append(field_name)
+                        if subtype is not None:
+                            subtypes.add(subtype)
+
+                if not (changes or body):
+                    continue
 
             # find subtypes and post messages or log if no subtype found
             #
@@ -492,7 +544,7 @@ class mail_thread(osv.AbstractModel):
                     if field not in changes:
                         continue
                     for subtype, method in track_info.items():
-                        if method(self, cr, uid, record, context):
+                        if method(self, cr, uid, current, context):
                             subtypes.add(subtype)
 
             if subtypes:
@@ -509,14 +561,14 @@ class mail_thread(osv.AbstractModel):
                     else:
                         message = message or track_message
                     self.message_post(
-                            cr, uid, record['id'],
+                            cr, uid, id,
                             body=message,
                             context=context,
                             partner_ids=partner_ids,
                             )
                 else:
                     self.message_post(
-                            cr, uid, record['id'],
+                            cr, uid, id,
                             body=force_body+body,
                             context=context,
                             partner_ids=partner_ids,
@@ -532,7 +584,7 @@ class mail_thread(osv.AbstractModel):
                 description = subtype_rec.description or subtype_rec.name
                 message = force_body + body + '<br>' + format_message(description, tracked_values)
                 self.message_post(
-                        cr, uid, record['id'],
+                        cr, uid, id,
                         body=message,
                         subtype=subtype,
                         context=context,
