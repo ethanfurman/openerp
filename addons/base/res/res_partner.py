@@ -23,7 +23,6 @@ import datetime
 from lxml import etree
 import math
 import pytz
-import re
 
 import openerp
 from openerp import SUPERUSER_ID
@@ -415,7 +414,7 @@ class res_partner(osv.osv, format_address):
             context = {}
         if isinstance(ids, (int, long)):
             ids = [ids]
-        combine_company = context.get('combine_company', True)
+        combine_company = context.get('combine_company', False)
         res = []
         for record in self.browse(cr, uid, ids, context=context):
             name = record.name
