@@ -530,8 +530,8 @@ class mail_thread(osv.AbstractModel):
                         if subtype is not None:
                             subtypes.add(subtype)
 
-                if not (changes or body):
-                    continue
+            if not (changes or body):
+                continue
 
             # find subtypes and post messages or log if no subtype found
             #
@@ -561,6 +561,7 @@ class mail_thread(osv.AbstractModel):
                     else:
                         message = message or track_message
                     if not message.strip():
+                        _logger.error('empty message in mail thread: no subtype, tracked values')
                         continue
                     self.message_post(
                             cr, uid, id,
@@ -571,6 +572,7 @@ class mail_thread(osv.AbstractModel):
                 else:
                     message = force_body + body
                     if not message.strip():
+                        _logger.error('empty message in mail thread: no subtype, no tracked values')
                         continue
                     self.message_post(
                             cr, uid, id,
@@ -592,10 +594,7 @@ class mail_thread(osv.AbstractModel):
                 else:
                     message = format_message(description, tracked_values)
                 if not message.strip():
-                    _logger.error(
-                        'tracked fields but no body?\nmodel: %r\nid: %r\nsubtype: %r, fields: %r\nvalues: %r\ninitial: %r',
-                        self._name, id, subtype, tracked_fields, current, initial,
-                        )
+                    _logger.error('empty message in mail thread: subtype')
                     continue
                 self.message_post(
                         cr, uid, id,
