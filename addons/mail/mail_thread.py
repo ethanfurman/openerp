@@ -560,6 +560,8 @@ class mail_thread(osv.AbstractModel):
                         message += '<br>--=--<br>' + track_message
                     else:
                         message = message or track_message
+                    if not message.strip():
+                        continue
                     self.message_post(
                             cr, uid, id,
                             body=message,
@@ -567,9 +569,12 @@ class mail_thread(osv.AbstractModel):
                             partner_ids=partner_ids,
                             )
                 else:
+                    message = force_body + body
+                    if not message.strip():
+                        continue
                     self.message_post(
                             cr, uid, id,
-                            body=force_body+body,
+                            body=message,
                             context=context,
                             partner_ids=partner_ids,
                             )
@@ -582,7 +587,16 @@ class mail_thread(osv.AbstractModel):
                     _logger.warning('subtype %s not found, giving error "%s"' % (subtype, e))
                     continue
                 description = subtype_rec.description or subtype_rec.name
-                message = force_body + body + '<br>' + format_message(description, tracked_values)
+                if force_body or body:
+                    message = force_body + body + '<br>' + format_message(description, tracked_values)
+                else:
+                    message = format_message(description, tracked_values)
+                if not message.strip():
+                    _logger.error(
+                        'tracked fields but no body?\nmodel: %r\nid: %r\nsubtype: %r, fields: %r\nvalues: %r\ninitial: %r',
+                        self._name, id, subtype, tracked_fields, current, initial,
+                        )
+                    continue
                 self.message_post(
                         cr, uid, id,
                         body=message,
