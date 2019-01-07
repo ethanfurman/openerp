@@ -548,8 +548,10 @@ class mail_thread(osv.AbstractModel):
                     if field not in changes:
                         continue
                     for subtype, method in track_info.items():
+                        context['message_initial'] = initial
                         if method(self, cr, uid, current, context):
                             subtypes.add(subtype)
+                    context.pop('message_initial', None)
 
             if subtypes:
                 if track_only:
