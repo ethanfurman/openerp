@@ -582,6 +582,10 @@ class task(base_stage, osv.osv):
     _inherit = ['mail.thread', 'ir.needaction_mixin']
 
     _track = {
+        'kanban_state': {
+            'project.mt_task_slept': lambda self, cr, uid, obj, ctx=None: obj['kanban_state'] == 'sleeping',
+            'project.mt_task_awoke': lambda self, cr, uid, obj, ctx=None: obj['kanban_state'] != 'sleeping' and ctx['message_initial']['kanban_state'] == 'sleeping',
+            },
         'state': {
             'project.mt_task_new': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'new',
             'project.mt_task_started': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'open',
@@ -700,6 +704,11 @@ class task(base_stage, osv.osv):
             return {'value':{'partner_id':partner_id.id}}
         return {}
 
+    def onchange_kanban_state(self, cr, uid, ids, kanban_state):
+        if kanban_state != 'sleeping':
+            return {'value': {'awake_date': False}}
+        return {}
+
     def duplicate_task(self, cr, uid, map_ids, context=None):
         for new in map_ids.values():
             task = self.browse(cr, uid, new, context)
@@ -800,7 +809,7 @@ class task(base_stage, osv.osv):
                 " * In Progress indicates the task is currently being worked on\n"
                 " * Sleeping indicates task is inactive until a certain date",
             readonly=False, required=False),
-        'awake_date': fields.date('Awake Date', help='Date to move from Sleeping to In Progress'),
+        'awake_date': fields.date('Awake Date', help='Date to move from Sleeping to In Progress', track_visibility='on_set'),
         'create_date': fields.datetime('Create Date', readonly=True,select=True),
         'date_start': fields.datetime('Starting Date',select=True),
         'date_end': fields.datetime('Ending Date',select=True),

@@ -385,7 +385,7 @@
                             <field name="planned_hours" widget="float_time"
                                     groups="project.group_time_work_estimation_tasks"
                                     on_change="onchange_planned(planned_hours, effective_hours)"/>
-                            <field name="kanban_state" string="Activity Level" states="draft,pending,open" widget="radio"/>
+                            <field name="kanban_state" string="Activity Level" states="draft,pending,open" widget="radio" on_change="onchange_kanban_state(kanban_state)"/>
                             <field name="awake_date" string="Sleep until" attrs="{'invisible': [('kanban_state','!=','sleeping')], 'required': [('kanban_state','=','sleeping')]}"/>
                         </group>
                         <group>

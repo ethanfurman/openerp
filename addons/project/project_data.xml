@@ -101,6 +101,20 @@
             <field name="description">Task blocked</field>
             <field name="sequence" eval="71"/>
         </record>
+        <record id="mt_task_slept" model="mail.message.subtype">
+            <field name="name">Task Slept</field>
+            <field name="res_model">project.task</field>
+            <field name="default" eval="False"/>
+            <field name="description">Task slept</field>
+            <field name="sequence" eval="73"/>
+        </record>
+        <record id="mt_task_awoke" model="mail.message.subtype">
+            <field name="name">Task Awoke</field>
+            <field name="res_model">project.task</field>
+            <field name="default" eval="False"/>
+            <field name="description">Task awoke</field>
+            <field name="sequence" eval="75"/>
+        </record>
         <record id="mt_task_closed" model="mail.message.subtype">
             <field name="name">Task Done</field>
             <field name="res_model">project.task</field>
