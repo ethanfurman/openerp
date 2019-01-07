@@ -453,7 +453,7 @@ class mail_thread(osv.AbstractModel):
                         message += '%s &rarr; ' % (old_value, )
                     message += '%s</div>' % (new_value, )
                 else:
-                    # handle 2many fields
+                    # x2many fields
                     if old_value is None:
                         old_value = []
                     old_ids = set([t[0] for t in old_value])
@@ -506,6 +506,7 @@ class mail_thread(osv.AbstractModel):
                 # - 'always' --> show current and (if possible) old value
                 # - 'onchange' --> show old and new value (only if value changed)
                 # - 'change_only' --> show new value (only if value changed)
+                # - 'on_set' --> show new value if truthy
 
                 tracking = getattr(self._all_columns[field_name].column, 'track_visibility', None)
                 subtype = getattr(self._all_columns[field_name].column, 'track_subtype', None)
@@ -518,13 +519,16 @@ class mail_thread(osv.AbstractModel):
                     if is_many_field:
                         tracked_values['old_value'] = convert_for_display(initial_field_value, field_info)
                 elif current_field_value != initial_field_value:
-                    if tracking: # in ['always', 'onchange', 'change_only']:
+                    if tracking:
                         tracking_info = {'col_info': field_info['string']}
                         if tracking in ('always', 'onchange') or is_many_field:
                             tracking_info['old_value'] = convert_for_display(initial_field_value, field_info)
                         tracking_info['new_value'] = convert_for_display(current_field_value, field_info)
                         tracking_info['id'] = id
-                        tracked_values[field_name] = tracking_info
+                        if tracking != 'on_set' or current_field_value:
+                            # XXX: does this work with more complex data types? i.e. might they have
+                            # boolean True values that represent logically False ones?
+                            tracked_values[field_name] = tracking_info
                     if field_name in tracked_fields:
                         changes.append(field_name)
                         if subtype is not None:
