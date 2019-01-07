@@ -34,42 +34,42 @@ Access all issues from the top Project menu, and access the issues of a specific
             <field name="res_model">project.issue</field>
             <field name="default" eval="False"/>
             <field name="description">Issue created</field>
-            <field name="sequence" eval="1"/>
+            <field name="sequence" eval="31"/>
         </record>
         <record id="mt_issue_started" model="mail.message.subtype">
             <field name="name">Issue Started</field>
             <field name="res_model">project.issue</field>
             <field name="default" eval="False"/>
             <field name="description">Issue started</field>
-            <field name="sequence" eval="11"/>
+            <field name="sequence" eval="41"/>
         </record>
         <record id="mt_issue_blocked" model="mail.message.subtype">
             <field name="name">Issue Blocked</field>
             <field name="res_model">project.issue</field>
             <field name="default" eval="False"/>
             <field name="description">Issue blocked</field>
-            <field name="sequence" eval="21"/>
+            <field name="sequence" eval="51"/>
         </record>
         <record id="mt_issue_slept" model="mail.message.subtype">
             <field name="name">Issue Slept</field>
             <field name="res_model">project.issue</field>
             <field name="default" eval="False"/>
             <field name="description">Issue slept</field>
-            <field name="sequence" eval="31"/>
+            <field name="sequence" eval="61"/>
         </record>
         <record id="mt_issue_awoke" model="mail.message.subtype">
-            <field name="name">Issue awoke</field>
+            <field name="name">Issue Awoke</field>
             <field name="res_model">project.issue</field>
             <field name="default" eval="False"/>
             <field name="description">Issue awoke</field>
-            <field name="sequence" eval="41"/>
+            <field name="sequence" eval="71"/>
         </record>
         <record id="mt_issue_closed" model="mail.message.subtype">
             <field name="name">Issue Closed</field>
             <field name="res_model">project.issue</field>
             <field name="default" eval="False"/>
             <field name="description">Issue closed</field>
-            <field name="sequence" eval="51"/>
+            <field name="sequence" eval="81"/>
         </record>
         <record id="mt_issue_stage" model="mail.message.subtype">
             <field name="name">Stage Changed</field>
@@ -85,7 +85,7 @@ Access all issues from the top Project menu, and access the issues of a specific
             <field name="default" eval="False"/>
             <field name="parent_id" eval="ref('mt_issue_new')"/>
             <field name="relation_field">project_id</field>
-            <field name="sequence" eval="1"/>
+            <field name="sequence" eval="31"/>
         </record>
         <record id="mt_project_issue_started" model="mail.message.subtype">
             <field name="name">Issue Started</field>
@@ -93,21 +93,21 @@ Access all issues from the top Project menu, and access the issues of a specific
             <field name="default" eval="False"/>
             <field name="parent_id" eval="ref('mt_issue_started')"/>
             <field name="relation_field">project_id</field>
-            <field name="sequence" eval="11"/>
+            <field name="sequence" eval="41"/>
         </record>
         <record id="mt_project_issue_blocked" model="mail.message.subtype">
             <field name="name">Issue Blocked</field>
             <field name="res_model">project.project</field>
             <field name="parent_id" eval="ref('mt_issue_blocked')"/>
             <field name="relation_field">project_id</field>
-            <field name="sequence" eval="21"/>
+            <field name="sequence" eval="51"/>
         </record>
         <record id="mt_project_issue_closed" model="mail.message.subtype">
             <field name="name">Issue Closed</field>
             <field name="res_model">project.project</field>
             <field name="parent_id" eval="ref('mt_issue_closed')"/>
             <field name="relation_field">project_id</field>
-            <field name="sequence" eval="51"/>
+            <field name="sequence" eval="81"/>
         </record>
         <record id="mt_project_issue_stage" model="mail.message.subtype">
             <field name="name">Issue Stage Changed</field>
@@ -117,6 +117,6 @@ Access all issues from the top Project menu, and access the issues of a specific
             <field name="relation_field">project_id</field>
             <field name="sequence" eval="91"/>
         </record>
-        
+
     </data>
 </openerp>
