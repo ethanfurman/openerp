@@ -72,7 +72,7 @@
                                 <field name="project_id" on_change="on_change_project(project_id)" class="oe_inline" context="{'default_use_issues':1}"/>
                                 <button name="case_escalate" string="⇒ Escalate" type="object" states="draft,open,pending" class="oe_link"/>
                             </div>
-                            <field name="kanban_state" string="Activity Level" states="draft,open,pending" widget="radio"/>
+                            <field name="kanban_state" string="Activity Level" states="draft,open,pending" widget="radio" on_change="onchange_kanban_state(kanban_state)"/>
                             <field name="awake_date" string="Sleep until" attrs="{'invisible': [('kanban_state','!=','sleeping')], 'required': [('kanban_state','=','sleeping')]}"/>
                         </group>
                         <group>

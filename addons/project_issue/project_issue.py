@@ -48,6 +48,10 @@ class project_issue(base_stage, osv.osv):
     _inherit = ['mail.thread', 'ir.needaction_mixin']
 
     _track = {
+        'kanban_state': {
+            'project_issue.mt_issue_slept': lambda self, cr, uid, obj, ctx=None: obj['kanban_state'] == 'sleeping',
+            'project_issue.mt_issue_awoke': lambda self, cr, uid, obj, ctx=None: obj['kanban_state'] != 'sleeping' and ctx['message_initial']['kanban_state'] == 'sleeping',
+            },
         'state': {
             'project_issue.mt_issue_new': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'new',
             'project_issue.mt_issue_closed': lambda self, cr, uid, obj, ctx=None:  obj['state'] == 'done',
@@ -258,7 +262,7 @@ class project_issue(base_stage, osv.osv):
                  " * Sleeping indicates task is inactive until a certain date",
             readonly=False, required=False,
             ),
-        'awake_date': fields.date('Awake Date', help='Date to move from Sleeping to In Progress'),
+        'awake_date': fields.date('Awake Date', help='Date to move from Sleeping to In Progress', track_visibility='on_set'),
         'email_from': fields.char('Email', size=128, help="These people will receive email.", select=1),
         'email_cc': fields.char('Watchers Emails', size=256, help="These email addresses will be added to the CC field of all inbound and outbound emails for this record before being sent. Separate multiple email addresses with a comma"),
         'date_open': fields.datetime('Opened', readonly=True,select=True),
@@ -403,6 +407,11 @@ class project_issue(base_stage, osv.osv):
                     vals['date_closed'] = time.strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT)
 
         return super(project_issue, self).write(cr, uid, ids, vals, context)
+
+    def onchange_kanban_state(self, cr, uid, ids, kanban_state):
+        if kanban_state != 'sleeping':
+            return {'value': {'awake_date': False}}
+        return {}
 
     def onchange_task_id(self, cr, uid, ids, task_id, context=None):
         if not task_id:
