@@ -446,7 +446,7 @@ class mail_thread(osv.AbstractModel):
             for name, change in tracked_values.items():
                 old_value = change.get('old_value')
                 new_value = change.get('new_value')
-                if not isinstance(new_value, list):
+                if not isinstance(new_value, list) and not isinstance(old_value, list):
                     # "normal" fields
                     message += '<div> &nbsp; &nbsp; &bull; <b>%s</b>: ' % change.get('col_info')
                     if old_value is not None:
