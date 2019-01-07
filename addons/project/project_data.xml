@@ -109,7 +109,7 @@
             <field name="sequence" eval="73"/>
         </record>
         <record id="mt_task_awoke" model="mail.message.subtype">
-            <field name="name">Task Awoke</field>
+            <field name="name">Task awoke</field>
             <field name="res_model">project.task</field>
             <field name="default" eval="False"/>
             <field name="description">Task awoke</field>
