@@ -30,7 +30,7 @@ class ir_cron(osv.Model):
         exc_lines = traceback.format_exc(job_exception).split('\n')
         exc_lines[1:-2] = ['...']
         body = '\n'.join(exc_lines)
-        self._mail_cron_results(cr, SUPERUSER_ID, job_id, 'Failed job', body)
+        self._mail_cron_results(cr, SUPERUSER_ID, job_id, 'Failed job: %s' % (job_name, ), body)
 
     def _callback(self, cr, uid, model_name, method_name, args, job_id, job_name, job_type, job_timeout):
         "mail job report if error detected in results"
@@ -50,7 +50,7 @@ class ir_cron(osv.Model):
                 self._mail_cron_results(
                         cr, SUPERUSER_ID,
                         job_id,
-                        "Errors in < %s >" % (job_name, ),
+                        "Errors in job: %s" % (job_name, ),
                         ' '.join(args) + '\n'.join(lines[4:]),
                         )
         return result
@@ -87,7 +87,13 @@ class ir_cron(osv.Model):
                                (inactive_job['id'],),
                                log_exceptions=False,
                                )
-                self._mail_cron_results(cr, SUPERUSER_ID, inactive_job['id'], 'Inactive job', body, context=context)
+                self._mail_cron_results(
+                        cr, SUPERUSER_ID,
+                        inactive_job['id'],
+                        'Inactive job: %s' % (inactive_job['name'], ),
+                        body,
+                        context=context,
+                        )
         except Exception:
             _logger.error('Exception in cron:', exc_info=True)
             raise
