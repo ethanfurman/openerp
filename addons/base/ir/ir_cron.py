@@ -27,7 +27,7 @@ import psycopg2
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from antipathy import Path
-from scription import Execute
+from scription import Job
 from tempfile import mkdtemp
 import shlex
 
@@ -334,7 +334,9 @@ class ir_cron(osv.osv):
         "Runs the external job given in args"
         args = shlex.split(args)
         tmp = Path(mkdtemp(prefix='oe_cron_job-%s-' % Path(args[0]).filename))
-        job = Execute(args, cwd=tmp, timeout=timeout or None)
+        job = Job(args, cwd=tmp)
+        _logger.info('running job [%s]  %s', job.pid, ' '.join(args))
+        job.Execute(timeout=timeout or None)
         result = []
         if job.returncode:
             result.append('script exited with: %s\n' % job.returncode)
