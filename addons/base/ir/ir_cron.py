@@ -336,7 +336,7 @@ class ir_cron(osv.osv):
         tmp = Path(mkdtemp(prefix='oe_cron_job-%s-' % Path(args[0]).filename))
         job = Job(args, cwd=tmp)
         _logger.info('running job [%s]  %s', job.pid, ' '.join(args))
-        job.Execute(timeout=timeout or None)
+        job.communicate(timeout=timeout or None)
         result = []
         if job.returncode:
             result.append('script exited with: %s\n' % job.returncode)
