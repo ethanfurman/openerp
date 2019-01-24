@@ -1,2 +1,3 @@
 addons/project/scripts/project_status
 scripts/oe-graph --no-suid
+tools/check_openerp --suid
