@@ -51,7 +51,7 @@ class ir_cron(osv.Model):
                         cr, SUPERUSER_ID,
                         job_id,
                         "Errors in job: %s" % (job_name, ),
-                        args + '\n\n'.join(lines[4:]),
+                        args + '\n\n' + '\n'.join(lines[4:]),
                         )
         return result
 

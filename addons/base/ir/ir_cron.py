@@ -334,22 +334,28 @@ class ir_cron(osv.osv):
         "Runs the external job given in args"
         args = shlex.split(args)
         tmp = Path(mkdtemp(prefix='oe_cron_job-%s-' % Path(args[0]).filename))
-        job = Job(args, cwd=tmp)
-        _logger.info('running job [%s]  %s', job.pid, ' '.join(args))
-        job.communicate(timeout=timeout or None)
-        result = []
-        if job.returncode:
-            result.append('script exited with: %s\n' % job.returncode)
-        if job.stdout:
-            result.append('======')
-            result.append('stdout')
-            result.append('======')
-            result.append(job.stdout.strip())
-        if job.stderr:
-            result.append('======')
-            result.append('stderr')
-            result.append('======')
-            result.append(job.stderr.strip())
+        job = None
+        try:
+            job = Job(args, cwd=tmp)
+            _logger.info('running job [%s]  %s', job.pid, ' '.join(args))
+            job.communicate(timeout=timeout or None)
+            result = []
+            if job.returncode:
+                result.append('script exited with: %s\n' % job.returncode)
+            if job.stdout:
+                result.append('======')
+                result.append('stdout')
+                result.append('======')
+                result.append(job.stdout.strip())
+            if job.stderr:
+                result.append('======')
+                result.append('stderr')
+                result.append('======')
+                result.append(job.stderr.strip())
+        finally:
+            if job is not None:
+                _logger.info('closing job [%s]  %s', job.pid, ' '.join(args))
+                job.close()
         try:
             tmp.rmtree()
         except Exception:
