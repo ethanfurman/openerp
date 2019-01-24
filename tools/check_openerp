@@ -4,6 +4,7 @@ from __future__ import print_function
 from scription import *
 from openerplib import get_connection, AttrDict
 import os
+import socket
 
 CONFIG = OrmFile('%s/config/fnx.ini' % os.environ['VIRTUAL_ENV'], section='openerp')
 
@@ -15,15 +16,16 @@ def connect():
 @Command()
 def check_openerp():
     "simple heart-beat test by attempting to connect to OpenERP"
-    hopeful = wait_and_check(300, 15)
-    while True:
-        try:
-            print('connecting...', end=' ')
-            connect()
-            print('success!')
-            break
-        except Exception:
-            if not hopeful:
-                raise
+    try:
+        print('connecting...', end=' ')
+        connect()
+        print('success!')
+    except socket.error as exc:
+        if exc.errno == 111:
+            print('OpenERP is not running, restarting')
+            with user_ids(0, 0):
+                os.system('/etc/init.d/openerp start')
+        else:
+            raise
 
 Main()
