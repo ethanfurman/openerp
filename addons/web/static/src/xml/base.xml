@@ -78,7 +78,7 @@
                 </ul>
             </form>
             <div class="oe_login_footer">
-                <a href="#" class="oe_login_manage_db">Manage Databases</a> |
+                <!-- <a href="#" class="oe_login_manage_db">Manage Databases</a> | -->
                 Powered by <span>OpenERP</span>
             </div>
         </div>
