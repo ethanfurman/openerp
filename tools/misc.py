@@ -1181,6 +1181,9 @@ class CountingStream(object):
             raise StopIteration()
         return val
 
+class OrderByStr(unicode):
+    "string for pass-through order-by statements"
+
 def Singleton(cls):
     "transforms class into a Singleton object"
     return cls()

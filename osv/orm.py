@@ -67,6 +67,7 @@ from fields import SelectionEnum, Sentinel, default
 import openerp
 import openerp.netsvc as netsvc
 import openerp.tools as tools
+from openerp.tools import OrderByStr
 from openerp.tools.config import config
 from openerp.tools.misc import CountingStream, issubclass
 from openerp.tools.safe_eval import safe_eval as eval
@@ -5128,6 +5129,8 @@ class BaseModel(object):
 
         :raise" except_orm in case order_spec is malformed
         """
+        if isinstance(order_spec, OrderByStr):
+            return order_spec
         order_by_clause = ''
         order_spec = order_spec or self._order
         if order_spec:
