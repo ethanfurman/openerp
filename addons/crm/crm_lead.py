@@ -31,7 +31,8 @@ from openerp.tools import html2plaintext
 
 from base.res.res_partner import format_address
 
-CRM_LEAD_FIELDS_TO_MERGE = ['name',
+CRM_LEAD_FIELDS_TO_MERGE = [
+    'name',
     'partner_id',
     'channel_id',
     'company_id',
