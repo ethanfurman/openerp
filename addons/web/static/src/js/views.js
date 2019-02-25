@@ -1497,7 +1497,11 @@ instance.web.View = instance.web.Widget.extend({
      */
     is_action_enabled: function(action) {
         var attrs = this.fields_view.arch.attrs;
-        return (action in attrs) ? JSON.parse(attrs[action]) : true;
+        if (action in attrs && attrs[action].substring(0, 1) != '[') {
+            return JSON.parse(attrs[action]);
+        } else {
+            return true;
+        };
     }
 });
 

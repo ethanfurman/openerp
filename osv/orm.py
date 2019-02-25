@@ -2112,19 +2112,23 @@ class BaseModel(object):
         fields_def = self.__view_look_dom(cr, user, node, view_id, False, fields, context=context)
         node = self._disable_workflow_buttons(cr, user, node)
         if node.tag in ('kanban', 'tree', 'form', 'gantt'):
+            if node.get('edit') and not node.get('delete'):
+                node.set('delete', node.get('edit'))
             for action, operation in (('create', 'create'), ('delete', 'unlink'), ('edit', 'write')):
                 actual_action = node.get(action)
                 if not actual_action and not self.check_access_rights(cr, user, operation, raise_exception=False):
                     node.set(action, 'false')
                 elif actual_action not in ('0', 'false', '1', 'true', None):
-                    # must be one or more group names, check if user is a member of any of them
-                    groups = actual_action.split(',')
-                    res_users = self.pool.get('res.users')
-                    if any(res_users.has_group(cr, user, [user], g) for g in groups):
-                        node.set(action, 'true')
+                    if actual_action[:1] != '[':
+                        # must be one or more group names, check if user is a member of any of them
+                        groups = actual_action.split(',')
+                        res_users = self.pool.get('res.users')
+                        if any(res_users.has_group(cr, user, [user], g) for g in groups):
+                            node.set(action, 'true')
+                        else:
+                            node.set(action, 'false')
                     else:
-                        node.set(action, 'false')
-
+                        node.set(action, actual_action.replace('(','[').replace(')',']'))
         arch = etree.tostring(node, encoding="utf-8").replace('\t', '')
         for k in fields.keys():
             if k not in fields_def:
