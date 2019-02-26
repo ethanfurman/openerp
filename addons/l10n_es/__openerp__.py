@@ -57,4 +57,3 @@ Spanish Charts of Accounts (PGCE 2008).
     'images': ['images/config_chart_l10n_es.jpeg','images/l10n_es_chart.jpeg'],
 }
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

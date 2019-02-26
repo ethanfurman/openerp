@@ -68,4 +68,3 @@ class procurement_compute_all(osv.osv_memory):
 
 procurement_compute_all()
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

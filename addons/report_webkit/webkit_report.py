@@ -335,4 +335,3 @@ class WebKitParser(report_sxw):
             return (False,False)
         return result
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

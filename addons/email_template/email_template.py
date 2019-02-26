@@ -401,4 +401,3 @@ class email_template(osv.osv):
             mail_mail.send(cr, uid, [msg_id], context=context)
         return msg_id
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

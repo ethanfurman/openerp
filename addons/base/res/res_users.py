@@ -894,4 +894,3 @@ class users_view(osv.osv):
             adjusted_args.append(arg)
         return super(users_view, self).search(cr, user, adjusted_args, offset=offset, limit=limit, order=order, context=context, count=count)
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

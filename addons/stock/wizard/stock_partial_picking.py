@@ -214,4 +214,3 @@ class stock_partial_picking(osv.osv_memory):
         stock_picking.do_partial(cr, uid, [partial.picking_id.id], partial_data, context=context)
         return {'type': 'ir.actions.act_window_close'}
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

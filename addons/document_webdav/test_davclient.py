@@ -705,4 +705,3 @@ class DAVClient(object):
         etag = m.getheader('ETag')
         return etag or True
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

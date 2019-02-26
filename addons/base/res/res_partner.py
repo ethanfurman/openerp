@@ -588,4 +588,3 @@ class res_partner(osv.osv, format_address):
         address = '\n'.join([line for line in address.split('\n') if line])
         return address
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

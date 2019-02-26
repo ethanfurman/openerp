@@ -66,5 +66,4 @@ wsgi.register_wsgi_handler = wsgi.wsgi_server.register_wsgi_handler
 multi_process = False
 
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
 

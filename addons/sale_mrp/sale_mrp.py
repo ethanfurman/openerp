@@ -76,4 +76,3 @@ class mrp_production(osv.osv):
 
 mrp_production()
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

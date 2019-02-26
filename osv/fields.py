@@ -1853,4 +1853,3 @@ def apply_groups(columns, groups):
                     column.groups = ','.join(set(all_groups))
 
 
-# vim:expandtab:tabstop=4:softtabstop=4:shiftwidth=4:

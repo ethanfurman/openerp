@@ -137,4 +137,3 @@ class crm_helpdesk(base_state, base_stage, osv.osv):
 
         return super(crm_helpdesk,self).message_update(cr, uid, ids, msg, update_vals=update_vals, context=context)
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

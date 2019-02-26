@@ -121,4 +121,3 @@ class TestRelatedField(common.TransactionCase):
         # restore res.partner fields
         self.partner._columns = old_columns
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
