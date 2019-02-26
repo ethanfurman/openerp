@@ -364,7 +364,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                 // evaluate is_action_enabled on form view for edit and delete
                 var p_edit = self.fields_view.arch.attrs['edit'];
                 var p_delete = self.fields_view.arch.attrs['delete'];
-                if (p_edit.substring(0, 1) == '[') {
+                if (p_edit && p_edit.substring(0, 1) == '[') {
                     var domain = instance.web.pyeval.eval('domain', p_edit, {})
                     var res = self.compute_domain(domain);
                     var button_div = document.getElementById('form_view_edit_button_div');
@@ -374,7 +374,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                         button_div.setAttribute('style', "display: none;");
                     }
                 }
-                if (p_delete.substring(0, 1) == '[') {
+                if (p_delete && p_delete.substring(0, 1) == '[') {
                     var domain = instance.web.pyeval.eval('domain', p_delete, {});
                     var res = self.compute_domain(domain);
                     var other = self.sidebar.items && self.sidebar.items.other || [];
