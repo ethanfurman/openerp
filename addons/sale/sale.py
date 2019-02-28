@@ -999,4 +999,3 @@ class mail_compose_message(osv.Model):
             wf_service.trg_validate(uid, 'sale.order', context['default_res_id'], 'quotation_sent', cr)
         return super(mail_compose_message, self).send_mail(cr, uid, ids, context=context)
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

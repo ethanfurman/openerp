@@ -1181,6 +1181,15 @@ class CountingStream(object):
             raise StopIteration()
         return val
 
+def self_ids(table, cr, uid, ids, context=None):
+    return ids
+
+def self_uid(table, cr, uid, ids, context=None):
+    return uid
+
+class OrderByStr(unicode):
+    "string for pass-through order-by statements"
+
 def Singleton(cls):
     "transforms class into a Singleton object"
     return cls()

@@ -240,5 +240,4 @@ class stock_picking_in(osv.osv):
         }
 stock_picking_in()
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
 

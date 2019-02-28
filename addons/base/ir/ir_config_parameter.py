@@ -136,4 +136,3 @@ class ir_config_parameter(osv.osv):
             self.check_param(cr, entry['key'], vals['value'])
         return super(ir_config_parameter, self).write(cr, uid, ids, vals, context=context)
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

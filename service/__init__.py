@@ -177,4 +177,3 @@ class OpenERP(object):
             openerp.service.stop_services()
 
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

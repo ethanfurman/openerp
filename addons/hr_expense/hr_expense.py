@@ -449,4 +449,3 @@ class hr_expense_line(osv.osv):
 
 hr_expense_line()
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

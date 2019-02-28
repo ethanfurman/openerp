@@ -417,4 +417,3 @@ class WorkerCron(Worker):
         Worker.start(self)
         openerp.service.start_internal()
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

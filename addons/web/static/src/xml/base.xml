@@ -78,7 +78,7 @@
                 </ul>
             </form>
             <div class="oe_login_footer">
-                <a href="#" class="oe_login_manage_db">Manage Databases</a> |
+                <!-- <a href="#" class="oe_login_manage_db">Manage Databases</a> | -->
                 Powered by <span>OpenERP</span>
             </div>
         </div>
@@ -821,7 +821,7 @@
     <t t-if="widget.options.action_buttons !== false">
         <span class="oe_form_buttons_view">
             <!-- required for the bounce effect on button -->
-            <div t-if="widget.is_action_enabled('edit')" style="display: inline-block;">
+            <div t-if="widget.is_action_enabled('edit')" style="display: inline-block;" id="form_view_edit_button_div">
                 <button type="button" class="oe_button oe_form_button_edit" accesskey="E">Edit</button>
             </div>
             <button t-if="widget.is_action_enabled('create')"

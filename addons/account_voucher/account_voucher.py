@@ -1623,4 +1623,3 @@ def resolve_o2m_operations(cr, uid, target_osv, operations, fields, context):
     return results
 
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

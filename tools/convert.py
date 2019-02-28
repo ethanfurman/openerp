@@ -49,7 +49,6 @@ import misc
 import openerp.pooler as pooler
 from config import config
 from translate import _
-from xaml import Xaml
 
 # List of etree._Element subclasses that we choose to ignore when parsing XML.
 from misc import SKIPPED_ELEMENT_TYPES
@@ -768,7 +767,7 @@ form: module.record_id""" % (xml_id,)
                 return None
         res = {}
         for field in rec.findall('./field'):
-#TODO: most of this code is duplicated above (in _eval_xml)...
+            #TODO: most of this code is duplicated above (in _eval_xml)...
             f_name = field.get("name",'').encode('utf-8')
             f_ref = field.get("ref",'').encode('utf-8')
             f_search = field.get("search",'').encode('utf-8')
@@ -956,4 +955,3 @@ def convert_xml_import(cr, module, xmlfile, idref=None, mode='init', noupdate=Fa
     return True
 
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

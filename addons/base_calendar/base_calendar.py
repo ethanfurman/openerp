@@ -1923,4 +1923,3 @@ class virtual_report_spool(web_services.report_spool):
 
 virtual_report_spool()
 
-# vim:expandtab:tabstop=4:softtabstop=4:shiftwidth=4:

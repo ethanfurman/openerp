@@ -31,7 +31,8 @@ from openerp.tools import html2plaintext
 
 from base.res.res_partner import format_address
 
-CRM_LEAD_FIELDS_TO_MERGE = ['name',
+CRM_LEAD_FIELDS_TO_MERGE = [
+    'name',
     'partner_id',
     'channel_id',
     'company_id',
@@ -1083,4 +1084,3 @@ class crm_lead(base_stage, format_address, osv.osv):
             return {'value':{'country_id':country_id}}
         return {}
 
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

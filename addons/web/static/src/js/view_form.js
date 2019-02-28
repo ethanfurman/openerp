@@ -195,7 +195,7 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                 this.sidebar.add_toolbar(this.fields_view.toolbar);
             }
             this.sidebar.add_items('other', _.compact([
-                self.is_action_enabled('delete') && { label: _t('Delete'), callback: self.on_button_delete },
+                self.is_action_enabled('delete') && { label: _t('Delete'), callback: self.on_button_delete, classname: 'record_delete_button' },
                 self.is_action_enabled('create') && { label: _t('Duplicate'), callback: self.on_button_duplicate }
             ]));
         }
@@ -361,6 +361,34 @@ instance.web.FormView = instance.web.View.extend(instance.web.form.FieldManagerM
                 }
                 self.$el.add(self.$buttons).removeClass('oe_form_dirty');
                 self.autofocus();
+                // evaluate is_action_enabled on form view for edit and delete
+                var p_edit = self.fields_view.arch.attrs['edit'];
+                var p_delete = self.fields_view.arch.attrs['delete'];
+                if (p_edit && p_edit.substring(0, 1) == '[') {
+                    var domain = instance.web.pyeval.eval('domain', p_edit, {})
+                    var res = self.compute_domain(domain);
+                    var button_div = document.getElementById('form_view_edit_button_div');
+                    if (res == true) {
+                        button_div.setAttribute('style', "display: inline-block;");
+                    } else {
+                        button_div.setAttribute('style', "display: none;");
+                    }
+                }
+                if (p_delete && p_delete.substring(0, 1) == '[') {
+                    var domain = instance.web.pyeval.eval('domain', p_delete, {});
+                    var res = self.compute_domain(domain);
+                    var other = self.sidebar.items && self.sidebar.items.other || [];
+                    for(var i=0; i<other.length; ++i) {
+                        // {label: ..., callback: ..., classname: ... }
+                        if (other[i].classname && other[i].classname.search(/record_delete_button/) > -1) {
+                            if (res) {
+                                other[i].classname = 'record_delete_button';
+                            } else {
+                                other[i].classname = 'record_delete_button oe_cannot_delete';
+                            }
+                        }
+                    }
+                }
             });
         });
     },
