@@ -24,7 +24,6 @@
     'version': '1.0',
     'depends': [
         'base',
-        'share',
         'auth_signup',
     ],
     'author': 'OpenERP SA',
@@ -38,15 +37,13 @@ have the access to technical features (e.g. the administrator).
 Also, each portal member is linked to a specific partner.
 
 The module also associates user groups to the portal users (adding a group in
-the portal automatically adds it to the portal users, etc).  That feature is
-very handy when used in combination with the module 'share'.
+the portal automatically adds it to the portal users, etc).
     """,
     'website': 'http://www.openerp.com',
     'data': [
         'portal_data.xml',
         'portal_view.xml',
         'wizard/portal_wizard_view.xml',
-        'wizard/share_wizard_view.xml',
         'acquirer_view.xml',
         'security/ir.model.access.csv',
         'security/portal_security.xml',
