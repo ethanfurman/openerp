@@ -140,6 +140,7 @@ class res_users(osv.osv):
 
     def check_credentials(self, cr, uid, password):
         # convert to base_crypt if needed
+        stored_password_crypt = ''
         cr.execute('SELECT password, password_crypt FROM res_users WHERE id=%s AND active', (uid,))
         if cr.rowcount:
             stored_password, stored_password_crypt = cr.fetchone()
