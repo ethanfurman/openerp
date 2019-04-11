@@ -44,7 +44,6 @@ the portal automatically adds it to the portal users, etc).
         'portal_data.xml',
         'portal_view.xml',
         'wizard/portal_wizard_view.xml',
-        'acquirer_view.xml',
         'security/ir.model.access.csv',
         'security/portal_security.xml',
     ],
