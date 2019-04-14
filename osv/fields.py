@@ -132,6 +132,12 @@ class _column(object):
         for a, v in args.items():
             setattr(self, a, v)
 
+    def __repr__(self):
+        return "<openerp.osv.fields.%s(%s)" % (
+                self.__class__.__name__,
+                ', '.join(['%s=%r' % (k, v) for k, v in self.__dict__.items()])
+                )
+
     def _finalize(self, cls, name):
         for a, v in self.__dict__.items():
             if isinstance(v, default):
