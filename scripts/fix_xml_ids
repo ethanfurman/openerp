@@ -5,7 +5,7 @@ OpenERP HR field of identification_id to using the fnx.xmlid mixin,
 duplicate records can be generated:
 
     - the original record, with all the preexisting data
-    - the new record, with the FIS xml_id and module date
+    - the new record, with the FIS xml_id and module data
 
 This script will adjust the matching records in ir.model.data to point
 to the pre-existing records, update the preexisting records with the xml_id
