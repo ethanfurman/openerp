@@ -19,6 +19,57 @@ from aenum import NamedTuple
 from collections import defaultdict
 from openerplib import get_connection, get_records
 import os
+import xmlrpclib
+
+@Command(
+        module=Spec('module to check [default: all models]', REQUIRED, force_default=''),
+        delete=Spec('delete records?', FLAG),
+        )
+def ir_model_data(module, delete):
+    "ensure pointed-to records exist"
+    config = OrmFile('%s/config/fnx.ini' % os.environ['VIRTUAL_ENV'], section='openerp')
+    conn = get_connection(hostname=config.host, database=config.db, login=config.user, password=config.pw)
+    ir_model_data = conn.get_model('ir.model.data')
+    if module:
+        domain = [('module','=',module)]
+    else:
+        domain = [(1,'=',1)]
+    recs = ir_model_data.search_read(domain, fields=['module','name','model','res_id'])
+    tables = {}
+    bad_links = 0
+    bad_tables = 0
+    missing_ids = set()
+    for r in ProgressView(
+            iterable=recs,
+            view_type='bar',
+            message='check $total records...',
+        ):
+        if module and module != r.module:
+            continue
+        if r.model not in tables:
+            try:
+                tables[r.model] = conn.get_model(r.model)
+            except xmlrpclib.Fault:
+                tables[r.model] = None
+        model = tables[r.model]
+        if model is None:
+            bad_tables += 1
+            target_rec = None
+        else:
+            target_rec = model.read(r.res_id, fields=['id'])
+        if not target_rec:
+            print('broken link: %s:%s --> %s:%s' % (r.module, r.name, r.model, r.res_id), verbose=2)
+            bad_links += 1
+            missing_ids.add(r.id)
+    print('%d records in ir.model.data' % len(recs), verbose=2)
+    if bad_links or bad_tables:
+        print('\n%d missing tables found' % bad_tables)
+        print('%d broken links found' % bad_links)
+        if delete:
+            print('removing missing links...')
+            ir_model_data.unlink(list(missing_ids))
+    else:
+        echo('no bad links found')
 
 @Command(
         table=Spec('which table to deduplicate'),
