@@ -69,7 +69,7 @@ import openerp.netsvc as netsvc
 import openerp.tools as tools
 from openerp.tools import OrderByStr
 from openerp.tools.config import config
-from openerp.tools.misc import CountingStream, issubclass
+from openerp.tools.misc import CountingStream, issubclass, self_ids
 from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
 from openerp import SUPERUSER_ID
@@ -1115,9 +1115,32 @@ class BaseModel(object):
             if not f.store:
                 continue
 
+            def _create_stored(self, name, field):
+                #
+                args = field.arg
+                if field.store is True and field.path is None:
+                    # calculate and store field.path
+                    tables = self._name, self._columns[args[0]]._obj
+                    if len(args) == 1:
+                        tables = tables[:1]
+                    field.path = tuple([(t, f) for t, f in zip(tables, args)])
+                sm = {}
+                start = 10 * len(field.path)
+                stop = start + len(field.path)
+                priorities = list(reversed(range(start, stop)))
+                path = list(reversed(field.path))
+                while path:
+                    current_table, current_field = path.pop(0)
+                    current_priority = priorities.pop(0)
+                    sm[current_table] = self._create_entry(path, current_field, current_priority)
+                return sm
+            #
             sm = f.store
-            if sm is True:
-                sm = {self._name: (lambda self, cr, uid, ids, c={}: ids, None, 10, None)}
+            if sm is True and not isinstance(f, fields.related):
+                sm = {self._name: (self_ids, None, 10, None)}
+            elif sm is True:
+                sm = _create_stored(self, column, f)
+
             for object, aa in sm.items():
                 if len(aa) == 4:
                     (fnct, fields2, order, length) = aa
@@ -1203,6 +1226,22 @@ class BaseModel(object):
         else:
             self._rec_name = 'name'
 
+    def _create_entry(self, path, field, priority):
+        current_path = path[:]
+        current_field = field
+        current_priority = priority
+        def _get_related_ids(ids_table, cr, uid, ids, context=None):
+            if not ids:
+                return []
+            if isinstance(ids, (int, long)):
+                ids = [ids]
+            for table, field in current_path:
+                # look for effected records
+                ids = ids_table.pool.get(table).search(cr, SUPERUSER_ID, [(field,'in',ids)], context=context)
+                if not ids:
+                    break
+            return ids
+        return _get_related_ids, [current_field], current_priority
 
     def __export_row(self, cr, uid, row, fields, context=None):
         if context is None:
@@ -3053,6 +3092,9 @@ class BaseModel(object):
         return True
 
     def _update_store(self, cr, f, k):
+        """
+        called by _auto_init
+        """
         _logger.info("storing computed values of fields.function '%s'", k)
         ss = self._columns[k]._symbol_set
         update_query = 'UPDATE "%s" SET "%s"=%s WHERE id=%%s' % (self._table, k, ss[0])
@@ -3453,7 +3495,7 @@ class BaseModel(object):
                             # remember the functions to call for the stored fields
                             if isinstance(f, fields.function):
                                 order = 10
-                                if f.store is not True: # i.e. if f.store is a dict
+                                if f.store is not True and not isinstance(f.store, tuple): # i.e. if f.store is a dict
                                     order = f.store[f.store.keys()[0]][2]
                                 todo_end.append((order, self._update_store, (f, k)))
 
@@ -4911,7 +4953,10 @@ class BaseModel(object):
     def _store_set_values(self, cr, uid, ids, fields, context):
         """
         Calls the fields.function's "implementation function" for all ``fields``, on records with ``ids`` (taking care of
-           respecting ``multi`` attributes), and stores the resulting values in the database directly."""
+           respecting ``multi`` attributes), and stores the resulting values in the database directly.
+           
+           called by: create, unlink, and write
+        """
         if not ids:
             return True
         field_flag = False

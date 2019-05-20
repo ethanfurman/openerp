@@ -1388,12 +1388,27 @@ class related(function):
         return res
 
     def __init__(self, *arg, **args):
+        path = None
+        if '.' in arg[-1]:
+            path = tuple([tuple(a.rsplit('.', 1)) for a in arg])
+            arg = tuple([p[-1] for p in path])
         self.arg = arg
+        self.path = path
         self._relations = []
         super(related, self).__init__(self._fnct_read, arg, self._fnct_write, fnct_inv_arg=arg, fnct_search=self._fnct_search, **args)
-        if self.store is True:
-            # TODO: improve here to change self.store = {...} according to related objects
-            pass
+        # NOTE: BaseModel will transform 'store' to necessary dict of table: (function, field, priority)
+        # if store is True and args is one or two fields.
+        #
+        # for example:
+        #
+        #   store=True
+        #
+        # in table sample.product with arg=('request_id','ref_num') becomes
+        #
+        #   store={
+        #           'sample.product': (_get_related_ids, ['request_id'], 20),
+        #           'sample.request': (_get_related_ids, ['ref_num'], 21),
+        #           }
 
 
 class sparse(function):
