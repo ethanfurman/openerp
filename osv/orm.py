@@ -1120,9 +1120,23 @@ class BaseModel(object):
                 args = field.arg
                 if field.store is True and field.path is None:
                     # calculate and store field.path
-                    tables = self._name, self._columns[args[0]]._obj
+                    link_field = args[0]
+                    current_table = self._name
                     if len(args) == 1:
-                        tables = tables[:1]
+                        tables = (current_table, )
+                    else:
+                        try:
+                            next_table = self._columns[link_field]._obj
+                        except KeyError:
+                            # check for table in self._inherits
+                            for inherit_table, inherit_field in self._inherits.items():
+                                if inherit_field == link_field:
+                                    next_table = inherit_table
+                                    break
+                                else:
+                                    _logger.warning('Unable to calculate related path for %r', column)
+                                    return
+                        tables = current_table, next_table
                     field.path = tuple([(t, f) for t, f in zip(tables, args)])
                 sm = {}
                 start = 10 * len(field.path)
@@ -1139,7 +1153,11 @@ class BaseModel(object):
             if sm is True and not isinstance(f, fields.related):
                 sm = {self._name: (self_ids, None, 10, None)}
             elif sm is True:
+                # get self and inherit'd fields, in case first target is from an inherited table
                 sm = _create_stored(self, column, f)
+                if not sm:
+                    f.store = False
+                    continue
 
             for object, aa in sm.items():
                 if len(aa) == 4:
@@ -3932,7 +3950,6 @@ class BaseModel(object):
                             * if user tries to bypass access rules for read on the requested object
 
         """
-
         if context is None:
             context = {}
         if not isinstance(fields, (type(None), bool)):
@@ -4954,7 +4971,7 @@ class BaseModel(object):
         """
         Calls the fields.function's "implementation function" for all ``fields``, on records with ``ids`` (taking care of
            respecting ``multi`` attributes), and stores the resulting values in the database directly.
-           
+
            called by: create, unlink, and write
         """
         if not ids:
