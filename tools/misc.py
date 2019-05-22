@@ -1187,7 +1187,7 @@ def self_ids(table, cr, uid, ids, context=None):
 def self_uid(table, cr, uid, ids, context=None):
     return uid
 
-class OrderByStr(unicode):
+class OrderBy(unicode):
     "string for pass-through order-by statements"
 
 def Singleton(cls):
