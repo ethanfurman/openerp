@@ -5092,7 +5092,7 @@ class BaseModel(object):
         return Query(tables, where_clause, where_params)
 
     def _check_qorder(self, word):
-        if not isinstance(word, OrderBy) and not regex_order.match(word):
+        if not regex_order.match(word):
             raise except_orm(_('AccessError'), _('Invalid "order" specified. A valid "order" specification is a comma-separated list of valid field names (optionally followed by asc/desc for the direction)'))
         return True
 
@@ -5194,10 +5194,10 @@ class BaseModel(object):
 
         :raise" except_orm in case order_spec is malformed
         """
-        if isinstance(order_spec, OrderBy):
-            return order_spec
         order_by_clause = ''
         order_spec = order_spec or self._order
+        if isinstance(order_spec, OrderBy):
+            return ' ORDER BY %s' % (order_spec, )
         if order_spec:
             order_by_elements = []
             self._check_qorder(order_spec)
