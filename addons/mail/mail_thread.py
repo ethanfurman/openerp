@@ -382,21 +382,22 @@ class mail_thread(osv.AbstractModel):
 
     def _get_current_values(self, cr, uid, ids, tracked_fields, context=None):
         res = {}
-        many_fields = [n for n, f in tracked_fields.items() if f['type'] in ('one2many','many2many')]
-        for rec in self.read(cr, uid, ids, tracked_fields.keys(), context=context):
-            id = rec['id']
-            res[id] = values = {}
-            for field_name in tracked_fields:
-                field_info = tracked_fields[field_name]
-                value = rec[field_name]
-                if field_name in many_fields:
-                    model = self.pool.get(field_info['relation'])
-                    value = [
-                        id_name
-                        for id_name in
-                            model.name_get(cr, uid, value, context=context)
-                            ]
-                values[field_name] = value
+        if tracked_fields:
+            many_fields = [n for n, f in tracked_fields.items() if f['type'] in ('one2many','many2many')]
+            for rec in self.read(cr, uid, ids, tracked_fields.keys(), context=context):
+                id = rec['id']
+                res[id] = values = {}
+                for field_name in tracked_fields:
+                    field_info = tracked_fields[field_name]
+                    value = rec[field_name]
+                    if field_name in many_fields:
+                        model = self.pool.get(field_info['relation'])
+                        value = [
+                            id_name
+                            for id_name in
+                                model.name_get(cr, uid, value, context=context)
+                                ]
+                    values[field_name] = value
         return res
 
     def message_track(
