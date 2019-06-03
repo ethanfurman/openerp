@@ -381,7 +381,7 @@ class mail_thread(osv.AbstractModel):
         return self.fields_get(cr, uid, lst, context=context)
 
     def _get_current_values(self, cr, uid, ids, tracked_fields, context=None):
-        res = {}
+        res = {}.fromkeys(ids)
         if tracked_fields:
             many_fields = [n for n, f in tracked_fields.items() if f['type'] in ('one2many','many2many')]
             for rec in self.read(cr, uid, ids, tracked_fields.keys(), context=context):
