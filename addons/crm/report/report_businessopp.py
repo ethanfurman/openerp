@@ -104,9 +104,9 @@ class report_custom(report_int):
 
                 l[i] = (percent, newbenef)
 
-#TODO:
-#-group by "categorie de probabilites ds graphe du haut"
-#-echelle variable
+        #TODO:
+        #-group by "categorie de probabilites ds graphe du haut"
+        #-echelle variable
 
         pdf_string = StringIO.StringIO()
         can = canvas.init(fname = pdf_string, format = 'pdf')

@@ -21,6 +21,7 @@
 import logging
 import random
 import time
+from textwrap import dedent
 from urllib import quote_plus
 import uuid
 from openerp import SUPERUSER_ID
@@ -124,20 +125,20 @@ class share_wizard(osv.TransientModel):
         base_url = self.pool.get('ir.config_parameter').get_param(cr, uid, 'web.base.url', default=None, context=context)
         user = wizard.result_line_ids[0]
 
-        return """
-<script type="text/javascript" src="%(base_url)s/web/webclient/js"></script>
-<script type="text/javascript">
-    new openerp.init(%(init)s).web.embed(%(server)s, %(dbname)s, %(login)s, %(password)s,%(action)d%(options)s);
-</script> """ % {
-            'init': simplejson.dumps(openerp.conf.server_wide_modules),
-            'base_url': base_url or '',
-            'server': simplejson.dumps(base_url),
-            'dbname': simplejson.dumps(cr.dbname),
-            'login': simplejson.dumps(user.login),
-            'password': simplejson.dumps(user.password),
-            'action': user.user_id.action_id.id,
-            'options': js_options_str,
-        }
+        return dedent("""\
+                <script type="text/javascript" src="%(base_url)s/web/webclient/js"></script>
+                <script type="text/javascript">
+                    new openerp.init(%(init)s).web.embed(%(server)s, %(dbname)s, %(login)s, %(password)s,%(action)d%(options)s);
+                </script> """ % {
+                        'init': simplejson.dumps(openerp.conf.server_wide_modules),
+                        'base_url': base_url or '',
+                        'server': simplejson.dumps(base_url),
+                        'dbname': simplejson.dumps(cr.dbname),
+                        'login': simplejson.dumps(user.login),
+                        'password': simplejson.dumps(user.password),
+                        'action': user.user_id.action_id.id,
+                        'options': js_options_str,
+                        })
 
     def _embed_code(self, cr, uid, ids, _fn, _args, context=None):
         result = dict.fromkeys(ids, '')

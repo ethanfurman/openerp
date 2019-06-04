@@ -31,7 +31,8 @@ from openerp.tools.translate import _
 import pytz
 import re
 import time
-from openerp import tools, SUPERUSER_ID
+from openerp import tools
+from textwrap import dedent
 
 months = {
     1: "January", 2: "February", 3: "March", 4: "April",
@@ -896,19 +897,22 @@ class calendar_alarm(osv.osv):
             if re_dates:
                 if alarm.action == 'email':
                     sub = '[OpenERP Reminder] %s' % (alarm.name)
-                    body = """<pre>
-Event: %s
-Event Date: %s
-Description: %s
+                    body = dedent("""\
+                            <pre>
+                            Event: %s
+                            Event Date: %s
+                            Description: %s
 
-From:
-      %s
+                            From:
+                                  %s
 
-----
-%s
-</pre>
-"""  % (alarm.name, alarm.trigger_date, alarm.description,
-                        alarm.user_id.name, alarm.user_id.signature)
+                            ----
+                            %s
+                            </pre>
+                            """
+                            % (alarm.name, alarm.trigger_date, alarm.description,
+                               alarm.user_id.name, alarm.user_id.signature)
+                            )
                     mail_to = alarm.user_id.email
                     for att in alarm.attendee_ids:
                         mail_to = mail_to + " " + att.user_id.email

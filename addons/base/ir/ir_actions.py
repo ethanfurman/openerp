@@ -24,6 +24,7 @@ import os
 import re
 from socket import gethostname
 import time
+from textwrap import dedent
 
 from openerp import SUPERUSER_ID
 from openerp import netsvc, tools
@@ -767,10 +768,14 @@ class ir_actions_todo(osv.osv):
         'sequence': fields.integer('Sequence'),
         'state': fields.selection(TODO_STATES, string='Status', required=True),
         'name': fields.char('Name', size=64),
-        'type': fields.selection(TODO_TYPES, 'Type', required=True,
-            help="""Manual: Launched manually.
-Automatic: Runs whenever the system is reconfigured.
-Launch Manually Once: after having been launched manually, it sets automatically to Done."""),
+        'type': fields.selection(
+            TODO_TYPES, 'Type', required=True,
+            help=dedent("""\
+                    Manual: Launched manually.
+                    Automatic: Runs whenever the system is reconfigured.
+                    Launch Manually Once: after having been launched manually, it sets automatically to Done.
+                    """
+                    )),
         'groups_id': fields.many2many('res.groups', 'res_groups_action_rel', 'uid', 'gid', 'Groups'),
         'note': fields.text('Text', translate=True),
     }

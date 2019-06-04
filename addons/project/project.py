@@ -22,6 +22,7 @@
 from datetime import datetime, date
 from lxml import etree
 from fnx import date as fnx_date
+from textwrap import dedent
 import time
 
 from openerp import SUPERUSER_ID
@@ -457,14 +458,14 @@ class project(osv.osv):
             calendar_id = project.resource_calendar_id and project.resource_calendar_id.id or False
             resource_objs = resource_pool.generate_resources(cr, uid, u_ids, calendar_id, context=context)
             for key, vals in resource_objs.items():
-                result +='''
-class User_%s(Resource):
-    efficiency = %s
-''' % (key,  vals.get('efficiency', False))
-
-        result += '''
-def Project():
-        '''
+                result += dedent('''\
+                    class User_%s(Resource):
+                        efficiency = %s
+                    ''' % (key,  vals.get('efficiency', False))
+                    )
+                result += dedent('''\
+                    def Project():
+                    ''')
         return result
 
     def _schedule_project(self, cr, uid, project, context=None):
@@ -475,21 +476,22 @@ def Project():
         puids = [x.id for x in project.members]
         if project.user_id:
             puids.append(project.user_id.id)
-        result = """
-  def Project_%d():
-    start = \'%s\'
-    working_days = %s
-    resource = %s
-"""       % (
-            project.id,
-            project.date_start or time.strftime('%Y-%m-%d'), working_days,
-            '|'.join(['User_'+str(x) for x in puids])
-        )
+        result = dedent("""\
+            def Project_%d():
+                start = \'%s\'
+                working_days = %s
+                resource = %s
+            """ % (
+                project.id,
+                project.date_start or time.strftime('%Y-%m-%d'), working_days,
+                '|'.join(['User_'+str(x) for x in puids])
+                ))
         vacation = calendar_id and tuple(resource_pool.compute_vacation(cr, uid, calendar_id, context=context)) or False
         if vacation:
-            result+= """
-    vacation = %s
-""" %   ( vacation, )
+            result += dedent("""\
+                vacation = %s
+                """ % ( vacation, )
+                )
         return result
 
     #TODO: DO Resource allocation and compute availability
@@ -1207,23 +1209,26 @@ class task(base_stage, osv.osv):
         for task in tasks:
             if task.state in ('done','cancelled'):
                 continue
-            result += '''
-%sdef Task_%s():
-%s  todo = \"%.2fH\"
-%s  effort = \"%.2fH\"''' % (ident,task.id, ident,task.remaining_hours, ident,task.total_hours)
+            result += dedent('''\
+                %sdef Task_%s():
+                %s  todo = \"%.2fH\"
+                %s  effort = \"%.2fH\"
+                '''
+                % (ident,task.id, ident,task.remaining_hours, ident,task.total_hours)
+                )
             start = []
             for t2 in task.parent_ids:
                 start.append("up.Task_%s.end" % (t2.id,))
             if start:
-                result += '''
-%s  start = max(%s)
-''' % (ident,','.join(start))
-
+                result += dedent('''\
+                    %s  start = max(%s)
+                    ''' % (ident,','.join(start))
+                    )
             if task.user_id:
-                result += '''
-%s  resource = %s
-''' % (ident, 'User_'+str(task.user_id.id))
-
+                result += dedent('''\
+                    %s  resource = %s
+                    ''' % (ident, 'User_'+str(task.user_id.id))
+                    )
         result += "\n"
         return result
 

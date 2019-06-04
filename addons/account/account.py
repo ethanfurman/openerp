@@ -327,15 +327,6 @@ class account_account(osv.osv):
             currency_obj = self.pool.get('res.currency')
             while brs:
                 current = brs.pop(0)
-#                can_compute = True
-#                for child in current.child_id:
-#                    if child.id not in sums:
-#                        can_compute = False
-#                        try:
-#                            brs.insert(0, brs.pop(brs.index(child)))
-#                        except ValueError:
-#                            brs.insert(0, child)
-#                if can_compute:
                 for fn in field_names:
                     sums.setdefault(current.id, {})[fn] = accounts.get(current.id, {}).get(fn, 0.0)
                     for child in current.child_id:
@@ -1007,7 +998,7 @@ class account_period(osv.osv):
         if context is None: context = {}
         if not dt:
             dt = fields.date.context_today(self,cr,uid,context=context)
-#CHECKME: shouldn't we check the state of the period?
+        #CHECKME: shouldn't we check the state of the period?
         args = [('date_start', '<=' ,dt), ('date_stop', '>=', dt)]
         if context.get('company_id', False):
             args.append(('company_id', '=', context['company_id']))

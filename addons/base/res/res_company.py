@@ -27,6 +27,7 @@ from openerp.osv import fields, osv
 from openerp.tools.translate import _
 from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools import image_resize_image
+from textwrap import dedent
 
 class multi_company_default(osv.osv):
     """
@@ -269,22 +270,23 @@ class res_company(osv.osv):
     def _get_logo(self, cr, uid, ids):
         return open(os.path.join( tools.config['root_path'], 'addons', 'base', 'res', 'res_company_logo.png'), 'rb') .read().encode('base64')
 
-    _header = """
-<header>
-<pageTemplate>
-    <frame id="first" x1="28.0" y1="28.0" width="%s" height="%s"/>
-    <pageGraphics>
-        <fill color="black"/>
-        <stroke color="black"/>
-        <setFont name="DejaVu Sans" size="8"/>
-        <drawString x="%s" y="%s"> [[ formatLang(time.strftime("%%Y-%%m-%%d"), date=True) ]]  [[ time.strftime("%%H:%%M") ]]</drawString>
-        <setFont name="DejaVu Sans Bold" size="10"/>
-        <drawCentredString x="%s" y="%s">[[ company.partner_id.name ]]</drawCentredString>
-        <stroke color="#000000"/>
-        <lines>%s</lines>
-    </pageGraphics>
-</pageTemplate>
-</header>"""
+    _header = dedent("""\
+        <header>
+        <pageTemplate>
+            <frame id="first" x1="28.0" y1="28.0" width="%s" height="%s"/>
+            <pageGraphics>
+                <fill color="black"/>
+                <stroke color="black"/>
+                <setFont name="DejaVu Sans" size="8"/>
+                <drawString x="%s" y="%s"> [[ formatLang(time.strftime("%%Y-%%m-%%d"), date=True) ]]  [[ time.strftime("%%H:%%M") ]]</drawString>
+                <setFont name="DejaVu Sans Bold" size="10"/>
+                <drawCentredString x="%s" y="%s">[[ company.partner_id.name ]]</drawCentredString>
+                <stroke color="#000000"/>
+                <lines>%s</lines>
+            </pageGraphics>
+        </pageTemplate>
+        </header>
+        """)
 
     _header2 = _header % (539, 772, "1.0cm", "28.3cm", "11.1cm", "28.3cm", "1.0cm 28.1cm 20.1cm 28.1cm")
 
@@ -300,50 +302,51 @@ class res_company(osv.osv):
         except:
             return self._header_a4
 
-    _header_main = """
-<header>
-    <pageTemplate>
-        <frame id="first" x1="1.3cm" y1="3.0cm" height="%s" width="19.0cm"/>
-         <stylesheet>
-            <paraStyle name="main_footer"  fontName="DejaVu Sans" fontSize="8.0" alignment="CENTER"/>
-            <paraStyle name="main_header"  fontName="DejaVu Sans" fontSize="8.0" leading="10" alignment="LEFT" spaceBefore="0.0" spaceAfter="0.0"/>
-         </stylesheet>
-        <pageGraphics>
-            <!-- You Logo - Change X,Y,Width and Height -->
-            <image x="1.3cm" y="%s" height="40.0" >[[ company.logo or removeParentNode('image') ]]</image>
-            <setFont name="DejaVu Sans" size="8"/>
-            <fill color="black"/>
-            <stroke color="black"/>
+    _header_main = dedent("""\
+        <header>
+            <pageTemplate>
+                <frame id="first" x1="1.3cm" y1="3.0cm" height="%s" width="19.0cm"/>
+                 <stylesheet>
+                    <paraStyle name="main_footer"  fontName="DejaVu Sans" fontSize="8.0" alignment="CENTER"/>
+                    <paraStyle name="main_header"  fontName="DejaVu Sans" fontSize="8.0" leading="10" alignment="LEFT" spaceBefore="0.0" spaceAfter="0.0"/>
+                 </stylesheet>
+                <pageGraphics>
+                    <!-- You Logo - Change X,Y,Width and Height -->
+                    <image x="1.3cm" y="%s" height="40.0" >[[ company.logo or removeParentNode('image') ]]</image>
+                    <setFont name="DejaVu Sans" size="8"/>
+                    <fill color="black"/>
+                    <stroke color="black"/>
 
-            <!-- page header -->
-            <lines>1.3cm %s 20cm %s</lines>
-            <drawRightString x="20cm" y="%s">[[ company.rml_header1 ]]</drawRightString>
-            <drawString x="1.3cm" y="%s">[[ company.partner_id.name ]]</drawString>
-            <place x="1.3cm" y="%s" height="1.8cm" width="15.0cm">
-                <para style="main_header">[[ display_address(company.partner_id) or  '' ]]</para>
-            </place>
-            <drawString x="1.3cm" y="%s">Phone:</drawString>
-            <drawRightString x="7cm" y="%s">[[ company.partner_id.phone or '' ]]</drawRightString>
-            <drawString x="1.3cm" y="%s">Mail:</drawString>
-            <drawRightString x="7cm" y="%s">[[ company.partner_id.email or '' ]]</drawRightString>
-            <lines>1.3cm %s 7cm %s</lines>
+                    <!-- page header -->
+                    <lines>1.3cm %s 20cm %s</lines>
+                    <drawRightString x="20cm" y="%s">[[ company.rml_header1 ]]</drawRightString>
+                    <drawString x="1.3cm" y="%s">[[ company.partner_id.name ]]</drawString>
+                    <place x="1.3cm" y="%s" height="1.8cm" width="15.0cm">
+                        <para style="main_header">[[ display_address(company.partner_id) or  '' ]]</para>
+                    </place>
+                    <drawString x="1.3cm" y="%s">Phone:</drawString>
+                    <drawRightString x="7cm" y="%s">[[ company.partner_id.phone or '' ]]</drawRightString>
+                    <drawString x="1.3cm" y="%s">Mail:</drawString>
+                    <drawRightString x="7cm" y="%s">[[ company.partner_id.email or '' ]]</drawRightString>
+                    <lines>1.3cm %s 7cm %s</lines>
 
-            <!-- left margin -->
-            <rotate degrees="90"/>
-            <fill color="grey"/>
-            <drawString x="2.65cm" y="-0.4cm">generated by OpenERP.com</drawString>
-            <fill color="black"/>
-            <rotate degrees="-90"/>
+                    <!-- left margin -->
+                    <rotate degrees="90"/>
+                    <fill color="grey"/>
+                    <drawString x="2.65cm" y="-0.4cm">generated by OpenERP.com</drawString>
+                    <fill color="black"/>
+                    <rotate degrees="-90"/>
 
-            <!--page bottom-->
-            <lines>1.2cm 2.65cm 19.9cm 2.65cm</lines>
-            <place x="1.3cm" y="0cm" height="2.55cm" width="19.0cm">
-                <para style="main_footer">[[ company.rml_footer ]]</para>
-                <para style="main_footer">Contact : [[ user.name ]] - Page: <pageNumber/></para>
-            </place>
-        </pageGraphics>
-    </pageTemplate>
-</header>"""
+                    <!--page bottom-->
+                    <lines>1.2cm 2.65cm 19.9cm 2.65cm</lines>
+                    <place x="1.3cm" y="0cm" height="2.55cm" width="19.0cm">
+                        <para style="main_footer">[[ company.rml_footer ]]</para>
+                        <para style="main_footer">Contact : [[ user.name ]] - Page: <pageNumber/></para>
+                    </place>
+                </pageGraphics>
+            </pageTemplate>
+        </header>
+        """)
 
     _header_a4 = _header_main % ('21.7cm', '27.7cm', '27.7cm', '27.7cm', '27.8cm', '27.3cm', '25.3cm', '25.0cm', '25.0cm', '24.6cm', '24.6cm', '24.5cm', '24.5cm')
     _header_letter = _header_main % ('20cm', '26.0cm', '26.0cm', '26.0cm', '26.1cm', '25.6cm', '23.6cm', '23.3cm', '23.3cm', '22.9cm', '22.9cm', '22.8cm', '22.8cm')
