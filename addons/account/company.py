@@ -46,7 +46,7 @@ class res_company(osv.osv):
                 If you have any queries regarding your account, Please contact us.
 
                 Thank you in advance for your cooperation.
-                Best Regards,'''
+                Best Regards,''')
     }
 
 res_company()
