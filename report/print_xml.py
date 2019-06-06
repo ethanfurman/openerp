@@ -275,12 +275,12 @@ class document(object):
                     sep = attrs.get('sep', ', ')
                     if sep == '\\n':
                         sep = '\n'
+                    vals = []
                     if value:
                         if not isinstance(value, list):
                             v_list = [value]
                         else:
                             v_list = value
-                        vals = []
                         for v in v_list:
                             vals.append(v[field_name])
                     sort = attrs.get('sort', None)
