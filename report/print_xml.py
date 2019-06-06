@@ -268,6 +268,29 @@ class document(object):
                             el = etree.SubElement(parent, node.tag)
                             for el_cld in node:
                                 self.parse_node(el_cld, el, v)
+
+                elif attrs['type'] == 'merge':
+                    value = self.get_value(browser, attrs['name'])
+                    field_name = attrs['field']
+                    sep = attrs.get('sep', ', ')
+                    if sep == '\\n':
+                        sep = '\n'
+                    if value:
+                        if not isinstance(value, list):
+                            v_list = [value]
+                        else:
+                            v_list = value
+                        vals = []
+                        for v in v_list:
+                            vals.append(v[field_name])
+                    sort = attrs.get('sort', None)
+                    if sort == 'asc':
+                        vals.sort()
+                    elif sort == 'desc':
+                        vals.sort(reverse=True)
+                    el = etree.SubElement(parent, node.tag)
+                    el.text = tounicode(sep.join(vals))
+
             else:
                 # if there is no "type" attribute in the node, copy it to the xml data and parse its children
                 if not node.tag == etree.Comment:
