@@ -156,7 +156,12 @@
                             </group>
                         </page>
                         <page string="Project Stages" attrs="{'invisible': [('use_tasks', '=', False)]}" name="project_stages">
-                             <field name="type_ids"/>
+                             <field name="type_ids">
+                                <tree string="Task Stage">
+                                    <field name="name"/>
+                                    <field name="state"/>
+                                </tree>
+                            </field>
                         </page>
                     </notebook>
                 </sheet>
