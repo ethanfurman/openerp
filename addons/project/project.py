@@ -698,13 +698,17 @@ class task(base_stage, osv.osv):
         return {'value':{'remaining_hours': planned - effective}}
 
     def onchange_project(self, cr, uid, id, project_id):
-        if not project_id:
-            return {}
-        data = self.pool.get('project.project').browse(cr, uid, [project_id])
-        partner_id=data and data[0].partner_id
-        if partner_id:
-            return {'value':{'partner_id':partner_id.id}}
-        return {}
+        "update partner and starting stage"
+        res = {}
+        if project_id:
+            value = {}
+            data = self.pool.get('project.project').browse(cr, uid, [project_id])
+            partner_id = data and data[0].partner_id
+            if partner_id:
+                value['partner_id'] = partner_id.id
+            value['stage_id'] = self._get_default_stage_id(cr, uid, context={'default_project_id': project_id})
+            res['value'] = value
+        return res
 
     def onchange_kanban_state(self, cr, uid, ids, kanban_state):
         if kanban_state != 'sleeping':
