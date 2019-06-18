@@ -4323,11 +4323,13 @@ instance.web.form.FieldMany2ManyTags = instance.web.form.AbstractField.extend(in
                         $(this).trigger('hideDropdown');
                         var index = Number(this.selectedSuggestionElement().children().children().data('index'));
                         var data = self.search_result[index];
-                        if (data.id) {
-                            self.add_id(data.id);
-                        } else {
-                            ignore_blur = true;
-                            data.action();
+                        if (data !== undefined) {
+                            if (data.id) {
+                                self.add_id(data.id);
+                            } else {
+                                ignore_blur = true;
+                                data.action();
+                            }
                         }
                     },
                 },
