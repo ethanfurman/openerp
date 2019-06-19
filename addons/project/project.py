@@ -589,14 +589,14 @@ class task(base_stage, osv.osv):
             'project.mt_task_awoke': lambda self, cr, uid, obj, ctx=None: obj['kanban_state'] != 'sleeping' and ctx['message_initial']['kanban_state'] == 'sleeping',
             },
         'state': {
-            'project.mt_task_new': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'new',
-            'project.mt_task_started': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'open',
+            'project.mt_task_new': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'draft',
+            'project.mt_task_started': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'pending',
             'project.mt_task_closed': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'done',
-        },
+            },
         'stage_id': {
-            'project.mt_task_stage': lambda self, cr, uid, obj, ctx=None: obj['state'] not in ['new', 'done', 'open'],
-        },
-    }
+            'project.mt_task_stage': lambda self, cr, uid, obj, ctx=None: obj['state'] not in ['draft', 'done', 'pending'],
+            },
+        }
 
     def _get_default_project_id(self, cr, uid, context=None):
         """ Gives default section by checking if present in the context """
@@ -855,7 +855,7 @@ class task(base_stage, osv.osv):
                 'project.task': (lambda self, cr, uid, ids, c={}: ids, ['work_ids', 'remaining_hours', 'planned_hours'], 10),
                 'project.task.work': (_get_task, ['hours'], 10),
             }),
-        'user_id': fields.many2one('res.users', 'Assigned to', track_visibility='onchange'),
+        'user_id': fields.many2one('res.users', 'Assigned to', track_visibility='initial_and_change_only'),
         'delegated_user_id': fields.related('child_ids', 'user_id', type='many2one', relation='res.users', string='Delegated To'),
         'partner_id': fields.many2one('res.partner', 'Customer'),
         'work_ids': fields.one2many('project.task.work', 'task_id', 'Work done'),
@@ -1182,6 +1182,10 @@ class task(base_stage, osv.osv):
             if  vals.get('project_id'):
                 ctx['default_project_id'] = vals['project_id']
             vals['stage_id'] = self._get_default_stage_id(cr, uid, context=ctx)
+        # notify assigned-to user
+        if vals.get('user_id'):
+            assigned_user = self.pool.get('res.users').browse(cr, uid, vals['user_id'], context=context)
+            vals.setdefault('message_notify_ids', []).append(assigned_user.partner_id.id)
         task_id = super(task, self).create(cr, uid, vals, context=context)
         self._store_history(cr, uid, [task_id], context=context)
         return task_id
@@ -1194,6 +1198,10 @@ class task(base_stage, osv.osv):
             if project_id:
                 vals.setdefault('message_follower_ids', [])
                 vals['message_follower_ids'] += [(6, 0,[follower.id]) for follower in project_id.message_follower_ids]
+        # notify assigned-to user
+        if vals.get('user_id'):
+            assigned_user = self.pool.get('res.users').browse(cr, uid, vals['user_id'], context=context)
+            vals.setdefault('message_notify_ids', []).append(assigned_user.partner_id.id)
         result = super(task, self).write(cr, uid, ids, vals, context=context)
         if ('stage_id' in vals) or ('remaining_hours' in vals) or ('user_id' in vals) or ('state' in vals) or ('kanban_state' in vals):
             self._store_history(cr, uid, ids, context=context)
