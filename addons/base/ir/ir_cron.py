@@ -130,8 +130,16 @@ class ir_cron(osv.osv):
         'user_id': fields.many2one('res.users', 'User', required=True),
         'active': fields.boolean('Active'),
         'interval_number': fields.integer('Interval Number',help="Repeat every x."),
-        'interval_type': fields.selection( [('minutes', 'Minutes'),
-            ('hours', 'Hours'), ('work_days','Work Days'), ('days', 'Days'),('weeks', 'Weeks'), ('months', 'Months')], 'Interval Unit'),
+        'interval_type': fields.selection([
+            ('minutes', 'Minutes'),
+            ('hours', 'Hours'),
+            ('work_days','Work Days'),
+            ('days', 'Days'),
+            ('weeks', 'Weeks'),
+            ('months', 'Months')
+            ],
+            string='Interval Unit',
+            ),
         'numbercall': fields.integer('Number of Calls', help='How many times the method is called,\na negative number indicates no limit.'),
         'doall' : fields.boolean('Repeat Missed', help="Specify if missed occurrences should be executed when the server restarts."),
         'nextcall' : fields.datetime('Next Execution Date', required=True, help="Next planned execution date for this job."),
