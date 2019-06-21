@@ -226,7 +226,7 @@
             <field name="name">project.project.kanban</field>
             <field name="model">project.project</field>
             <field name="arch" type="xml">
-                <kanban version="7.0" class="oe_background_grey">
+                <kanban version="7.0" class="oe_background_grey" default_order="name">
                     <field name="effective_hours"/>
                     <field name="planned_hours"/>
                     <field name="name"/>
