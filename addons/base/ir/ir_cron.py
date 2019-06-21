@@ -78,7 +78,7 @@ class ir_cron(osv.osv):
             time = rec['timeout_display']
             if not time:
                 res[id] = 0
-                return res
+                continue
             text = time
             if text[0] == '-':
                 raise ERPError('Field Error', 'invalid wait time: <%s>' % time)
