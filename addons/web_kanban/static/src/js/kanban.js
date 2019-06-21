@@ -77,6 +77,25 @@ instance.web_kanban.KanbanView = instance.web.View.extend({
         this.add_qweb_template();
         this.has_been_loaded.resolve();
         this.trigger('kanban_view_loaded', data);
+        // use default order if defined in xml description (taken from Odoo 10)
+        var default_order = this.fields_view.arch.attrs.default_order;
+        console.log('default order', default_order);
+        var unsorted = !this.dataset._sort.length;
+        console.log('dataset sort', this.dataset._sort);
+        console.log('unsorted', unsorted);
+        console.log('data', this.dataset);
+        if (unsorted && default_order) {
+            this.dataset.set_sort(default_order.split(','));
+        }
+        // Sort
+        if (!unsorted) {
+            if (this.dataset._sort[0].indexOf('-') == -1) {
+                this.$el.find('th[data-id=' + this.dataset._sort[0] + ']').addClass("sortdown");
+            } else {
+                this.$el.find('th[data-id=' + this.dataset._sort[0].split('-')[1] + ']').addClass("sortup");
+            }
+        }
+        //
         return $.when();
     },
     _is_quick_create_enabled: function() {
