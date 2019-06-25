@@ -379,6 +379,27 @@ class datetime(_column):
     _symbol_set = (_symbol_c, _symbol_f)
 
     @staticmethod
+    def server_time(model, cr, timestamp=None):
+        # timestamp should be in UTC
+        timestamp = timestamp or DT.datetime.now()
+        if isinstance(timestamp, basestring):
+            timestamp = DT.datetime.strptime(timestamp, tools.DEFAULT_SERVER_DATETIME_FORMAT)
+        try:
+            tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+        except IndexError:
+            _logger.error('missing system parameter: database.time_zone')
+            raise ERPError('Missing System Parametor', 'database.time_zone missing: unable to calculate server time')
+        try:
+            db_tz = pytz.timezone(tz_name)
+            utc_timestamp = UTC.localize(timestamp, is_dst=False) # UTC = no DST
+            tz_timestamp = utc_timestamp.astimezone(db_tz)
+        except Exception:
+            _logger.exception("failed to compute server timestamp")
+            raise ERPError('Unknown Failure', 'unable to calculate server time; examine logs for details')
+        return tz_timestamp
+
+
+    @staticmethod
     def now(model, cr, *args, **kwds):
         """ Returns the current datetime in a format fit for being a
         default value to a ``datetime`` field.
