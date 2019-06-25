@@ -18,18 +18,23 @@
                         <field name="priority" />
                     </group>
                     <notebook>
-                    <page string="Information">
+                    <page string="Schedule">
                         <group col="4">
-                            <field name="interval_number"/>
-                            <field name="interval_type"/>
+                            <field name="schedule_type"/>
+                            <separator colspan="2"/>
+                            <field name="cron_schedule" attrs="{'invisible': [('schedule_type','!=','crontab')]}" on_change="onchange_cron_schedule(cron_schedule)"/>
+                        </group>
+                        <group col="4">
+                            <field name="interval_number" attrs="{'invisible': [('schedule_type','!=','internal')]}"/>
+                            <field name="interval_type" attrs="{'invisible': [('schedule_type','!=','internal')]}"/>
                             <newline/>
                             <field name="nextcall"/>
-                            <field name="numbercall"/>
+                            <field name="numbercall" attrs="{'invisible': [('schedule_type','!=','internal')]}"/>
                             <field name="doall"/>
                             <field name="partial"/>
                         </group>
                     </page>
-                    <page string="Technical Data" groups="base.group_no_one">
+                    <page string="Job" groups="base.group_no_one">
                         <group>
                             <field name="type"/>
                             <field name="model" attrs="{'invisible': [('type','!=','internal')]}"/>
