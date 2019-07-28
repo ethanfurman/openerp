@@ -21,6 +21,7 @@
 import logging
 from operator import itemgetter
 import os
+import textwrap
 
 from openerp import report, tools
 
@@ -142,22 +143,24 @@ class report_graph_instance(object):
                     (data['model'],))
             wkfinfo = cr.dictfetchone()
             if not wkfinfo:
-                ps_string = '''%PS-Adobe-3.0
-/inch {72 mul} def
-/Times-Roman findfont 50 scalefont setfont
-1.5 inch 15 inch moveto
-(No workflow defined) show
-showpage'''
+                ps_string = textwrap.dedent('''\
+                        %PS-Adobe-3.0
+                        /inch {72 mul} def
+                        /Times-Roman findfont 50 scalefont setfont
+                        1.5 inch 15 inch moveto
+                        (No workflow defined) show
+                        showpage''')
             else:
                 cr.execute('select i.id from wkf_instance i left join wkf w on (i.wkf_id=w.id) where res_id=%s and osv=%s',(data['id'],data['model']))
                 inst_ids = cr.fetchall()
                 if not inst_ids:
-                    ps_string = '''%PS-Adobe-3.0
-/inch {72 mul} def
-/Times-Roman findfont 50 scalefont setfont
-1.5 inch 15 inch moveto
-(No workflow instance defined) show
-showpage'''
+                    ps_string = textwrap.dedent('''\
+                            %PS-Adobe-3.0
+                            /inch {72 mul} def
+                            /Times-Roman findfont 50 scalefont setfont
+                            1.5 inch 15 inch moveto
+                            (No workflow instance defined) show
+                            showpage''')
                 else:
                     graph = pydot.Dot(graph_name=data['model'].replace('.','_'),
                         fontsize='16',
@@ -171,12 +174,13 @@ showpage'''
         except Exception:
             _logger.exception('Exception in call:')
             # string is in PS, like the success message would have been
-            ps_string = '''%PS-Adobe-3.0
-/inch {72 mul} def
-/Times-Roman findfont 50 scalefont setfont
-1.5 inch 15 inch moveto
-(No workflow available) show
-showpage'''
+            ps_string = textwrap.dedent('''\
+                    %PS-Adobe-3.0
+                    /inch {72 mul} def
+                    /Times-Roman findfont 50 scalefont setfont
+                    1.5 inch 15 inch moveto
+                    (No workflow available) show
+                    showpage''')
         if os.name == "nt":
             prog = 'ps2pdf.bat'
         else:
