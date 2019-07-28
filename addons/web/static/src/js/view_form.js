@@ -3184,7 +3184,9 @@ instance.web.form.CompletionFieldMixin = {
                 title: (view === 'search' ? _t("Search: ") : _t("Create: ")) + this.string,
                 initial_ids: ids ? _.map(ids, function(x) {return x[0]}) : undefined,
                 initial_view: view,
-                disable_multiple_selection: true
+                disable_multiple_selection: true,
+                create: this.options.create || false,
+                create_edit: this.options.create_edit || false,
             },
             self.build_domain(),
             new instance.web.CompoundContext(self.build_context(), context || {})
@@ -3302,27 +3304,12 @@ instance.web.form.FieldMany2One = instance.web.form.AbstractField.extend(instanc
         // doesn't work
     },
     show_error_displayer: function() {
-        new instance.web.form.M2ODialog(this).open();
-        // FIXME
-        // show quick create dialog if
-        //   m2o_dialog is true
-        // or
-        //   m2o_dialog is undefined and (create or create_edit) is true
-        // or
-        //   m2o_dialog/create/create_edit are undefined and can_create is true
-        /* if (
-            (this.options.m2o_dialog)
-            ||
-            (typeof this.options.m2o_dialog === 'undefined' &&
-                ((this.create || this.create_edit)
-                 ||
-                 (typeof this.create === 'undefined' && typeof this.create_edit === 'undefined' && this.can_create)
-                ))
-            ) {
+        if (this.options.create || this.options.create_edit)
+            {
                 new instance.web.form.M2ODialog(this).open();
             } else {
                 alert('invalid input');
-            } */
+            }
     },
     render_editable: function() {
         var self = this;
@@ -3349,7 +3336,9 @@ instance.web.form.FieldMany2One = instance.web.form.AbstractField.extend(instanc
                 self.get("value"),
                 self.build_context(),
                 {
-                    title: _t("Open: ") + self.string
+                    title: _t("Open: ") + self.string,
+                    create: this.options.create || false,
+                    create_edit: this.options.create_edit || false,
                 }
             );
             pop.on('write_completed', self, function(){
@@ -3623,7 +3612,11 @@ instance.web.form.Many2OneButton = instance.web.form.AbstractField.extend({
             this.field.relation,
             this.get('value'),
             this.build_context(),
-            {title: this.string}
+            {
+                title: this.string,
+                create: this.options.create || false,
+                create_edit: this.options.create_edit || false,
+            },
         );
         this.popup.on('create_completed', self, function(r) {
             self.set_value(r);
@@ -3742,7 +3735,7 @@ instance.web.form.FieldOne2Many = instance.web.form.AbstractField.extend({
             var view = {
                 view_id: false,
                 view_type: mode == "tree" ? "list" : mode,
-                options: {}
+                options: self.options || {}
             };
             if (self.field.views && self.field.views[mode]) {
                 view.embedded_view = self.field.views[mode];
@@ -4013,7 +4006,9 @@ instance.web.form.One2ManyViewManager = instance.web.ViewManager.extend({
                 return self.o2m.dataset.read_ids.apply(self.o2m.dataset, arguments);
             },
             form_view_options: {'not_interactible_on_create':true},
-            readonly: self.o2m.get("effective_readonly")
+            readonly: self.o2m.get("effective_readonly"),
+            create: this.options.create || false,
+            create_edit: this.options.create_edit || false,
         });
         pop.on("elements_selected", self, function() {
             self.o2m.reload_current_view();
@@ -4101,7 +4096,9 @@ instance.web.form.One2ManyListView = instance.web.ListView.extend({
                     },
                     parent_view: self.o2m.view,
                     child_name: self.o2m.name,
-                    form_view_options: {'not_interactible_on_create':true}
+                    form_view_options: {'not_interactible_on_create':true},
+                    create: this.options.create || false,
+                    create_edit: this.options.create_edit || false,
                 },
                 self.o2m.build_domain(),
                 self.o2m.build_context()
@@ -4128,7 +4125,9 @@ instance.web.form.One2ManyListView = instance.web.ListView.extend({
                 return self.o2m.dataset.read_ids.apply(self.o2m.dataset, arguments);
             },
             form_view_options: {'not_interactible_on_create':true},
-            readonly: !this.is_action_enabled('edit') || self.o2m.get("effective_readonly")
+            readonly: !this.is_action_enabled('edit') || self.o2m.get("effective_readonly"),
+            create: this.options.create || false,
+            create_edit: this.options.create_edit || false,
         });
     },
     do_button_action: function (name, id, callback) {
@@ -4471,14 +4470,14 @@ instance.web.form.FieldMany2Many = instance.web.form.AbstractField.extend(instan
 
         this.$el.addClass('oe_form_field oe_form_field_many2many');
 
-        this.list_view = new instance.web.form.Many2ManyListView(this, this.dataset, false, {
+        this.list_view = new instance.web.form.Many2ManyListView(this, this.dataset, false, _.extend({}, self.options, {
                     'addable': this.get("effective_readonly") ? null : _t("Add"),
                     'deletable': this.get("effective_readonly") ? false : true,
                     'selectable': this.multi_selection,
                     'sortable': false,
                     'reorderable': false,
                     'import_enabled': false,
-            });
+            }));
         var embedded = (this.field.views || {}).tree;
         if (embedded) {
             this.list_view.set_embedded_view(embedded);
@@ -4544,7 +4543,9 @@ instance.web.form.Many2ManyListView = instance.web.ListView.extend(/** @lends in
         pop.select_element(
             this.model,
             {
-                title: _t("Add: ") + this.m2m_field.string
+                title: _t("Add: ") + this.m2m_field.string,
+                create: this.options.create || false,
+                create_edit: this.options.create_edit || false,
             },
             new instance.web.CompoundDomain(this.m2m_field.build_domain(), ["!", ["id", "in", this.m2m_field.dataset.ids]]),
             this.m2m_field.build_context()
@@ -4569,7 +4570,9 @@ instance.web.form.Many2ManyListView = instance.web.ListView.extend(/** @lends in
         var pop = new instance.web.form.FormOpenPopup(this);
         pop.show_element(this.dataset.model, id, this.m2m_field.build_context(), {
             title: _t("Open: ") + this.m2m_field.string,
-            readonly: this.getParent().get("effective_readonly")
+            readonly: this.getParent().get("effective_readonly"),
+            create: this.options.create || false,
+            create_edit: this.options.create_edit || false,
         });
         pop.on('write_completed', self, self.reload_content);
     },
@@ -4674,7 +4677,9 @@ instance.web.form.FieldMany2ManyKanban = instance.web.form.AbstractField.extend(
             pop.select_element(
                 this.field.relation,
                 {
-                    title: _t("Add: ") + this.string
+                    title: _t("Add: ") + this.string,
+                    create: this.options.create || false,
+                    create_edit: this.options.create_edit || false,
                 },
                 new instance.web.CompoundDomain(this.build_domain(), ["!", ["id", "in", this.dataset.ids]]),
                 this.build_context()
@@ -4701,7 +4706,9 @@ instance.web.form.FieldMany2ManyKanban = instance.web.form.AbstractField.extend(
                 alternative_form_view: self.field.views ? self.field.views["form"] : undefined,
                 parent_view: self.view,
                 child_name: self.name,
-                readonly: self.get("effective_readonly")
+                readonly: self.get("effective_readonly"),
+                create: this.options.create || false,
+                create_edit: this.options.create_edit || false,
             });
         }
     },
