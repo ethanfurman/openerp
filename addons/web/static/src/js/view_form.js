@@ -4544,8 +4544,8 @@ instance.web.form.Many2ManyListView = instance.web.ListView.extend(/** @lends in
             this.model,
             {
                 title: _t("Add: ") + this.m2m_field.string,
-                create: (typeof self.options !== "undefined" && self.options.create) || false,
-                create_edit: (typeof self.options !== "undefined" && self.options.create_edit) || false,
+                create: (typeof this.options !== "undefined" && this.options.create) || false,
+                create_edit: (typeof this.options !== "undefined" && this.options.create_edit) || false,
             },
             new instance.web.CompoundDomain(this.m2m_field.build_domain(), ["!", ["id", "in", this.m2m_field.dataset.ids]]),
             this.m2m_field.build_context()
