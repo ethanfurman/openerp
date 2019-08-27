@@ -421,7 +421,7 @@
         <img class="oe_topbar_avatar" t-att-data-default-src="_s + '/web/static/src/img/user_menu_avatar.png'"/>
         <span class="oe_topbar_name"/>
         <ul class="oe_dropdown_menu">
-            <li><a href="#" data-menu="settings">Preferences</a></li>
+            <!-- <li><a href="#" data-menu="settings">Preferences</a></li> -->
             <li><a href="#" data-menu="about">About OpenERP</a></li>
             <li><a href="#" data-menu="logout">Log out</a></li>
         </ul>
@@ -430,7 +430,7 @@
 <t t-name="UserMenu.about">
 
     <div class="oe_about">
-      <a class="oe_activate_debug_mode oe_right" href="?debug" style="background-color: white; padding:2px 6px; border-radius: 10px;">Activate the developer mode</a>
+      <!-- <a class="oe_activate_debug_mode oe_right" href="?debug" style="background-color: white; padding:2px 6px; border-radius: 10px;">Activate the developer mode</a> -->
       <img class="oe_logo" src="/web/static/src/img/logo2.png"/>
       <h3>Version <t t-esc="version_info.server_version"/></h3>
 
