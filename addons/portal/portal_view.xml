@@ -8,8 +8,6 @@
             groups="portal.group_portal,portal.group_anonymous"
             sequence="15"/>
 
-        <!-- remove all mail
-
         <menuitem name="Messaging" id="portal_messages" parent="portal_menu" sequence="10" groups="portal.group_portal"/>
 
         <record id="action_mail_inbox_feeds_portal" model="ir.actions.client">
@@ -41,7 +39,7 @@
             </field>
         </record>
 
-        # TODO: remove me in 8.0
+        <!-- TODO: remove me in 8.0 -->
         <record id="action_mail_star_feeds_portal" model="ir.actions.client">
             <field name="name">To-do</field>
             <field name="tag">mail.wall</field>
@@ -71,7 +69,7 @@
         </record>
         <menuitem name="To-do" id="portal_mail_starfeeds" parent="portal_messages"
             action="action_mail_star_feeds_portal" sequence="20" groups="base.group_no_one"/>
-        # end
+        <!-- end -->
 
         <record id="action_mail_archives_feeds_portal" model="ir.actions.client">
             <field name="name">Archives</field>
