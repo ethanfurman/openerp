@@ -27,6 +27,7 @@ import os
 import platform
 import security
 import sys
+import textwrap
 import thread
 import threading
 import time
@@ -182,7 +183,7 @@ class db(netsvc.ExportService):
 
     def exp_get_progress(self, id):
         if self.actions[id]['thread'].isAlive():
-#           return openerp.modules.init_progress[db_name]
+            # return openerp.modules.init_progress[db_name]
             return min(self.actions[id].get('progress', 0),0.95), []
         else:
             clean = self.actions[id]['clean']
@@ -454,14 +455,14 @@ class common(netsvc.ExportService):
         @return string if extended is False else tuple
         """
 
-        info = _('''
+        info = _(textwrap.dedent('''\
 
-OpenERP is an ERP+CRM program for small and medium businesses.
+                OpenERP is an ERP+CRM program for small and medium businesses.
 
-The whole source code is distributed under the terms of the
-GNU Public Licence.
+                The whole source code is distributed under the terms of the
+                GNU Public Licence.
 
-(c) 2003-TODAY - OpenERP SA''')
+                (c) 2003-TODAY - OpenERP SA'''))
 
         if extended:
             return info, release.version
@@ -715,6 +716,7 @@ class report_spool(netsvc.ExportService):
                     self._reports[id]['exception'] = openerp.exceptions.DeferredException('RML is not available at specified location or not enough data to print!', tb)
                 self._reports[id]['result'] = result
                 self._reports[id]['format'] = format
+                self._reports[id]['file_name'] = obj.filename
                 self._reports[id]['state'] = True
             except Exception, exception:
                 _logger.exception('Exception: %s\n', exception)
@@ -751,6 +753,10 @@ class report_spool(netsvc.ExportService):
             if res2:
                 res['result'] = base64.encodestring(res2)
             res['format'] = result['format']
+            filename = result['file_name']
+            if isinstance(filename, unicode):
+                filename = filename.encode('latin1', 'replace')
+            res['file_name'] = filename
             del self._reports[report_id]
         return res
 
