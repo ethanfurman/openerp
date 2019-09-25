@@ -540,7 +540,7 @@ class selection(_column):
 # ---------------------------------------------------------
 # Relationals fields
 # ---------------------------------------------------------
-
+#
 #
 # Values: (0, 0,  { fields })    create
 #         (1, ID, { fields })    update
@@ -562,6 +562,7 @@ class many2one(_column):
         _column.__init__(self, string=string, **args)
         self._obj = obj
         self._auto_join = auto_join
+	# if not specified, ondelete = 'set null'
 
     def get(self, cr, obj, ids, name, user=None, context=None, values=None):
         if context is None:
@@ -775,6 +776,7 @@ class many2many(_column):
         self._id2 = id2
         self._limit = limit
         self._order = order
+	# m2m fields are automatically and unavoidably ondelete='cascade'
 
     def _finalize(self, cls, name):
         _column._finalize(self, cls, name)
