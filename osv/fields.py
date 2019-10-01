@@ -47,7 +47,7 @@ import openerp
 import openerp.tools as tools
 from openerp.exceptions import ERPError
 from openerp.tools.translate import _
-from openerp.tools import Enum, issubclass, Sentinel, EnumAutoValue
+from openerp.tools import Enum, issubclass, Sentinel, EnumAutoValue, OrderBy
 from openerp.tools import float_round, float_repr
 from openerp.tools import html_sanitize
 from openerp.tools import default, default_uninit, UnInit
@@ -860,8 +860,11 @@ class many2many(_column):
         # (https://github.com/odoo/odoo/issues/531)
         order = self._order or obj._order
         order_by = []
-        for t in order.split(','):
-            order_by.append('"%s".%s' % (obj._table, t.strip()))
+        if isinstance(order, OrderBy):
+            order_by.append('"%s".id' % (obj._table, ))
+        else:
+            for t in order.split(','):
+                order_by.append('"%s".%s' % (obj._table, t.strip()))
         order_by = " ORDER BY %s" % ",".join(order_by)
 
         limit_str = ''
