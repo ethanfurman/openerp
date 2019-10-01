@@ -1190,6 +1190,10 @@ def self_uid(table, cr, uid, ids, context=None):
 class OrderBy(unicode):
     "string for pass-through order-by statements"
 
+from xmlrpclib import Marshaller
+Marshaller.dispatch[OrderBy] = Marshaller.dump_unicode
+
+
 def Singleton(cls):
     "transforms class into a Singleton object"
     return cls()
