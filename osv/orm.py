@@ -400,7 +400,7 @@ class browse_record(object):
                 else:
                     return attr
             else:
-                error_msg = "Field '%s' does not exist in object '%s'" % (name, self)
+                error_msg = "Field %r does not exist in object %r" % (name, self)
                 self.__logger.warning(error_msg)
                 if self.__logger.isEnabledFor(logging.DEBUG):
                     self.__logger.debug(''.join(traceback.format_stack()))
@@ -440,7 +440,7 @@ class browse_record(object):
                 lang = self._context.get('lang', 'en_US') or 'en_US'
                 lang_obj_ids = self.pool.get('res.lang').search(self._cr, self._uid, [('code', '=', lang)])
                 if not lang_obj_ids:
-                    raise Exception(_('Language with code "%s" is not defined in your system !\nDefine it through the Administration menu.') % (lang,))
+                    raise Exception(_('Language with code %r is not defined in your system !\nDefine it through the Administration menu.') % (lang,))
                 lang_obj = self.pool.get('res.lang').browse(self._cr, self._uid, lang_obj_ids[0])
 
                 for field_name, field_column in fields_to_fetch:
@@ -453,7 +453,7 @@ class browse_record(object):
             if not field_values:
                 # Where did those ids come from? Perhaps old entries in ir_model_dat?
                 _logger.warning("No field_values found for ids %s in %s", ids, self)
-                raise KeyError('Field %r not found in %s'%(name, self))
+                raise KeyError('Field %r not found in %r'%(name, self))
             # create browse records for 'remote' objects
             for result_line in field_values:
                 new_data = {}
@@ -513,7 +513,7 @@ class browse_record(object):
             # How did this happen? Could be a missing model due to custom fields used too soon, see above.
             self.__logger.error("Fields to fetch: %s, Field values: %s", field_names, field_values)
             self.__logger.error("Cached: %s, Table: %s", self._data[self._id], self._table)
-            raise KeyError(_('Unknown attribute %s in %s ') % (name, self))
+            raise KeyError(_("Unknown attribute %r in %r") % (name, self))
         return self._data[self._id][name]
 
     def __getattr__(self, name):
