@@ -562,7 +562,7 @@ class many2one(_column):
         _column.__init__(self, string=string, **args)
         self._obj = obj
         self._auto_join = auto_join
-	# if not specified, ondelete = 'set null'
+        # if not specified, ondelete = 'set null'
 
     def get(self, cr, obj, ids, name, user=None, context=None, values=None):
         if context is None:
@@ -1704,6 +1704,8 @@ class ref(object):
         if xml_id.count('.') != 1:
             raise ERPError('Bad Reference', 'reference must be <module>.<name>, not %r' % xml_id)
         self.module, self.name = xml_id.split('.')
+    def __repr__(self):
+        return 'fields.ref(%s.%s)' % (self.module, self.name)
     def __call__(self, pool, cr):
         ir_model_data = pool.get('ir.model.data')
         found = ir_model_data.read(
@@ -1712,7 +1714,11 @@ class ref(object):
                 fields=['res_id'],
                 )
         if not found:
-            raise ERPError('Bad Reference', 'unable to find match for <%s.%s>' % (self.module, self.name))
+            if pool._init:
+                _logger.error('Missing reference to <%s.%s> -- stop and restart server' % (self.module, self.name))
+                return 'ref(%s.%s)' % (self.module, self.name)
+            else:
+                raise ERPError('Bad Reference', 'unable to find match for <%s.%s>' % (self.module, self.name))
         elif len(found) > 1:
             raise ERPError('Bad Reference', 'too many matches for <%s.%s>' % (self.module, self.name))
         return found[0]['res_id']
