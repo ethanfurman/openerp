@@ -25,6 +25,7 @@ import logging
 import os.path
 import pickle
 import re
+import textwrap
 
 # for eval context:
 import time
@@ -248,9 +249,12 @@ class xml_import(object):
         id = xml_id
         if '.' in xml_id:
             module, id = xml_id.split('.', 1)
-            assert '.' not in id, """The ID reference "%s" must contain
-maximum one dot. They are used to refer to other modules ID, in the
-form: module.record_id""" % (xml_id,)
+            assert '.' not in id, textwrap.dedent("""\
+                    The ID reference "%s" must contain a maximum of one dot.
+                    They are used to refer to other modules ID, in the form:
+
+                       module.record_id
+                    """ % (xml_id,))
             if module != self.module:
                 modcnt = self.pool.get('ir.module.module').search_count(self.cr, self.uid, ['&', ('name', '=', module), ('state', 'in', ['installed'])])
                 assert modcnt == 1, """The ID "%s" refers to an uninstalled module""" % (xml_id,)
