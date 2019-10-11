@@ -32,6 +32,7 @@ import openerp.tools
 import openerp.modules.db
 import openerp.tools.config
 from openerp.tools import assertion_report
+from openerp.exceptions import ERPError
 
 _logger = logging.getLogger(__name__)
 
@@ -119,6 +120,13 @@ class Registry(object):
             if model._name not in models_to_load:
                 # avoid double-loading models whose declaration is split
                 models_to_load.append(model._name)
+        missed_models = [m for m in models_to_load if m not in self.models]
+        if missed_models:
+            raise ERPError('Logic Error',
+                    'Model(s) not initialized:\n\n%s\n\nFailed to chain __init__()?'
+                    % '\n'.join(missed_models)
+                    )
+
         return [self.models[m] for m in models_to_load]
 
     def clear_caches(self):
