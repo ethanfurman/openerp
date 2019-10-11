@@ -656,7 +656,7 @@ class MetaModel(type):
 
     module_to_models = {}
 
-    def __init__(cls, name, bases, attrs):
+    def __init__(cls, clsname, bases, attrs):
         # set field names on columns
         for field_name, column in cls._columns.items():
             column._field_name = field_name
@@ -668,7 +668,7 @@ class MetaModel(type):
 
         if not cls._register:
             cls._register = True
-            super(MetaModel, cls).__init__(name, bases, attrs)
+            super(MetaModel, cls).__init__(clsname, bases, attrs)
             return
 
         # The (OpenERP) module name can be in the `openerp.addons` namespace
@@ -965,6 +965,8 @@ class BaseModel(object):
             if not name:
                 raise TypeError('_name is mandatory in case of multiple inheritance')
 
+            _rec_names = []
+            _descriptions = []
             for parent_name in ((type(parent_names)==list) and parent_names or [parent_names]):
                 parent_model = pool.get(parent_name)
                 if not parent_model:
@@ -973,6 +975,8 @@ class BaseModel(object):
                 if not getattr(cls, '_original_module', None) and name == parent_model._name:
                     cls._original_module = parent_model._original_module
                 parent_class = parent_model.__class__
+                _rec_names.append(parent_class._rec_name)
+                _descriptions.append(parent_class._description)
                 nattr = {}
                 for s in attributes:
                     new = copy.copy(getattr(parent_model, s, {}))
@@ -1015,6 +1019,16 @@ class BaseModel(object):
                     else:
                         new.extend(cls.__dict__.get(s, []))
                     nattr[s] = new
+                # use inherited _rec_name if necessary
+                if not getattr(cls, '_rec_name'):
+                    _rec_names = [rn for rn in _rec_names if rn is not None]
+                    if len(_rec_names) == 1:
+                        nattr['_rec_name'] = _rec_names[0]
+                # use inherited _description if necessary
+                if not getattr(cls, '_description'):
+                    _descriptions = [d for d in _descriptions if d is not None]
+                    if len(_descriptions) == 1:
+                        nattr['_description'] = _descriptions[0]
 
                 # Keep links to non-inherited constraints, e.g. useful when exporting translations
                 nattr['_local_constraints'] = cls.__dict__.get('_constraints', [])
@@ -1079,12 +1093,10 @@ class BaseModel(object):
 
             _logger.error(msg)
             raise except_orm('ValueError', msg)
-
         if not self._description:
             self._description = self._name
         if not self._table:
             self._table = self._name.replace('.', '_')
-
         if not hasattr(self, '_log_access'):
             # If _log_access is not specified, it is the same value as _auto.
             self._log_access = getattr(self, "_auto", True)
@@ -1170,10 +1182,8 @@ class BaseModel(object):
                 self.pool._store_function.setdefault(object, [])
                 self.pool._store_function[object].append((self._name, column, fnct, tuple(fields2) if fields2 else None, order, length))
                 self.pool._store_function[object].sort(lambda x, y: cmp(x[4], y[4]))
-
         for (key, __, msg) in self._sql_constraints:
             self.pool._sql_error[self._table+'_'+key] = msg
-
         # Load manual fields
 
         # Check the query is already done for all modules of if we need to
@@ -1219,7 +1229,6 @@ class BaseModel(object):
                 self._columns[field['name']] = fields.many2many(field['relation'], _rel_name, 'id1', 'id2', **attrs)
             else:
                 self._columns[field['name']] = getattr(fields, field['ttype'])(**attrs)
-
         self._inherits_check()
         self._inherits_reload()
         if not self._sequence:
@@ -1228,7 +1237,6 @@ class BaseModel(object):
             assert (k in self._columns) or (k in self._inherit_fields), 'Default function defined in %s but field %s does not exist !' % (self._name, k,)
         for f in self._columns:
             self._columns[f].restart()
-
         # Transience
         if self.is_transient():
             self._transient_check_count = 0
@@ -1236,7 +1244,6 @@ class BaseModel(object):
             self._transient_max_hours = config.get('osv_memory_age_limit')
             assert self._log_access, "TransientModels must have log_access turned on, "\
                                      "in order to implement their access rights policy"
-
         # Validate rec_name
         if self._rec_name is not None:
             assert self._rec_name in self._all_columns.keys() + ['id'], "Invalid rec_name %s for model %s" % (self._rec_name, self._name)
@@ -2696,9 +2703,10 @@ class BaseModel(object):
 
         if self._rec_name in self._all_columns:
             rec_name_column = self._all_columns[self._rec_name].column
-            return [(r['id'], rec_name_column.as_display_name(cr, user, self, r[self._rec_name], context=context))
-                        for r in self.read(cr, user, ids, [self._rec_name],
-                                       load='_classic_write', context=context)]
+            return [
+                    (r['id'], rec_name_column.as_display_name(cr, user, self, r[self._rec_name], context=context))
+                    for r in self.read(cr, user, ids, [self._rec_name], load='_classic_write', context=context)
+                    ]
         return [(id, "%s,%s" % (self._name, id)) for id in ids]
 
     def name_search(self, cr, user, name='', args=None, operator='ilike', context=None, limit=100):
