@@ -3308,6 +3308,7 @@ class BaseModel(object):
         - save in self._foreign_keys a list a foreign keys to create (see
           _auto_end).
 
+        Runs during --update.
         """
         self._foreign_keys = set()
         raise_on_invalid_object_name(self._name)
@@ -3578,7 +3579,6 @@ class BaseModel(object):
     def _post_init(self, pool, cr):
         # final stop for super()
         return True
-
 
     def _table_exist(self, cr):
         cr.execute("SELECT relname FROM pg_class WHERE relkind IN ('r','v') AND relname=%s", (self._table,))
