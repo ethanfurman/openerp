@@ -933,6 +933,7 @@ class BaseModel(object):
     # Goal: try to apply inheritance at the instanciation level and
     #       put objects in the pool var
     #
+
     @classmethod
     def create_instance(cls, pool, cr):
         """
@@ -1034,7 +1035,7 @@ class BaseModel(object):
                 nattr['_local_constraints'] = cls.__dict__.get('_constraints', [])
                 nattr['_local_sql_constraints'] = cls.__dict__.get('_sql_constraints', [])
 
-                cls = type(name, (cls, parent_class), dict(nattr, _register=False))
+                cls = type(name, (cls, parent_class), dict(nattr, _register=False, __doc__=cls.__doc__))
         else:
             cls._local_constraints = getattr(cls, '_constraints', [])
             cls._local_sql_constraints = getattr(cls, '_sql_constraints', [])
@@ -1082,6 +1083,14 @@ class BaseModel(object):
         - ensure there is a many2one for each _inherits'd parent,
         - update the children's _columns,
         - give a chance to each field to initialize itself.
+
+        Order of creation:
+        - __new__
+        - create_instance
+        - __init__
+        -   _auto_init  / only during update/install
+        -   _auto_end -/
+        - _post_init
 
         """
         pool.add(self._name, self)
@@ -3288,8 +3297,6 @@ class BaseModel(object):
 
         # (re-)create the FK
         self._m2o_add_foreign_key_checked(source_field, dest_model, ondelete)
-
-
 
     def _auto_init(self, cr, context=None):
         """
