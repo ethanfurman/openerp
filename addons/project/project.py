@@ -776,6 +776,7 @@ class task(base_stage, osv.osv):
         return result
 
     def _post_init(self, pool, cr):
+        super(task, self)._post_init(pool, cr)
         # make sure all tasks with a deadline also have a warning
         ids = self.search(cr, 1, [('date_deadline','!=',False),('date_warning','=',False)])
         res = self._calculate_warning_date(cr, 1, ids, ['date_warning'], None)
