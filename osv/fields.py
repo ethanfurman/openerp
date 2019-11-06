@@ -144,6 +144,7 @@ class _column(object):
                 if v.value is UnInit:
                     raise ValueError("%s.%s:%s -- %r is a required field" % (cls.__module__, cls.__name__, name, a))
                 setattr(self, a, v.value)
+        return self
 
     def restart(self):
         pass
@@ -535,7 +536,7 @@ class selection(_column):
         if self.selection is not default_uninit and self.sort_order is default_none:
             if issubclass(self.selection, SelectionEnum):
                 self.sort_order = 'definition'
-        _column._finalize(self, cls, name)
+        return _column._finalize(self, cls, name)
 
 # ---------------------------------------------------------
 # Relationals fields
@@ -787,6 +788,7 @@ class many2many(_column):
             "Field: %s.%s.%s" % (
                 rel, cls.__module__, cls.__name__, name,
                 )))
+        return self
 
     def _sql_names(self, source_model):
         """Return the SQL names defining the structure of the m2m relationship table
@@ -1290,6 +1292,7 @@ class function(_column):
                     self._symbol_set = ('%s', lambda x: float_repr(float_round(__builtin__.float(x or 0.0),
                                                                                precision_digits=scale),
                                                                    precision_digits=scale))
+        return self
 
     def search(self, cr, uid, obj, name, args, context=None):
         if not self._fnct_search:
