@@ -1,0 +1,75 @@
+[submodule "addons/automated_clearing_house"]
+	path = addons/automated_clearing_house
+	url = ssh://code.stoneleaf.us/repos/openerp_automated_clearing_house.git
+[submodule "addons/automated_clearing_house_hr"]
+	path = addons/automated_clearing_house_hr
+	url = ssh://code.stoneleaf.us/repos/openerp_automated_clearing_house_hr.git
+[submodule "addons/cmms"]
+	path = addons/cmms
+	url = ssh://code.stoneleaf.us/repos/openerp_cmms.git
+[submodule "addons/cmms_ip_map"]
+	path = addons/cmms_ip_map
+	url = ssh://code.stoneleaf.us/repos/openerp_cmms_ip_map.git
+[submodule "addons/fis_integration"]
+	path = addons/fis_integration
+	url = ssh://code.stoneleaf.us/repos/openerp_fis_integration.git
+[submodule "addons/fnx_checklist"]
+	path = addons/fnx_checklist
+	url = ssh://code.stoneleaf.us/repos/openerp_fnx_checklist.git
+[submodule "addons/fnx_customer_portal"]
+	path = addons/fnx_customer_portal
+	url = ssh://code.stoneleaf.us/repos/openerp_fnx_customer_portal.git
+[submodule "addons/fnx_fs"]
+	path = addons/fnx_fs
+	url = ssh://code.stoneleaf.us/repos/openerp_fnx_fs.git
+[submodule "addons/fnx_hd"]
+	path = addons/fnx_hd
+	url = ssh://code.stoneleaf.us/repos/openerp_fnx_hd.git
+[submodule "addons/fnx"]
+	path = addons/fnx
+	url = ssh://code.stoneleaf.us/repos/openerp_fnx.git
+[submodule "addons/fnx_pd"]
+	path = addons/fnx_pd
+	url = ssh://code.stoneleaf.us/repos/openerp_fnx_pd.git
+[submodule "addons/fnx_qa"]
+	path = addons/fnx_qa
+	url = ssh://code.stoneleaf.us/repos/openerp_fnx_qa.git
+[submodule "addons/fnx_sanitation"]
+	path = addons/fnx_sanitation
+	url = ssh://code.stoneleaf.us/repos/openerp_fnx_sanitation.git
+[submodule "addons/fnx_sr"]
+	path = addons/fnx_sr
+	url = ssh://code.stoneleaf.us/repos/openerp_fnx_sr.git
+[submodule "addons/hatta"]
+	path = addons/hatta
+	url = ssh://code.stoneleaf.us/repos/openerp_hatta.git
+[submodule "addons/hr_insurance"]
+	path = addons/hr_insurance
+	url = ssh://code.stoneleaf.us/repos/openerp_hr_insurance.git
+[submodule "addons/hr_training"]
+	path = addons/hr_training
+	url = ssh://code.stoneleaf.us/repos/openerp_hr_training.git
+[submodule "addons/hr_workers_comp"]
+	path = addons/hr_workers_comp
+	url = ssh://code.stoneleaf.us/repos/openerp_hr_workers_comp.git
+[submodule "addons/ip_map"]
+	path = addons/ip_map
+	url = ssh://code.stoneleaf.us/repos/openerp_ip_map.git
+[submodule "addons/ip_network"]
+	path = addons/ip_network
+	url = ssh://code.stoneleaf.us/repos/openerp_ip_network.git
+[submodule "addons/lockdown"]
+	path = addons/lockdown
+	url = ssh://code.stoneleaf.us/repos/openerp_lockdown.git
+[submodule "addons/safe_quality_food"]
+	path = addons/safe_quality_food
+	url = ssh://code.stoneleaf.us/repos/openerp_safe_quality_food.git
+[submodule "addons/salesinq"]
+	path = addons/salesinq
+	url = ssh://code.stoneleaf.us/repos/openerp_salesinq.git
+[submodule "addons/sample_crm"]
+	path = addons/sample_crm
+	url = ssh://code.stoneleaf.us/repos/openerp_sample_crm.git
+[submodule "addons/sample"]
+	path = addons/sample
+	url = ssh://code.stoneleaf.us/repos/openerp_sample.git
