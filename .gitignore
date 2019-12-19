@@ -18,6 +18,6 @@
 original_xml/
 PKG-INFO
 filestore/
-addons/fleet_hr/fleet_hr_view.xml/
-addons/hr/hr_view.*\.xml/
-addons/hr/hr_data\.xml/
+addons/fleet_hr/fleet_hr_view.xml
+addons/hr/hr_view*.xml
+addons/hr/hr_data.xml
