@@ -1,0 +1,401 @@
+#!/usr/local/sbin/suid-python --virtualenv
+from __future__ import print_function, unicode_literals
+# str = unicode
+
+from scription import *
+from antipathy import Path
+from collections import defaultdict
+from openerplib import get_connection, get_records, Many2One
+import os
+import re
+
+virtual_env = os.environ['VIRTUAL_ENV']
+config = OrmFile(Path('%s/config/fnx.ini' % virtual_env), types={'_path':Path})
+env = config.env
+
+@Command(
+        )
+def fix_links():
+    "ensure each non-temp hr record is linked to a partner record"
+    # load employees
+    # load partners
+    # for each employee
+    # - if partner set
+    # --  check partner for match
+    # --  if not set
+    # ---   set it
+    # --  else
+    # ---   (other stuff)
+    #
+    # for each partner
+    # - if employee set
+    # --  check employee for match
+    # --  if not set
+    # ---   set it
+    # --  else
+    # ---   (other stuff)
+    #
+    # (other stuff)
+    # - if linked record points to source record
+    # --  done
+    # - else
+    # --  print diagnostics
+    #
+    config = OrmFile('%s/config/fnx.ini' % virtual_env, types={'_path': Path})
+    oe = config.openerp
+    oe = get_connection(hostname=oe.host, database=oe.db, login=oe.user, password=oe.pw)
+    res_partner = oe.get_model('res.partner')
+    hr_employee = oe.get_model('hr.employee')
+    employee_records = dict(
+            (emp.id, emp)
+            for emp in get_records(
+                hr_employee,
+                fields=['id', 'active', 'name', 'partner_id', 'identification_id'],
+                context={'active_test': False},
+                ))
+    employee_id_by_fis_id = dict(
+            (emp.identification_id, emp.id)
+            for emp in employee_records.values()
+            )
+    partner_records = dict(
+            (p.id, p)
+            for p in get_records(
+                res_partner,
+                fields=[
+                    'id', 'active', 'fis_active', 'name', 'employee_id',
+                    'customer', 'supplier', 'employee',
+                    'is_carrier', 'is_company',
+                    'module', 'xml_id',
+                    ],
+                context={'active_test': False},
+                ))
+    problem_partners = {}
+    problem_employees = {}
+    fixed_employees = 0
+    fixed_partners = 0
+    #
+    # create missing partner->employee links
+    #
+    for emp_id, emp in employee_records.items():
+        # every employee should have a partner
+        if not emp.partner_id:
+            # echo('employee %s [%d]: missing partner link <%s>)' % (emp.name, emp_id, emp.partner_id))
+            # give the partner section a chance to make this connection
+            continue
+        partner = partner_records[emp.partner_id]
+        # partner_employee = partner.employee_id
+        if partner.employee_id == emp_id:
+            # already matches
+            continue
+        elif not partner.employee_id:
+            # needs setting
+            # echo('establishing return link for %s [%d] with partner %s [%d]' % (emp.name, emp_id, partner.name, partner.id))
+            res_partner.write(partner.id, {'employee_id': emp_id})
+            partner.employee_id = Many2One(emp_id, emp.name)
+            fixed_partners += 1
+        else:
+            # set, but not matching
+            while True:
+                # add the whole chain, including the starting record
+                print('adding problem employee:  %s [%s]' % (emp.name, emp.id), verbose=2)
+                problem_employees[emp.id] = emp
+                print('-' * 50, verbose=2)
+                print('adding problem partner:  %s [%s]' % (partner.name, partner.id), verbose=2)
+                problem_partners[partner.id] = partner
+                employee = employee_records[partner.employee_id]
+                if employee.id in problem_employees:
+                    break
+                print('adding problem employee:  %s [%s]' % (employee.name, employee.id), verbose=2)
+                problem_employees[employee.id] = employee
+                if not employee.partner_id:
+                    break
+                partner = partner_records[employee.partner_id]
+                if partner.id in problem_partners:
+                    break
+
+    #
+    # create missing employee->partner links
+    #
+    for partner_id, partner in partner_records.items():
+        # only EMP partners should have an employee (EMP = employee_id or employee)
+        if not partner.employee_id:
+            employee = None
+            if partner.module == 'F74' and partner.xml_id:
+                employee = employee_id_by_fis_id.get(partner.xml_id)
+                if employee:
+                    res_partner.write(partner.id, {'employee_id': emp_id})
+                    partner.employee_id = Many2One(emp_id, emp.name)
+                    fixed_partners += 1
+            if partner.module == 'F74' and employee is None:
+                problem_partners[partner_id] = partner
+            if employee is None:
+                continue
+        employee = employee_records[partner.employee_id]
+        # employee_partner = employee.partner_id
+        if employee.partner_id == partner_id:
+            # already matches
+            continue
+        elif not employee.partner_id:
+            # needs setting
+            pass
+            hr_employee.write(employee.id, {'partner_id': partner_id})
+            employee.partner_id = Many2One(partner_id, partner.name)
+            fixed_employees += 1
+        else:
+            # set, but not matching
+            while True:
+                print('-' * 50, verbose=2)
+                # add the whole chain, including the starting record
+                print('adding problem partner:  %s [%s]' % (partner.name, partner.id), verbose=2)
+                problem_partners[partner.id] = partner
+                print('adding problem employee:  %s [%s]' % (employee.name, employee.id), verbose=2)
+                problem_employees[employee.id] = employee
+                if not employee.partner_id:
+                    break
+                partner = partner_records[employee.partner_id]
+                if partner.id in problem_partners:
+                    break
+                print('adding problem partner:  %s [%s]' % (partner.name, partner.id), verbose=2)
+                problem_partners[partner.id] = partner
+                if not partner.employee_id:
+                    break
+                employee = employee_records[partner.employee_id]
+                if employee.id in problem_employees:
+                    break
+    #
+    # problem_employees are those with a set partner id that does not match its partner
+    # problem_partners are those with a set employee id than does not match its employee
+    #   and those that have "employee" True but not an "employee_id" link
+    #
+    id_nets = list()
+    for emp_id, emp in problem_employees.items():
+        # echo('id_nets: %r' % (id_nets, ))
+        emp_net = 'e-%s' % (emp_id, )
+        # echo('  emp_net:', emp_net)
+        for emp_group in id_nets:
+            # echo('    emp_group', emp_group)
+            if emp_net in emp_group:
+                break
+        else:
+            emp_group = set([emp_net])
+            id_nets.append(emp_group)
+        partner = partner_records[emp.partner_id]
+        partner_net = 'p-%s' % (partner.id, )
+        # echo('  partner_net', partner_net)
+        for partner_group in id_nets:
+            # echo('    partner_group', partner_group)
+            if partner_net in partner_group:
+                break
+        else:
+            partner_group = set([partner_net])
+            id_nets.append(partner_group)
+        emp_group |= partner_group
+        partner_group |= emp_group
+        # echo('id_nets: %r' % (id_nets, ))
+        for group in id_nets:
+            while id_nets.count(group) > 1:
+                # echo('removing', group)
+                id_nets.remove(group)
+        # echo('id_nets: %r' % (id_nets, ))
+        # echo('-----------------------------------------------')
+        # input()
+    #
+    for partner_id, partner in problem_partners.items():
+        # echo('id_nets: %r' % (id_nets, ))
+        partner_net = 'p-%s' % (partner_id, )
+        # echo('  partner_net:', partner_net)
+        for partner_group in id_nets:
+            # echo('    partner_group', partner_group)
+            if partner_net in partner_group:
+                break
+        else:
+            partner_group = set([partner_net])
+            id_nets.append(partner_group)
+        emp = employee_records.get(partner.employee_id)
+        if emp:
+            emp_net = 'e-%s' % (emp.id, )
+            for emp_group in id_nets:
+                if emp_net in emp_group:
+                    break
+            else:
+                emp_group = set([emp_net])
+                id_nets.append(emp_group)
+            partner_group |= emp_group
+            emp_group |= partner_group
+        # echo('id_nets', id_nets)
+        for group in id_nets:
+            while id_nets.count(group) > 1:
+                # echo('removing', group)
+                id_nets.remove(group)
+        # echo('id_nets', id_nets)
+        # echo('--------------------------------------------------')
+        # input()
+    #
+    # at this point id_nets should be composed of related employees and partners
+    #
+    table = [(
+            'emp id', 'name', 'active', 'partner',
+            'partner id', 'name', 'module', 'employee', 'active', 'fis active',
+            'cust', 'supp', 'emp', 'shpr', 'cmpy',
+            ),
+            None,
+            ]
+    for group in id_nets:
+        employees = [employee_records[int(id[2:])] for id in group if id.startswith('e-')]
+        partners = [partner_records[int(id[2:])] for id in group if id.startswith('p-')]
+        for emp, prt in zip_all(employees, partners):
+            row = [
+                    emp.id,
+                    emp.name,
+                    bool2str(emp.active, 'act'),
+                    m2o2str(emp.partner_id),
+                    prt.id,
+                    prt.name,
+                    prt.module,
+                    m2o2str(prt.employee_id),
+                    bool2str(prt.active, 'act'),
+                    bool2str(prt.fis_active, 'f-act'),
+                    bool2str(prt.customer, 'cust'),
+                    bool2str(prt.supplier, 'supp'),
+                    bool2str(prt.employee, 'empl'),
+                    bool2str(prt.is_carrier, 'ship'),
+                    bool2str(prt.is_company, 'cmpy'),
+                    ]
+            table.append(row)
+        row = ['']
+        table.append(None)
+    # lose last None
+    table.pop()
+    echo(table, border='table')
+    echo('%d partners fixed' % fixed_partners)
+    echo('%d employees fixed' % fixed_employees)
+
+
+@Command(
+        )
+def partner_bridge():
+    """show all possible res.partner matches for hr.employee records"""
+    config = OrmFile('%s/config/fnx.ini' % virtual_env, types={'_path': Path})
+    oe = config.openerp
+    oe = get_connection(hostname=oe.host, database=oe.db, login=oe.user, password=oe.pw)
+    employee_records = defaultdict(list)
+    for emp in get_records(
+            oe, 'hr.employee',
+            fields=['id', 'active', 'name', 'partner_id'],
+            context={'active_test': False},
+            ):
+        employee_records[by_name(emp)].append(emp)
+    partner_records = defaultdict(list)
+    for partner in get_records(
+            oe, 'res.partner',
+            fields=[
+                'id', 'active', 'fis_active', 'name', 'employee_id',
+                'customer', 'supplier', 'employee',
+                'is_carrier', 'is_company',
+                'module',
+                ],
+            domain=['|',('module','=','F74'),('employee','=',True)],
+            context={'active_test': False},
+            ):
+        partner_records[by_name(partner)].append(partner)
+    table = [(
+            'key',
+            'emp id', 'name', 'active', 'partner',
+            'partner id', 'name', 'module', 'employee', 'active', 'fis active',
+            'cust', 'supp', 'emp', 'shpr', 'cmpy',
+            ),
+            None,
+            ]
+    for names, employees in sorted(employee_records.items()):
+        partners = partner_records[names]
+        row = [':'.join(names)]
+        for emp, prt in zip_all(employees, partners):
+            row.extend([
+                    emp.id,
+                    emp.name,
+                    bool2str(emp.active, 'act'),
+                    m2o2str(emp.partner_id),
+                    prt.id,
+                    prt.name,
+                    prt.module,
+                    m2o2str(prt.employee_id),
+                    bool2str(prt.active, 'act'),
+                    bool2str(prt.fis_active, 'f-act'),
+                    bool2str(prt.customer, 'cust'),
+                    bool2str(prt.supplier, 'supp'),
+                    bool2str(prt.employee, 'empl'),
+                    bool2str(prt.is_carrier, 'ship'),
+                    bool2str(prt.is_company, 'cmpy'),
+                    ])
+            table.append(row)
+            row = ['']
+        table.append(None)
+    # lose last None
+    table.pop()
+    echo(table, border='table')
+
+# helpers
+
+def m2o2str(thing):
+    return thing and thing.id or ''
+
+def bool2str(value, bstr):
+    if isinstance(value, str):
+        return value
+    return (bstr.lower(), bstr.upper())[value]
+
+class empty_emp(object):
+    id = ''
+    name = ''
+    active = ''
+    partner_id = ''
+
+class empty_partner(object):
+    id = ''
+    name = ''
+    employee_id = ''
+    active = ''
+    fis_active = ''
+    customer = ''
+    supplier = ''
+    employee = ''
+    is_carrier = ''
+    is_company = ''
+    module = ''
+
+def zip_all(employees, partners):
+    employees = iter(employees)
+    partners = iter(partners)
+    while True:
+        emp = next(employees, None)
+        partner = next(partners, None)
+        if emp is partner is None:
+            break
+        if emp is None:
+            yield empty_emp, partner
+        elif partner is None:
+            yield emp, empty_partner
+        else:
+            yield emp, partner
+
+
+def by_name(record):
+    """return significant names as sorted tuple
+
+    :record
+        AttrDict of record, which must contain `name` field
+    :<--
+        tuple of names
+    """
+    res = []
+    names = re.sub(r'\(.*?[()]', ' ', record.name.lower())
+    for retract in ('.', ',', '-', '#', ):
+        names = names.replace(retract, ' ')
+    res = [
+            name
+            for name in names.split()
+            if len(name) > 1 and not name.isdigit() and name not in ('qc', )]
+    return tuple(sorted(res, key=lambda n: len(n))[-2:])
+
+
+Main()
