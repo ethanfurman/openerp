@@ -287,6 +287,16 @@ class HttpRequest(WebRequest):
         _logger.debug("%s --> %s.%s %r", self.httprequest.method, method.im_class.__name__, method.__name__, akw)
         try:
             r = method(self, **self.params)
+            if r is None:
+                r = werkzeug.exceptions.InternalServerError(cgi.escape(simplejson.dumps({
+                    'code': 300,
+                    'message': 'OpenERP Module Error',
+                    'data': {
+                        'type': 'server_exception',
+                        'fault_code': -1,
+                        'debug': 'error in %s.%s' % (self.__class__.__name__, method.__name__),
+                        },
+                    })))
         except xmlrpclib.Fault, e:
             r = werkzeug.exceptions.InternalServerError(cgi.escape(simplejson.dumps({
                 'code': 200,
