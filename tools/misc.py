@@ -1250,6 +1250,46 @@ default_true = default(True)
 default_false = default(False)
 default_uninit = default(UnInit)
 
+
+class NamedLock(object):
+    "create locks by argument"
+    #
+    def __init__(self):
+        self._locks = {}
+        self._own_lock = threading.Lock()
+        self._cleanup = 111
+    #
+    def __call__(self, *args):
+        with self._own_lock:
+            self._cleanup -= 1
+            if not self._cleanup:
+                self._cleanup = 111
+                for name, lock in list(self._locks.items()):
+                    if not lock.locked():
+                        # trim it out
+                        self._locks.pop(name)
+            if args in self._locks:
+                lock = self._locks[args]
+            else:
+                lock = self._locks[args] = threading.Lock()
+        return lock
+
+
+class Bomb(object):
+    "helper for testing thread safety"
+    #
+    _bombs = {}
+    #
+    def __init__(self, name):
+        self._name = name
+        if name in self._bombs:
+            raise RuntimeError("BOOM!")
+        self._bombs[name] = True
+    #
+    def release(self):
+        del self._bombs[self._name]
+
+
 # periods for domain searches
 class Period(timedelta, Enum):
     '''
