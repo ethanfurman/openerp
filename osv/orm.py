@@ -2767,10 +2767,18 @@ class BaseModel(object):
             context = {}
         args = args[:]
         # optimize out the default criterion of ``ilike ''`` that matches everything
-        if not (name == '' and operator == 'ilike'):
-            args += [(self._rec_name, operator, name)]
+        if name:
+            if operator == 'ilike':
+                operator = '=ilike'
+                name += '%'
+            if operator != 'ilike':
+                args += [(self._rec_name, operator, name)]
         access_rights_uid = name_get_uid or user
         ids = self._search(cr, user, args, limit=limit, context=context, access_rights_uid=access_rights_uid)
+        if name and not ids:
+            # fall back it all-inclusive search
+            args[-1] = (self._rec_name, 'ilike', name)
+            ids = self._search(cr, user, args, limit=limit, context=context, access_rights_uid=access_rights_uid)
         res = self.name_get(cr, access_rights_uid, ids, context)
         return res
 
