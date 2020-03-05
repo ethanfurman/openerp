@@ -1,4 +1,3 @@
-
 # -*- encoding: utf-8 -*-
 ##############################################################################
 #
@@ -21,26 +20,35 @@
 ##############################################################################
 
 from openerp.osv import fields, osv
-from openerp.tools.translate import _
 
-class survey_print(osv.osv_memory):
+class survey_print(osv.TransientModel):
     _name = 'survey.print'
+
     _columns = {
         'survey_ids': fields.many2many('survey', string="Survey", required="1"),
-        'orientation' : fields.selection([('vertical','Portrait(Vertical)'),\
-                            ('horizontal','Landscape(Horizontal)')], 'Orientation'),
-        'paper_size' : fields.selection([('letter','Letter (8.5" x 11")'),\
-                            ('legal','Legal (8.5" x 14")'),('a4','A4 (210mm x 297mm)')], 'Paper Size'),
+        'orientation' : fields.selection([
+                ('vertical', 'Portrait(Vertical)'),
+                ('horizontal', 'Landscape(Horizontal)'),
+                ],
+            'Orientation',
+            ),
+        'paper_size' : fields.selection([
+                ('letter', 'Letter (8.5" x 11")'),
+                ('legal', 'Legal (8.5" x 14")'),
+                ('a4', 'A4 (210mm x 297mm)'),
+                ],
+            'Paper Size',
+            ),
         'page_number' : fields.boolean('Include Page Number'),
         'without_pagebreak' : fields.boolean('Print Without Page Breaks'),
-    }
+        }
 
     _defaults = {
         'orientation': lambda *a:'vertical',
         'paper_size': lambda *a:'letter',
         'page_number':lambda *a: 0,
         'without_pagebreak':lambda *a: 0
-    }
+        }
 
     def action_next(self, cr, uid, ids, context=None):
         """
@@ -54,8 +62,12 @@ class survey_print(osv.osv_memory):
         @return : Dictionary value for print survey form.
         """
         datas = {'ids' : self.read(cr, uid, ids, ['survey_ids'], context=context)[0]['survey_ids']}
-        res = self.read(cr, uid, ids, ['survey_title', 'orientation', 'paper_size',\
-                             'page_number', 'without_pagebreak'], context=context)
+        res = self.read(
+                cr, uid,
+                ids,
+                ['survey_title', 'orientation', 'paper_size', 'page_number', 'without_pagebreak'],
+                context=context,
+                )
         res = res and res[0] or {}
         datas['form'] = res
         datas['model'] = 'survey.print'
@@ -63,6 +75,5 @@ class survey_print(osv.osv_memory):
             'type': 'ir.actions.report.xml',
             'report_name': 'survey.form',
             'datas': datas,
-        }
-survey_print()
+            }
 
