@@ -408,27 +408,29 @@ class browse_record(object):
 
             # if the field is a classic one or a many2one, we'll fetch all classic and many2one fields
             if col._prefetch:
-                # gen the list of "local" (ie not inherited) fields which are classic or many2one
-                potential_fields = filter(lambda x: x[1]._classic_write, self._table._columns.items())
-                # gen the list of inherited fields
+                local_fields = self._table._columns.keys()
+                # gen the list of "local" (ie not inherited) fields which are classic or many2one, and prefetch
+                potential_fields = filter(lambda x: x[1]._classic_write and x[1]._prefetch, self._table._columns.items())
+                # gen the list of inherited fields, minus locally overridden fields
                 inherits = map(lambda x: (x[0], x[1][2]), self._table._inherit_fields.items())
+                inherits = filter(lambda x: x[0] not in local_fields, inherits)
                 # complete the field list with the inherited fields which are classic or many2one
-                potential_fields += filter(lambda x: x[1]._classic_write, inherits)
+                potential_fields += filter(lambda x: x[1]._classic_write and x[1]._prefetch, inherits)
                 # then apply group restrictions
                 fields_to_fetch = []
                 has_group = self._model.pool.get('res.users').has_group
                 for col_name, col_obj in potential_fields:
                     if (
-                            col_name == name
-                            or not col_obj.groups
-                            or any([
-                                has_group(self._cr, self._uid, [self._uid], group_ext_id=grp, context=self._context)
-                                for grp in col_obj.groups.split(',')
-                                ])
+                        col_name == name
+                        or not col_obj.groups
+                        or any([
+                            has_group(self._cr, self._uid, [self._uid], group_ext_id=grp, context=self._context)
+                            for grp in col_obj.groups.split(',')
+                            ])
                         ):
                         fields_to_fetch.append((col_name, col_obj))
-            # otherwise we fetch only that field
             else:
+                # otherwise we fetch only that field
                 fields_to_fetch = [(name, col)]
             ids = filter(lambda id: name not in self._data[id], self._data.keys())
             # read the results
@@ -1848,6 +1850,9 @@ class BaseModel(object):
             if isinstance(v, SelectionEnum):
                 defaults[k] = v.db
         return defaults
+
+    def own_fields_get_keys(self, cr, user, context=None):
+        return self._columns.keys()
 
     def fields_get_keys(self, cr, user, context=None):
         res = self._columns.keys()
@@ -3853,6 +3858,75 @@ class BaseModel(object):
     #    return _proxy
 
 
+    def own_fields_get(self, cr, user, allfields=None, context=None, write_access=True):
+        """
+        Return the definition of each field, excluding fields from parents.
+
+        The returned value is a dictionary (indiced by field name) of
+        dictionaries. The string, help, and selection (if present)
+        attributes are translated.
+
+        :param cr: database cursor
+        :param user: current user id
+        :param allfields: list of fields
+        :param context: context arguments, like lang, time zone
+        :return: dictionary of field dictionaries, each one describing a field of the business object
+        :raise AccessError: * if user has no create/write rights on the requested object
+
+        """
+        if context is None:
+            context = {}
+
+        write_access = self.check_access_rights(cr, user, 'write', raise_exception=False) \
+            or self.check_access_rights(cr, user, 'create', raise_exception=False)
+
+        res = {}
+
+        translation_obj = self.pool.get('ir.translation')
+
+        for f, field in self._columns.iteritems():
+            if (allfields and f not in allfields) or \
+                (field.groups and not self.user_has_groups(cr, user, groups=field.groups, context=context)):
+                continue
+
+            res[f] = fields.field_to_dict(self, cr, user, field, context=context)
+
+            if not write_access:
+                res[f]['readonly'] = True
+                res[f]['states'] = {}
+
+            if 'lang' in context:
+                if 'string' in res[f]:
+                    res_trans = translation_obj._get_source(cr, user, self._name + ',' + f, 'field', context['lang'])
+                    if res_trans:
+                        res[f]['string'] = res_trans
+                if 'help' in res[f]:
+                    help_trans = translation_obj._get_source(cr, user, self._name + ',' + f, 'help', context['lang'])
+                    if help_trans:
+                        res[f]['help'] = help_trans
+                if 'selection' in res[f]:
+                    sel = fields.selection
+                    if isinstance(sel, (tuple, list)) or issubclass(sel, SelectionEnum):
+                        sel2 = []
+                        for key, val in sel:
+                            val2 = None
+                            if val:
+                                val2 = translation_obj._get_source(cr, user, self._name + ',' + f, 'selection',  context['lang'], val)
+                            sel2.append((key, val2 or val))
+                        res[f]['selection'] = sel2
+
+        for link_field, mirrors in self._mirrors.items():
+            if allfields and link_field not in allfields:
+                continue
+            link_table = res[link_field]['relation']
+            link_table_fields = self.pool.get(link_table).fields_get(cr, user, mirrors, context, write_access)
+            for mirror in mirrors:
+                link_mirror = link_field + '.' + mirror
+                res[link_mirror] = link_table_fields[mirror]
+                res[link_mirror]['readonly'] = True
+
+        return res
+
     def fields_get(self, cr, user, allfields=None, context=None, write_access=True):
         """
         Return the definition of each field.
@@ -5716,11 +5790,19 @@ class BaseModel(object):
             raise Exception('_get_vars_ is only accessible to admin')
         res = {}
         for name in dir(self):
+            if name in ('__dict__', '_uid_cache', '_defaults', '_inherit'):
+                continue
             if name.isupper():
                 continue
             obj = getattr(self, name)
             if isinstance(obj, (bool, int, float, long, bytes, str, unicode, tuple)):
                 res[name] = obj
+            elif name in ('_inherits', ):
+                # dict attributes to send
+                res[name] = tuple(obj.items())
+            elif name in ():
+                # lists attributes to keep
+                res[name] = tuple(obj)
         return res
 
 # keep this import here, at top it will cause dependency cycle errors
