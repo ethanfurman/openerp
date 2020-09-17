@@ -963,7 +963,16 @@ class ir_model_data(osv.osv):
                             },context=context)
         else:
             if mode=='init' or (mode=='update' and xml_id):
-                res_id = model_obj.create(cr, uid, values, context=context)
+                # check if object already exists
+                search_vals = {}
+                for name, value in values.items():
+                    if not isinstance(value, (list, tuple)):
+                        search_vals[name] = value
+                res_id = model_obj.search(cr, uid, [(field,'=',value) for field, value in search_vals.items()])
+                if res_id:
+                    [res_id] = res_id
+                else:
+                    res_id = model_obj.create(cr, uid, values, context=context)
                 if xml_id:
                     self.create(cr, uid, {
                         'name': xml_id,

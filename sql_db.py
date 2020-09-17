@@ -161,6 +161,12 @@ class Cursor(object):
             return f(self, *args, **kwargs)
         return wrapper
 
+    def __new__(cls, pool, dbname, serialized=True):
+        # only allow connections to *sunridgefarms
+        if dbname not in ('postgres', 'sunridgefarms', 'test_sunridgefarms'):
+            raise ValueError('refusing to connect to %r' % (dbname, ))
+        return super(cls, Cursor).__new__(cls, pool, dbname, serialized=serialized)
+
     def __init__(self, pool, dbname, serialized=True):
         self.sql_from_log = {}
         self.sql_into_log = {}

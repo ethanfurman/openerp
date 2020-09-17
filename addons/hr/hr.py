@@ -322,6 +322,8 @@ class hr_employee(osv.osv):
         return super(hr_employee, self).write(cr, uid, ids, values, context=context)
 
     def unlink(self, cr, uid, ids, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         resource_ids = []
         for employee in self.browse(cr, uid, ids, context=context):
             resource_ids.append(employee.resource_id.id)
