@@ -57,6 +57,7 @@ def fix_links():
             (emp.identification_id, emp.id)
             for emp in employee_records.values()
             )
+    assert len(employee_records) == len(employee_id_by_fis_id), 'employee dicts to do not match!'
     partner_records = dict(
             (p.id, p)
             for p in get_records(
@@ -89,7 +90,7 @@ def fix_links():
             continue
         elif not partner.employee_id:
             # needs setting
-            # echo('establishing return link for %s [%d] with partner %s [%d]' % (emp.name, emp_id, partner.name, partner.id))
+            print('establishing return link for %s [%d] with partner %s [%d]' % (emp.name, emp_id, partner.name, partner.id))
             res_partner.write(partner.id, {'employee_id': emp_id})
             partner.employee_id = Many2One(emp_id, emp.name)
             fixed_partners += 1
@@ -138,6 +139,7 @@ def fix_links():
         elif not employee.partner_id:
             # needs setting
             pass
+            print('establishing return link for %s [%d] with employee %s [%d]' % (partner.name, partner.id, emp.name, emp_id))
             hr_employee.write(employee.id, {'partner_id': partner_id})
             employee.partner_id = Many2One(partner_id, partner.name)
             fixed_employees += 1
