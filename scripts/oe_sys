@@ -27,16 +27,28 @@ def print_environment():
 @Command(
         src=Spec('source file(s)'),
         dst=Spec('destination'),
+        force=Spec('remove destination file if unable to open', FLAG),
+        archive=Spec('do not follow sym links; recurse directories; preserve permissions', FLAG),
         )
-def cp(src, dst):
-    cmdline = [CP] + Path.glob(src) + [dst]
-    echo(' '.join(cmdline))
-    job = Execute(cmdline, interactive='echo')
+def cp(src, dst, force, archive):
+    """
+    use CP to copy files
+    """
+    with user_ids(0, 0):
+        args = []
+        if force:
+            args.append('-f')
+        if archive:
+            args.append('-a')
+        args.extend(Path.glob(src))
+        cmdline = [CP] + args + [dst]
+        job = Execute(cmdline, interactive='echo')
+        job
 
 
 def parent_is_openerp():
     python = virtualenv + '/bin/python'
-    openerp = '^/usr/local/s?bin/openerp-server$'
+    openerp = '^/usr/(local/s)?bin/openerp-server$'
     self = psutil.Process()
     parent = self.parent()
     try:
@@ -44,7 +56,7 @@ def parent_is_openerp():
         if interpreter == python and re.search(openerp, script):
             return True
     except ValueError:
-        pass
+        error('error processing\n  %r' % (parent.cmdline(), ))
     return False
 
 Run()
