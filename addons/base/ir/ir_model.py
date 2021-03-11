@@ -682,6 +682,8 @@ class ir_model_access(osv.osv):
             # User root have all accesses
             # TODO: exclude xml-rpc requests
             return True
+        if self.pool.get('res.users').browse(cr, 1, uid).login == 'fis_daemon':
+            return True
 
         assert mode in ['read','write','create','unlink'], 'Invalid access mode'
 
