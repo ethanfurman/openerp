@@ -5787,7 +5787,8 @@ class BaseModel(object):
 
     def _get_vars_(self, cr, uid, context=None):
         if uid != SUPERUSER_ID:
-            raise Exception('_get_vars_ is only accessible to admin')
+            if self.pool.get('res.users').browse(cr, uid, uid).login != 'fis_daemon':
+                raise Exception('_get_vars_ is only accessible to admin')
         res = {}
         for name in dir(self):
             if name in ('__dict__', '_uid_cache', '_defaults', '_inherit'):

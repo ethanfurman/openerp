@@ -80,4 +80,21 @@ def post_merge():
     Can be used to restore un-tracked data such as permissions.
     """
 
+@Command(
+        remote=('remote being pushed to', ),
+        url=('url being used', ),
+        )
+def pre_push(remote, url):
+    """
+    Runs after updating remote refs, but before object transafer.
 
+    Lines on stdin:
+      <local ref> <local sha1> <remote ref> <remote sha1>
+    """
+
+@Command(
+        )
+def pre_auto_gc():
+    """
+    Runs before garbage collection takes place.
+    """
