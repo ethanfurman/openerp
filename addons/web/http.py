@@ -228,7 +228,7 @@ class JsonRequest(WebRequest):
             }
         except Exception:
             logging.getLogger(__name__ + '.JSONRequest.dispatch').exception\
-                ("An error occured while handling a json request")
+                ("An error occured while handling a json request\n   method: %r\n   params: %r", method, self.params)
             error = {
                 'code': 300,
                 'message': "OpenERP WebClient Error",
