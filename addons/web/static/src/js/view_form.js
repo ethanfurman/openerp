@@ -4110,25 +4110,34 @@ instance.web.form.One2ManyListView = instance.web.ListView.extend({
     },
     do_activate_record: function(index, id) {
         var self = this;
-        var pop = new instance.web.form.FormOpenPopup(self);
-        pop.show_element(self.o2m.field.relation, id, self.o2m.build_context(), {
-            title: _t("Open: ") + self.o2m.string,
-            write_function: function(id, data) {
-                return self.o2m.dataset.write(id, data, {}).done(function() {
-                    self.o2m.reload_current_view();
+        if (typeof self.options !== "undefined" && self.options.action) {
+            self.do_action(
+                self.options.action,
+                {
+                    additional_context: {active_id: id, active_ids: self.o2m.dataset.ids},
+                    hide_breadcrumb: true,
                 });
-            },
-            alternative_form_view: self.o2m.field.views ? self.o2m.field.views["form"] : undefined,
-            parent_view: self.o2m.view,
-            child_name: self.o2m.name,
-            read_function: function() {
-                return self.o2m.dataset.read_ids.apply(self.o2m.dataset, arguments);
-            },
-            form_view_options: {'not_interactible_on_create':true},
-            readonly: !this.is_action_enabled('edit') || self.o2m.get("effective_readonly"),
-            create: (typeof self.options !== "undefined" && self.options.create) || false,
-            create_edit: (typeof self.options !== "undefined" && self.options.create_edit) || false,
-        });
+        } else {
+            var pop = new instance.web.form.FormOpenPopup(self);
+            pop.show_element(self.o2m.field.relation, id, self.o2m.build_context(), {
+                title: _t("Open: ") + self.o2m.string,
+                write_function: function(id, data) {
+                    return self.o2m.dataset.write(id, data, {}).done(function() {
+                        self.o2m.reload_current_view();
+                    });
+                },
+                alternative_form_view: self.o2m.field.views ? self.o2m.field.views["form"] : undefined,
+                parent_view: self.o2m.view,
+                child_name: self.o2m.name,
+                read_function: function() {
+                    return self.o2m.dataset.read_ids.apply(self.o2m.dataset, arguments);
+                },
+                form_view_options: {'not_interactible_on_create':true},
+                readonly: !this.is_action_enabled('edit') || self.o2m.get("effective_readonly"),
+                create: (typeof self.options !== "undefined" && self.options.create) || false,
+                create_edit: (typeof self.options !== "undefined" && self.options.create_edit) || false,
+            });
+        };
     },
     do_button_action: function (name, id, callback) {
         if (!_.isNumber(id)) {

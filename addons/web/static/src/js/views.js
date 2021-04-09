@@ -346,6 +346,9 @@ instance.web.ActionManager = instance.web.Widget.extend({
         } else if (_.isNumber(action) || _.isString(action)) {
             var self = this;
             return self.rpc("/web/action/load", { action_id: action }).then(function(result) {
+                if (typeof options.additional_context.active_id !== "undefined") {
+                    result.res_id = options.additional_context.active_id;
+                }
                 return self.do_action(result, options);
             });
         }
