@@ -551,6 +551,9 @@ class Scheduled(object):
 
     def __nonzero__(self):
         "calculate next run date/time and return True if before now()"
+        # emergency exit for crontab jobs without a crontab setting
+        if self.schedule_type == 'crontab' and not self.cron_schedule:
+            return False
         # only update after initial passthrough
         if self._once and self.numbercall:
             # put this here so it happens after the initial True result
@@ -569,6 +572,8 @@ class CronEntry(str):
     "minute  hour  day-of-month  month  day-of-week"
 
     def __new__(cls, line):
+        if not line:
+            raise ERPError('Cron Error', 'No timing specified.')
         line = '  '.join((line.split() + ['*', '*', '*', '*', '*'])[:5])
         ce = super(CronEntry, CronEntry).__new__(cls, line)
         minute, hour, day_of_month, month, day_of_week = line.split()
