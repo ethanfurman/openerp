@@ -39,7 +39,6 @@ import threading
 import time
 import zipfile
 from aenum import Enum, NoAlias as EnumNoAlias, Unique as EnumUnique, MultiValue as EnumMultiValue
-from aenum import AutoNumber as EnumAutoNumber, AutoValue as EnumAutoValue
 from collections import defaultdict
 from datetime import datetime, timedelta
 from dbf import Date, IsoDay, RelativeDay
@@ -60,7 +59,7 @@ from cache import *
 # There are moved to loglevels until we refactor tools.
 from openerp.loglevels import get_encodings, ustr, exception_to_unicode
 # stupid pyflakes
-get_encodings, ustr, exception_to_unicode, EnumNoAlias, EnumUnique, EnumMultiValue, EnumAutoNumber, EnumAutoValue
+get_encodings, ustr, exception_to_unicode, EnumNoAlias, EnumUnique, EnumMultiValue
 
 _logger = logging.getLogger(__name__)
 
