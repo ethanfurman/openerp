@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-
-# imports
 ##############################################################################
 #
 #    OpenERP, Open Source Management Solution
@@ -21,6 +19,7 @@
 #
 ##############################################################################
 
+# imports
 from openerp import addons
 import logging
 from openerp.osv import fields, osv
@@ -64,7 +63,7 @@ class hr_employee_category(osv.osv):
         'parent_id': fields.many2one('hr.employee.category', 'Parent Category', select=True),
         'child_ids': fields.one2many('hr.employee.category', 'parent_id', 'Child Categories'),
         'employee_ids': fields.many2many('hr.employee', 'employee_category_rel', 'category_id', 'emp_id', 'Employees'),
-    }
+        }
 
     def _check_recursion(self, cr, uid, ids, context=None):
         level = 100
@@ -78,7 +77,7 @@ class hr_employee_category(osv.osv):
 
     _constraints = [
         (_check_recursion, 'Error! You cannot create recursive Categories.', ['parent_id'])
-    ]
+        ]
 
 
 class hr_employee_issue(osv.osv):
@@ -146,15 +145,15 @@ class hr_job(osv.osv):
         'company_id': fields.many2one('res.company', 'Company'),
         'state': fields.selection(JobState, 'Status', readonly=True, required=True,
             help="By default 'In position', set it to 'In Recruitment' if recruitment process is going on for this job position."),
-    }
+        }
     _defaults = {
         'company_id': lambda self,cr,uid,c: self.pool.get('res.company')._company_default_get(cr, uid, 'hr.job', context=c),
         'state': 'open',
-    }
+        }
 
     _sql_constraints = [
         ('name_company_uniq', 'unique(name, company_id)', 'The name of the job position must be unique per company!'),
-    ]
+        ]
 
 
     def on_change_expected_employee(self, cr, uid, ids, no_of_recruitment, no_of_employee, context=None):
@@ -273,7 +272,7 @@ class hr_employee(osv.osv):
                 },
             ),
         'employment_agency_id': fields.many2one('res.partner', 'Employment Agency'),
-    }
+        }
 
     fields.apply_groups(
             _columns,
@@ -392,7 +391,7 @@ class hr_employee(osv.osv):
         'image': _get_default_image,
         'color': 0,
         'employment_type': EmploymentType.temporary,
-    }
+        }
 
     def _check_recursion(self, cr, uid, ids, context=None):
         level = 100
@@ -406,7 +405,7 @@ class hr_employee(osv.osv):
 
     _constraints = [
         (_check_recursion, 'Error! You cannot create recursive hierarchy of Employee(s).', ['parent_id']),
-    ]
+        ]
 
 
 class hr_department(osv.osv):
@@ -415,7 +414,7 @@ class hr_department(osv.osv):
     _columns = {
         'manager_id': fields.many2one('hr.employee', 'Manager'),
         'member_ids': fields.one2many('hr.employee', 'department_id', 'Members', readonly=True),
-    }
+        }
 
     def copy(self, cr, uid, ids, default=None, context=None):
         if default is None:
