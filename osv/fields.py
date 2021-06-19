@@ -1880,6 +1880,13 @@ class SelectionEnum(str, Enum):
         return list(cls)[index]
 
     @classmethod
+    def _missing_value_(cls, value):
+        "support look-up by db name"
+        for member in cls:
+            if member.db == value:
+                return member
+
+    @classmethod
     def get_member(cls, text, default=_raise_lookup):
         for member in cls:
             if member.db == text:
