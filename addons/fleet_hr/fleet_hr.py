@@ -115,7 +115,7 @@ class res_partner(osv.Model):
         for record in self.browse(cr, uid, ids, context=context):
             name = record.name
             is_employee = record.employee
-            employee = record.employee_id
+            employee = record.employee_id and record.employee_id[0] or False
             if is_employee and employee:
                 name = '%s (%s)\nLicense: %s %s %s\nLicense Exp: %s\nMedical Exp: %s' % (
                         name,

@@ -523,7 +523,7 @@ class res_partner(osv.Model):
     _inherit = 'res.partner'
 
     _columns = {
-        'employee_id': fields.many2one('hr.employee', 'Employee Record'),
+        'employee_id': fields.one2many('hr.employee', 'partner_id', string='Employee Record'),
         'agency_referred_ids': fields.one2many(
             'hr.employee',
             'employment_agency_id',
