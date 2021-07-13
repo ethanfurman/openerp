@@ -518,12 +518,47 @@ class hr_test(osv.Model):
         values['result'] = result
         return super(hr_test, self).write(cr, uid, ids, values, context=context)
 
+
 class res_partner(osv.Model):
     _name = 'res.partner'
     _inherit = 'res.partner'
 
+    def _calc_changing_res_partner(hr_employee, cr, uid, employee_ids, context=None):
+        # return the ids of any res.partner records that already point to the changed employee records, or
+        # that are pointed to by the changed employee records
+        self = hr_employee.pool.get('res.partner')
+        # first get records already point to the changed employee records
+        ids = self.search(cr, uid, [('id','in',employee_ids)], context=context)
+        # then add the ids pointed to by changed employee records
+        ids.extend([
+            r['partner_id'][0]
+            for r in hr_employee.read(
+                    cr, uid, employee_ids, fields=['partner_id'], context=context,
+                    )])
+        return ids
+
+    def _set_employee_id(self, cr, uid, ids, name, args, context=None):
+        res = {}.fromkeys(ids, False)
+        hr_employee = self.pool.get( 'hr.employee')
+        for rec in hr_employee.read(
+                cr, uid,
+                [('partner_id','in',ids)],
+                fields=['id','partner_id'],
+                context=context,
+                ):
+            res[rec['partner_id'][0]] = rec['id']
+        return res
+
+
     _columns = {
-        'employee_id': fields.one2many('hr.employee', 'partner_id', string='Employee Record'),
+        'employee_id': fields.function(
+            _set_employee_id,
+            type='many2one',
+            relation='hr.employee',
+            string='Employee Record',
+            store={
+                'hr.employee': (_calc_changing_res_partner, ['partner_id'], 10),
+                }),
         'agency_referred_ids': fields.one2many(
             'hr.employee',
             'employment_agency_id',
