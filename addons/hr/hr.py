@@ -294,11 +294,20 @@ class hr_employee(osv.osv):
         if 'image' not in data and not data.get('image_medium'):
             data.pop('image_medium', None)
             data['image'] = self._get_default_image(cr, uid, context=context)
-        employee_id = super(hr_employee, self).create(cr, uid, data, context=context)
         partner_id = data.get('partner_id')
-        if partner_id:
-            self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id, 'employee':True}, context=context)
-        return employee_id
+        if partner_id and isinstance(partner_id, (int, long)):
+            data['partner_id'] = [(1, partner_id, {
+                    'active': data.get('active', False),
+                    'employee': True,
+                    'name': data['name'],
+                    })]
+        elif not partner_id:
+            data['partner_id'] = [(0, 0, {
+                    'active': data.get('active', False),
+                    'employee': True,
+                    'name': data['name'],
+                    })]
+        return super(hr_employee, self).create(cr, uid, data, context=context)
 
     def write(self, cr, uid, ids, values, context=None):
         if isinstance(ids, (int, long)):
@@ -528,20 +537,23 @@ class res_partner(osv.Model):
         # that are pointed to by the changed employee records
         self = hr_employee.pool.get('res.partner')
         # first get records already point to the changed employee records
-        ids = self.search(cr, uid, [('id','in',employee_ids)], context=context)
+        ids = self.search(cr, SUPERUSER_ID, [('id','in',employee_ids)], context=context)
         # then add the ids pointed to by changed employee records
         ids.extend([
             r['partner_id'][0]
             for r in hr_employee.read(
-                    cr, uid, employee_ids, fields=['partner_id'], context=context,
-                    )])
+                    cr, SUPERUSER_ID, employee_ids, fields=['partner_id'], context=context,
+                    )
+            if r['partner_id']
+            ])
+
         return ids
 
     def _set_employee_id(self, cr, uid, ids, name, args, context=None):
         res = {}.fromkeys(ids, False)
         hr_employee = self.pool.get( 'hr.employee')
         for rec in hr_employee.read(
-                cr, uid,
+                cr, SUPERUSER_ID,
                 [('partner_id','in',ids)],
                 fields=['id','partner_id'],
                 context=context,
