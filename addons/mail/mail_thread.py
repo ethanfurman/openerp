@@ -1405,7 +1405,12 @@ class mail_thread(osv.AbstractModel):
         """ Add partners to the records followers. """
         if isinstance(ids, (int, long)):
             ids = [ids]
-        user_pid = self.pool.get('res.users').read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
+        res_users = self.pool.get('res.users')
+        # ensure that SUPERUSER is not in partner_ids
+        spid = res_users.read(cr, SUPERUSER_ID, SUPERUSER_ID, ['partner_id'], context=context)['partner_id'][0]
+        partner_ids = [pid for pid in partner_ids if pid != spid]
+        #
+        user_pid = res_users.read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
         if set(partner_ids) == set([user_pid]):
             self.check_access_rights(cr, uid, 'read')
         else:
