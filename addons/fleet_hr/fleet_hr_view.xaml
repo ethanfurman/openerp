@@ -56,3 +56,15 @@
                     @driver_medical_renewal_due_soon invisible='1'
                     @driver_medical_renewal_overdue invisible='1'
                     @driver_renewal_state invisible='1'
+                @driver_id position='replace'
+                    @driver
+
+        ~record model='ir.ui.view' #fleet_vehicle_driver_form
+            @name: fleet.vehicle.form
+            @model: fleet.vehicle
+            @inherit_id ref='fleet.fleet_vehicle_form'
+            @priority eval='10'
+            @arch type='xml'
+                @driver_id position='replace'
+                    @hr_driver_id attrs="{'readonly': [('driver_id','!=',False)]}"
+                    @driver_id attrs="{'readonly': [('hr_driver_id','!=',False)]}"

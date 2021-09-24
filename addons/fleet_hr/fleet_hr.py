@@ -2,6 +2,7 @@ import logging
 from osv import osv, fields
 from dbf import Date
 from openerp import SUPERUSER_ID
+from openerp.tools import self_ids
 
 _logger = logging.getLogger(__name__)
 
@@ -134,11 +135,32 @@ class fleet_vehicle(osv.Model):
     _name = 'fleet.vehicle'
     _inherit = 'fleet.vehicle'
 
+    def _get_driver(self, cr, uid, ids, field_name, arg, context=None):
+        res = dict.fromkeys(ids)
+        for vehic in self.browse(cr, uid, ids, context=context):
+            driver = vehic.driver_id or vehic.hr_driver_id
+            res[vehic.id] = driver.name
+        return res
+
     _columns = {
+        'driver': fields.function(
+            _get_driver,
+            string='Driver',
+            type='char',
+            size=128,
+            store={
+                    'fleet.vehicle': (self_ids, ['driver_id', 'hr_driver_id'], 10),
+                    },
+            ),
         'driver_id': fields.many2one(
             'res.partner',
-            'Driver',
+            'Outside Driver',
             domain=[('employee_id','!=',False)],
+            help="Driver of the vehicle",
+            ),
+        'hr_driver_id': fields.many2one(
+            'hr.employee',
+            'Employee Driver',
             help="Driver of the vehicle",
             ),
         'driver_license_renewal_due_soon': fields.function(
