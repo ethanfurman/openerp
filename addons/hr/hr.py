@@ -295,18 +295,8 @@ class hr_employee(osv.osv):
             data.pop('image_medium', None)
             data['image'] = self._get_default_image(cr, uid, context=context)
         partner_id = data.get('partner_id')
-        if partner_id and isinstance(partner_id, (int, long)):
-            data['partner_id'] = [(1, partner_id, {
-                    'active': data.get('active', False),
-                    'employee': True,
-                    'name': data['name'],
-                    })]
-        elif not partner_id:
-            data['partner_id'] = [(0, 0, {
-                    'active': data.get('active', False),
-                    'employee': True,
-                    'name': data['name'],
-                    })]
+        if partner_id and not isinstance(partner_id, (int, long)):
+            data.pop('partner_id')
         return super(hr_employee, self).create(cr, uid, data, context=context)
 
     def write(self, cr, uid, ids, values, context=None):
