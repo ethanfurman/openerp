@@ -459,13 +459,30 @@ class fleet_vehicle(osv.Model):
                 oldmodel = vehicle.model_id.name or _('None')
                 changes.append(_("Model: from '%s' to '%s'") %(oldmodel, value))
             driver_id = vals.get('driver_id')
-            if 'driver_id' in vals and vehicle.driver_id.id != driver_id:
-                if driver_id:
-                    value = self.pool.get('res.partner').browse(cr,uid,driver_id,context=context).name
-                else:
-                    value = _('None')
-                olddriver = (vehicle.driver_id.name) or _('None')
-                changes.append(_("Driver: from '%s' to '%s'") %(olddriver, value))
+            hr_driver_id = vals.get('hr_driver_id')
+            driver_handled = False
+            if 'driver_id' in vals and vehicle.driver_id.id != driver_id and 'hr_driver_id' in vals and vehicle.hr_driver_id.id != hr_driver_id:
+                dep_driver_name = vehicle.driver_id.name
+                hr_driver_name = self.pool.get('hr.employee').browse(cr,uid,hr_driver_id,context=context).name
+                if dep_driver_name.startswith(hr_driver_name):
+                    driver_handled = True
+            if driver_id:
+                raise except_orm('Deprecated Driver', "use 'Driver' instead")
+            if not driver_handled:
+                if 'driver_id' in vals and vehicle.driver_id.id != driver_id:
+                    if driver_id:
+                        value = self.pool.get('res.partner').browse(cr,uid,driver_id,context=context).name
+                    else:
+                        value = _('None')
+                    olddriver = (vehicle.driver_id.name) or _('None')
+                    changes.append(_("Driver (deprecated): from '%s' to '%s'") %(olddriver, value))
+                if 'hr_driver_id' in vals and vehicle.hr_driver_id.id != hr_driver_id:
+                    if hr_driver_id:
+                        value = self.pool.get('hr.employee').browse(cr,uid,hr_driver_id,context=context).name
+                    else:
+                        value = _('None')
+                    oldhrdriver = (vehicle.hr_driver_id.name) or _('None')
+                    changes.append(_("Driver: from '%s' to '%s'") %(oldhrdriver, value))
             state_id = vals.get('state_id')
             if 'state_id' in vals and vehicle.state_id.id != state_id:
                 if state_id:
@@ -481,7 +498,7 @@ class fleet_vehicle(osv.Model):
                 old_license_plate = vehicle.license_plate or _('None')
                 changes.append(_("License Plate: from '%s' to '%s'") %(old_license_plate, license_plate))
             if len(changes) > 0:
-                self.message_post(cr, uid, [vehicle.id], body=", ".join(changes), context=context)
+                self.message_post(cr, uid, [vehicle.id], body="\n".join(changes), context=context)
 
         vehicle_id = super(fleet_vehicle,self).write(cr, uid, ids, vals, context)
         return True
