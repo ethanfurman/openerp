@@ -1202,7 +1202,10 @@ def get_ids(records, *fields):
             more = getattr(rec, field)
             if not more:
                 continue
-            new_records.extend(more)
+            if isinstance(more, (list, tuple)):
+                new_records.extend(more)
+            else:
+                new_records.append(more)
         records = new_records
         new_records = []
     return [r.id for r in records]
