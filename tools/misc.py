@@ -1186,6 +1186,49 @@ def self_ids(table, cr, uid, ids, context=None):
 def self_uid(table, cr, uid, ids, context=None):
     return uid
 
+def get_ids(records, *fields):
+    """
+    field should be a list of browse records or None
+    """
+    if not records:
+        return []
+    if not isinstance(records, (tuple, list)):
+        records = [records]
+    new_records = []
+    for field in fields:
+        for rec in records:
+            if not rec:
+                continue
+            more = getattr(rec, field)
+            if not more:
+                continue
+            new_records.extend(more)
+        records = new_records
+        new_records = []
+    return [r.id for r in records]
+
+def merge_dicts(*dicts):
+    """
+    return a new dictionary with all keys from all dicts (recursively)
+    """
+    new = dicts[0].copy()
+    for d in dicts[1:]:
+        for k, v in d.items():
+            seen = new.get(k)
+            if isinstance(seen, dict) and not isinstance(v, dict):
+                # dict wins
+                pass
+            elif isinstance(v, dict) and not isinstance(seen, dict):
+                # dict still wins
+                new[k] = v
+            elif isinstance(seen, dict) and isinstance(v, dict):
+                # merge 'em
+                new[k] = merge_dicts(seen, v)
+            else:
+                # most recent wins
+                new[k] = v
+    return new
+
 class OrderBy(unicode):
     "string for pass-through order-by statements"
 
