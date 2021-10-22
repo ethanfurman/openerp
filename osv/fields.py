@@ -238,7 +238,7 @@ class reference(_column):
 class char(_column):
     _type = 'char'
 
-    def __init__(self, string=default('???'), size=default_none, **args):
+    def __init__(self, string=default('???'), size=default(128), **args):
         _column.__init__(self, string=string, size=size, **args)
         self._symbol_set = (self._symbol_c, self._symbol_set_char)
 
@@ -1254,6 +1254,8 @@ class function(_column):
             self._symbol_c = char._symbol_c
             self._symbol_f = char._symbol_f
             self._symbol_set = char._symbol_set
+            if not args.get('size'):
+                self.size = 128
 
         if type in ('many2one', 'many2many', 'one2many'):
             if self._obj is None:
@@ -1830,6 +1832,12 @@ class SelectionEnum(str, Enum):
         obj._value_ = args
         return obj
 
+    @classmethod
+    def __init_subclass__(cls):
+        "make SelectionEnum class marshallable as string"
+        from xmlrpclib import Marshaller
+        Marshaller.dispatch[cls] = Marshaller.dump_unicode
+
     def __str__(self):
         return str(self.db)
 
@@ -1897,6 +1905,7 @@ class SelectionEnum(str, Enum):
             if default is not _raise_lookup:
                 return default
         raise LookupError('%r not found in %s' % (text, cls.__name__))
+
 
 def apply_groups(columns, groups):
     "convenience method for applying groups to columns"

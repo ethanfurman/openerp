@@ -1146,6 +1146,8 @@ class BaseModel(object):
                     current_table = self._name
                     if len(args) == 1:
                         tables = (current_table, )
+                    elif len(args) > 2:
+                        raise except_orm('Error', '%s.%s: related field paths of more than two must specify path to use' % (self._name, name))
                     else:
                         try:
                             next_table = self._columns[link_field]._obj
@@ -4216,10 +4218,14 @@ class BaseModel(object):
                 for f in val:
                     res2 = self._columns[f].get(cr, self, ids, f, user, context=context, values=res)
                     for record in res:
-                        if res2:
-                            record[f] = res2[record['id']]
-                        else:
-                            record[f] = []
+                        try:
+                            if res2:
+                                record[f] = res2[record['id']]
+                            else:
+                                record[f] = []
+                        except Exception:
+                            _logger.error("unable to reify field %r for record %d", f, record['id'])
+                            raise except_orm('Missing data', 'unable to reify field %r for record %d' % (f, record['id']))
 
         # Warn about deprecated fields now that fields_pre and fields_post are computed
         # Explicitly use list() because we may receive tuples

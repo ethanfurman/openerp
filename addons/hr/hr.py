@@ -86,6 +86,10 @@ class hr_employee_issue(osv.osv):
     _inherit = []
 
     _columns = {
+        'name': fields.related(
+                'hr.employee.issue.employee_id', 'hr.employee.resource_id', 'resource.resource.name',
+                readonly=True, store=True, type='char', size=128,
+                ),
         'employee_id': fields.many2one('hr.employee', 'Employee'),
         'reporter_id': fields.many2one('res.users', 'Reported by'),
         'create_date': fields.datetime('Created', readonly=True),
@@ -448,7 +452,7 @@ class hr_test(osv.Model):
         'result': fields.char('Result', size=4),
         'employee_id': fields.many2one('hr.employee', 'Employee', ondelete='cascade'),
         'notes': fields.text('Notes'),
-        'create_date': fields.date('Created on'),
+        'create_date': fields.datetime('Created on'),
         }
 
     def onchange_test(self, cr, uid, ids, test_type, context=None):
