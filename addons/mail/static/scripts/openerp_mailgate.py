@@ -35,6 +35,7 @@ from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
+from scription import OrmFile
 
 class DefaultConfig(object):
     """
@@ -49,7 +50,14 @@ class DefaultConfig(object):
     MAIL_SERVER = 'smtp.example.com'
     MAIL_SERVER_PORT = 25
     MAIL_ADMINS = ('info@example.com',)
-
+    #
+    def __init__(self):
+        cfg = OrmFile('/opt/openerp/config/fnx.ini')
+        self.OPENERP_DEFAULT_PASSWORD = cfg.openerp.pw
+        self.OPENERP_DEFAULT_DATABASE = cfg.openerp.database
+        self.MAIL_ERROR = cfg.openerp.mail_error
+        self.MAIL_SERVER = cfg.openerp.mail_server
+        self.MAIL_ADMINS = cfg.openerp.mail_admins
 config = DefaultConfig()
 
 
