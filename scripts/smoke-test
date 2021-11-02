@@ -27,7 +27,15 @@ TESTS = []
 
 ALL= [(1,'=',1)]
 
-skip_tables = ['calendar.attendee']
+skip_tables = ['calendar.attendee', ] #'crm.meeting']
+
+test_levels = {
+        'quick': 101,
+        'slow': 1001,
+        'extensive': 5001,
+        'complete': 0,
+        }
+
 # API
 
 @Script(
@@ -45,11 +53,17 @@ def main():
 @Command(
         table=Spec('test specific table', OPTION, radio='table'),
         retest=Spec('test last failed tables', FLAG, radio='table'),
+        type=Spec('type of test to perform', choices=['quick','slow','extensive','complete'], force_default='quick', radio='test-type'),
+        quick=Spec('do a quick test (apx 100 records per table)', FLAG, radio='test-type', target='type', default='quick'),
+        slow=Spec('do a longer test (apx 1000 records per table)', FLAG, radio='test-type', target='type', default='slow'),
+        extensive=Spec('do a very long test (apx 5000 records per table)', FLAG, radio='test-type', target='type', default='extensive'),
+        complete=Spec('test every record', FLAG, radio='test-type', target='type', default='complete'),
         )
-def smoke_test(table, retest):
+def smoke_test(table, retest, type):
     """
     check a few records of each table for problems
     """
+    print('doing a %s check of openerp tables' % type)
     global errors
     # get last round of failures, if any
     prev_failed = get_failures()
@@ -59,54 +73,73 @@ def smoke_test(table, retest):
         model_domain = [('model','in',prev_failed.keys())]
     else:
         model_domain = [('osv_memory','=',False),('model','not in',skip_tables)]
-    models = [m.model for m in get_records(oe, 'ir.model', domain=model_domain, fields=['model'])]
+    models = dict(
+            (m.model, [])
+            for m in get_records(
+                    oe, 'ir.model',
+                    domain=model_domain,
+                    fields=['model'])
+            )
     errors = []
-    for chr, sample_size in zip('.-*', (13, 29, 59)):
-        if errors:
-            break
-        for model_name in models[:]:
-            display(one=model_name, end=' ... ')
-            try:
-                model = oe.get_model(model_name)
-            except Fault as e:
-                if ("Object %s doesn't exist" % model_name) in e.faultCode:
-                    display(zero='d', end='')
-                    display(one='defunct table')
-                elif ('relation "%s" does not exist' % model_name.replace('.','_')) in e.faultCode:
-                    display(zero='v', end='')
-                    display(one='(not db backed)')
-                else:
-                    display(zero='e', end='')
-                    display(one='error')
-                    add_error(model_name, "get_model failed with:", e)
-                models.remove(model_name)
-                continue
-            except Exception as e:
+    sample_limit = test_levels[type]
+    # get initial ids to test
+    for model_name in sorted(models):
+        display(one=model_name, end=' ... ')
+        try:
+            model = oe.get_model(model_name)
+        except Fault as e:
+            if ("Object %s doesn't exist" % model_name) in e.faultCode:
+                display(zero='d', end='')
+                display(one='defunct table')
+            elif ('relation "%s" does not exist' % model_name.replace('.','_')) in e.faultCode:
+                display(zero='v', end='')
+                display(one='(not db backed)')
+            else:
                 display(zero='e', end='')
                 display(one='error')
                 add_error(model_name, "get_model failed with:", e)
-                models.remove(model_name)
-                continue
-            if model_name in prev_failed:
-                sampling = prev_failed.pop(model_name)
-            else:
-                ids = model.search(domain=ALL, context={'active_test': False})
-                sampling = random.sample(ids, min(sample_size, len(ids)))
-                if not sampling:
-                    display(one='(empty table)')
-                    models.remove(model_name)
-                    continue
-                elif not isinstance(sampling[0], (int, long)):
-                    display(one='(non-ids returned)')
-                    models.remove(model_name)
-                    continue
+            models.pop(model_name)
+            continue
+        except Exception as e:
+            display(zero='e', end='')
+            display(one='error')
+            add_error(model_name, "get_model failed with:", e)
+            models.pop(model_name)
+            continue
+        ids = model.search(domain=ALL, context={'active_test': False})
+        sampling = random.sample(ids, min(5000, len(ids)))
+        if not sampling:
+            display(one='(empty table)')
+            models.pop(model_name)
+            continue
+        elif not isinstance(sampling[0], (int, long)):
+            display(one='(non-ids returned)')
+            models.pop(model_name)
+            continue
+        if model_name in prev_failed:
+            sampling[0:0] = prev_failed.pop(model_name)
+        models[model_name] = sampling
+        display(zero='.', end='')
+        display(one='ok  (%d ids saved)' % len(sampling))
+    # and test 'em
+    offset = -13
+    for sample_size in cycle(sample_limit):
+        if errors or not models:
+            break
+        display(zero='||', end='')
+        display(one='-' * 50)
+        offset += sample_size
+        for model_name, model_ids in sorted(models.items()):
+            model = oe.get_model(model_name)
             try:
+                display(one=model_name, end=' ... ')
+                sampling = model_ids[offset:offset+sample_size]
                 model.read(ids=sampling)
-                display(zero=chr, end='')
-                display(one='ok')
+                display(zero='.', end='')
+                display(one='ok  (%d records checked)' % len(sampling))
                 # if we've tested all available records, no need to keep testing
                 if len(sampling) < sample_size:
-                    models.remove(model_name)
+                    models.pop(model_name)
                 continue
             except Fault as e:
                 display(zero='e', end='')
@@ -128,7 +161,7 @@ def smoke_test(table, retest):
                         e,
                         msg,
                         )
-            prev_failed[model_name] = problem_ids or sampling
+            prev_failed[model_name] = sampling
     save_failures(prev_failed)
     display(zero='')
     if errors:
@@ -149,6 +182,18 @@ def add_error(model_name, *err):
             continue
         strings.append(e)
     errors.append((model_name, '\n'.join(strings)))
+
+def cycle(limit):
+    """
+    product integers until count >= limit, with a minimum of 101
+    """
+    yield 13
+    yield 29
+    yield 59
+    count = 101
+    while not limit or count <= limit:
+        yield 99
+        count += 99
 
 def display(zero=empty, one=empty, two=empty, **kwds):
     if zero is not empty and script_verbosity == 0:
