@@ -442,6 +442,7 @@ class hr_test(osv.Model):
     _name = 'hr.test'
     _description = 'checks and tests for (potential) employees'
     _columns = {
+        'name': fields.related('test_type', 'name', string='Name', type='char', store=True),
         'test_type': fields.many2one('hr.test.type', string='Type', ondelete='restrict', required=True),
         'result_type': fields.related('test_type', 'result_type', string='Result Type', type='selection', selection=ResultType),
         'result_description': fields.related('test_type', 'description', string='Description', type='text'),
