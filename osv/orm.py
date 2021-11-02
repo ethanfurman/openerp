@@ -286,17 +286,54 @@ class browse_null(object):
     Readonly python database object browser
     """
 
-    def __init__(self):
+    def __init__(self, model):
         self.id = False
+        self.model_name = model
+        self.__logger = logging.getLogger('openerp.osv.orm.browse_null.' + (model or 'null'))
+
+    def __get_(self, name):
+        if name == 'id' or self.model_name is None:
+            return False
+        try:
+            all_columns = MetaModel.all_models[self.model_name]
+        except KeyError:
+            raise except_orm('missing table', 'unable to find definition for table %r' % (self.model_name))
+        if name not in all_columns:
+            raise ValueError(name)
+        col = all_columns[name].column
+        if col._type not in ('many2one','one2many','many2many'):
+            return False
+        if col._type == 'many2one':
+            return browse_null(self.col._obj)
+        else:
+            return []
 
     def __getitem__(self, name):
-        return None
+        try:
+            return self.__get_(name)
+        except ValueError:
+            error_msg = "Field %r does not exist in object %r" % (name, self.model_name)
+            self.__logger.warning(error_msg)
+            if self.__logger.isEnabledFor(logging.DEBUG):
+                self.__logger.debug(''.join(traceback.format_stack()))
+            raise KeyError(error_msg)
 
     def __getattr__(self, name):
-        return None  # XXX: return self ?
+        try:
+            return self.__get_(name)
+        except ValueError:
+            raise
+            error_msg = "Field %r does not exist in object %r" % (name, self.model_name)
+            self.__logger.warning(error_msg)
+            if self.__logger.isEnabledFor(logging.DEBUG):
+                self.__logger.debug(''.join(traceback.format_stack()))
+            raise AttributeError(error_msg)
 
     def __int__(self):
         return False
+
+    def __repr__(self):
+        return "''"
 
     def __str__(self):
         return ''
@@ -306,6 +343,10 @@ class browse_null(object):
 
     def __unicode__(self):
         return u''
+
+from xmlrpclib import Marshaller
+Marshaller.dispatch[browse_null] = Marshaller.dump_bool
+del Marshaller
 
 
 #
@@ -488,9 +529,9 @@ class browse_record(object):
                                 else:
                                     new_data[field_name] = value
                             else:
-                                new_data[field_name] = browse_null()
+                                new_data[field_name] = browse_null(field_column._obj)
                         else:
-                            new_data[field_name] = browse_null()
+                            new_data[field_name] = browse_null(field_column._obj)
                     elif field_column._type in ('one2many', 'many2many') and len(result_line[field_name]):
                         new_data[field_name] = self._list_class([browse_record(self._cr, self._uid, id, self._table.pool.get(field_column._obj), self._cache, context=self._context, list_class=self._list_class, fields_process=self._fields_process) for id in result_line[field_name]], self._context)
                     elif field_column._type == 'reference':
@@ -504,9 +545,9 @@ class browse_record(object):
                                     obj = self._table.pool.get(ref_obj)
                                     new_data[field_name] = browse_record(self._cr, self._uid, ref_id, obj, self._cache, context=self._context, list_class=self._list_class, fields_process=self._fields_process)
                                 else:
-                                    new_data[field_name] = browse_null()
+                                    new_data[field_name] = browse_null(ref_obj)
                         else:
-                            new_data[field_name] = browse_null()
+                            new_data[field_name] = browse_null(None)
                     else:
                         new_data[field_name] = result_line[field_name]
                 self._data[result_line['id']].update(new_data)
@@ -657,16 +698,21 @@ class MetaModel(type):
     """
 
     module_to_models = {}
+    all_models = {}
 
     def __init__(cls, clsname, bases, attrs):
         # set field names on columns
         for field_name, column in cls._columns.items():
             column._field_name = field_name
+
         # check for mirrored fields -- if any, fill in _mirror_source
         for mirror in cls._mirrors:
             link_field = mirror.split('.', 1)[0]
             link_table = cls._columns[link_field]._obj
             cls._mirror_source[link_field] = link_table
+
+        # record this class' columns for null support
+        cls.all_models[cls._name] = cls._all_columns
 
         if not cls._register:
             cls._register = True
@@ -3807,7 +3853,9 @@ class BaseModel(object):
             for col in other._inherit_fields.keys():
                 res[col] = (table, self._inherits[table], other._inherit_fields[col][2], other._inherit_fields[col][3])
         self._inherit_fields = res
+        # self._all_columns.clear()
         self._all_columns = self._get_column_infos()
+        MetaModel.all_models[self._name] = self._all_columns
         self._inherits_reload_src()
 
 
@@ -5017,7 +5065,7 @@ class BaseModel(object):
                 select = self.search(cr, uid, select, context=context)
             return self._list_class([browse_record(cr, uid, id, self, cache, context=context, list_class=self._list_class, fields_process=fields_process) for id in select], context=context)
         else:
-            return browse_null()
+            return browse_null(self._name)
 
     def _store_get_values(self, cr, uid, ids, fields, context):
         """
