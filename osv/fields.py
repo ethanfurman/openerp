@@ -1763,8 +1763,12 @@ def field_to_dict(model, cr, user, field, context=None):
             res[arg] = getattr(field, arg)
 
     if hasattr(field, 'selection'):
-        if isinstance(field.selection, (tuple, list)) or issubclass(field.selection, SelectionEnum):
+        if isinstance(field.selection, (tuple, list)):
             res['selection'] = [(s[0], s[1]) for s in field.selection]
+        elif issubclass(field.selection, SelectionEnum):
+            enum = field.selection
+            res['selection'] = [(s[0], s[1]) for s in field.selection]
+            res['enum'] = [enum.__name__] + [(m.name, m.value) for m in enum]
         else:
             # call the 'dynamic selection' function
             res['selection'] = field.selection(model, cr, user, context)

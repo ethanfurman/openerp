@@ -3511,6 +3511,8 @@ class BaseModel(object):
                                 if k in self._defaults:
                                     if callable(self._defaults[k]):
                                         default = self._defaults[k](self, cr, SUPERUSER_ID, context)
+                                    elif isinstance(self._defaults[k], SelectionEnum):
+                                        default = self._defaults[k].db
                                     else:
                                         default = self._defaults[k]
 
