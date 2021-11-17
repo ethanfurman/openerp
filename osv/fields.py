@@ -133,9 +133,10 @@ class _column(object):
             setattr(self, a, v)
 
     def __repr__(self):
-        return "<openerp.osv.fields.%s(%s)" % (
+        return "<openerp.osv.fields.%s(string=%r)" % (
                 self.__class__.__name__,
-                ', '.join(['%s=%r' % (k, v) for k, v in self.__dict__.items()])
+                self.string,
+                # ', '.join(['%s=%r' % (k, v) for k, v in self.__dict__.items()])
                 )
 
     def _finalize(self, cls, name):
@@ -1736,7 +1737,6 @@ def field_to_dict(model, cr, user, field, context=None):
     the translation).
 
     """
-
     res = {'type': field._type}
     # some attributes for m2m/function field are added as debug info only
     if isinstance(field, function):
@@ -1756,12 +1756,9 @@ def field_to_dict(model, cr, user, field, context=None):
         (table, col1, col2) = field._sql_names(model)
         res['m2m_join_columns'] = [col1, col2]
         res['m2m_join_table'] = table
-    for arg in ('string', 'readonly', 'states', 'size', 'group_operator', 'required',
-            'change_default', 'translate', 'help', 'select', 'selectable', 'groups',
-            'deprecated', 'digits', 'invisible', 'filters'):
+    for arg in PUBLIC_FIELD_ATTRIBUTES:
         if getattr(field, arg, None):
             res[arg] = getattr(field, arg)
-
     if hasattr(field, 'selection'):
         if isinstance(field.selection, (tuple, list)):
             res['selection'] = [(s[0], s[1]) for s in field.selection]
@@ -1776,12 +1773,15 @@ def field_to_dict(model, cr, user, field, context=None):
         res['relation'] = field._obj
         res['domain'] = field._domain(model) if callable(field._domain) else field._domain
         res['context'] = field._context
-
     if isinstance(field, one2many):
         res['relation_field'] = field._fields_id
-
     return res
 
+PUBLIC_FIELD_ATTRIBUTES = [
+        'string', 'readonly', 'states', 'size', 'group_operator', 'required',
+        'change_default', 'translate', 'help', 'select', 'selectable', 'groups',
+        'deprecated', 'digits', 'invisible', 'filters',
+        ]
 
 class column_info(object):
     """ Struct containing details about an osv column, either one local to
