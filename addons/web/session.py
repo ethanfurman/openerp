@@ -76,6 +76,10 @@ class OpenERPSession(object):
         Used to store references to non-literal domains which need to be
         round-tripped to the client browser.
     """
+
+    def __repr__(self):
+        return "<OpenERPSession: login=%r, uid=%r>" % (self._login, self._uid)
+
     def __init__(self):
         self._creation_time = time.time()
         self._db = False
