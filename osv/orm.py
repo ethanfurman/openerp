@@ -4205,6 +4205,7 @@ class BaseModel(object):
         else:
             res = map(lambda x: {'id': x}, ids)
 
+
         if context.get('lang'):
             for f in fields_pre:
                 if f == self.CONCURRENCY_CHECK_FIELD:
@@ -4250,6 +4251,9 @@ class BaseModel(object):
         # Compute POST fields
         todo = {}
         for f in fields_post:
+            # determine whether each field will be calculated via a multi- or single-call
+            # multi calls always use the function
+            # single calls can take advantage of store field settings
             todo.setdefault(self._columns[f]._multi, [])
             todo[self._columns[f]._multi].append(f)
         for key, val in todo.items():
@@ -5090,14 +5094,21 @@ class BaseModel(object):
                 if ((not f[trigger_fields_]) or set(fields).intersection(f[trigger_fields_]))]
 
         mapping = {}
-        for function in to_compute:
-            # use admin user for accessing objects having rules defined on store fields
-            target_ids = [id for id in function[id_mapping_fnct_](self, cr, SUPERUSER_ID, ids, context) if id]
+        called_functions = {}
+        for model_name, target_field, id_function, trigger_fields, priority, unk in to_compute:
+
+            # for each model,id_func pair, only call id_func once
+            if (model_name, id_function) in called_functions:
+                target_ids = called_functions[model_name,id_function]
+            else:
+                # use admin user for accessing objects having rules defined on store fields
+                target_ids = [id for id in id_function(self, cr, SUPERUSER_ID, ids, context) if id]
+                called_functions[model_name,id_function] = target_ids
 
             # the compound key must consider the priority and model name
-            key = (function[priority_], function[model_name_])
+            key = priority, model_name
             for target_id in target_ids:
-                mapping.setdefault(key, {}).setdefault(target_id,set()).add(tuple(function))
+                mapping.setdefault(key, {}).setdefault(target_id,set()).add((model_name, target_field, id_function, trigger_fields, priority, unk))
 
         # Here mapping looks like:
         # { (10, 'model_a') : { target_id1: [ (function_1_tuple, function_2_tuple) ], ... }
