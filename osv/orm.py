@@ -4252,10 +4252,9 @@ class BaseModel(object):
         todo = {}
         for f in fields_post:
             # determine whether each field will be calculated via a multi- or single-call
-            # multi calls always use the function
-            # single calls can take advantage of store field settings
-            todo.setdefault(self._columns[f]._multi, [])
-            todo[self._columns[f]._multi].append(f)
+            # either way, pass through any values previously saved via a `store` setting
+            multi = self._columns[f]._multi
+            todo.setdefault(multi, []).append(f)
         for key, val in todo.items():
             if key:
                 res2 = self._columns[val[0]].get(cr, self, ids, val, user, context=context, values=res)

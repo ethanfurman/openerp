@@ -84,8 +84,8 @@ class _column(object):
     _type = 'unknown'
     _obj = None
     _multi = False
-    _symbol_c = '%s'
-    _symbol_f = _symbol_set
+    _symbol_c = '%s'                            # %-replacement for field name in sql statement
+    _symbol_f = _symbol_set                     # value of field in sql statement
     _symbol_set = (_symbol_c, _symbol_f)
     _symbol_get = None
 
@@ -129,6 +129,7 @@ class _column(object):
         self.group_operator = args.get('group_operator', default_false)
         self.groups = default_false  # CSV list of ext IDs of groups that can access this field
         self.deprecated = default_false # Optional deprecation warning
+        self.store = default_none
         for a, v in args.items():
             setattr(self, a, v)
 
@@ -136,7 +137,6 @@ class _column(object):
         return "<openerp.osv.fields.%s(string=%r)" % (
                 self.__class__.__name__,
                 self.string,
-                # ', '.join(['%s=%r' % (k, v) for k, v in self.__dict__.items()])
                 )
 
     def _finalize(self, cls, name):
@@ -298,6 +298,19 @@ class float(_column):
 
 class date(_column):
     _type = 'date'
+    _symbol_c = '%s'
+    def _symbol_f(symb):
+        if symb is None or symb == False:
+            return None
+        elif isinstance(symb, unicode):
+            symb = symb.encode('utf-8')
+        if not isinstance(symb, str):
+            # had better be something that quacks like a datetime
+            if symb.tzinfo is not None:
+                symb = symb.astimezone(UTC)
+            symb = symb.strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
+        return symb
+    _symbol_set = (_symbol_c, _symbol_f)
 
     @staticmethod
     def today(model, cr, *args, **kwds):
@@ -1196,16 +1209,23 @@ class function(_column):
         #
         self._obj = obj
         self._fnct = fnct
-        self._fnct_inv = fnct_inv
         self._arg = arg
+        self._fnct_inv = fnct_inv
+        self._fnct_inv_arg = fnct_inv_arg
+        self._fnct_search = fnct_search
         self._multi = multi
         if 'relation' in args:
             self._obj = args['relation']
-
-        self._fnct_inv_arg = fnct_inv_arg
         self._type = type
-        self._fnct_search = fnct_search
         self.store = store
+        if store:
+            self._classic_write = True
+
+        if isinstance(store, dict) and type in ('many2one','many2many','one2many','reference','sparse'):
+            _logger.warning(
+                "use of a `store` dictionary is pointless with relational and sparse fields [string=%r]"
+                % (args.get('string','???'))
+                )
 
         if fnct_inv is True:
             if fnct_inv_arg:
@@ -1213,20 +1233,18 @@ class function(_column):
                         'Cannot use inverse function arguments with simple_set [fnct_inv_arg=%r]'
                         % (fnct_inv_arg, )
                         )
-            self.simple_set = {
-                    'many2one': many2one.set,
-                    'many2many': many2many.set,
-                    'one2many': one2many.set,
-                    }.get(type, _column.set)
+            if type in ('many2one','many2many','one2many','reference','related','sparse'):
+                raise ValueError(
+                        "cannot use `fnct_inv=True` with relational nor sparse fields [string=%r]"
+                        % (args.get('string','???'))
+                        )
+            self.simple_set = _column.set
 
-        if self.store:
-            self._classic_write = True
 
         if type == 'float':
             self._symbol_c = float._symbol_c
             self._symbol_f = float._symbol_f
             self._symbol_set = float._symbol_set
-            # self.digits = args.get('digits', default((16,2)))
             if not args.get('digits_compute'):
                 self.digits_compute = default_none
             if not args.get('digits'):
@@ -1265,11 +1283,6 @@ class function(_column):
                 _logger.warning('%s field %r does not have the target field defined', type, args.get('string', '???'))
 
     def _finalize(self, cls, name):
-        # TODO: remove below once all float function fields are explicitly typed
-        # if isinstance(self._type, default) and self._type.value == 'float':
-        #     self._symbol_c = float._symbol_c
-        #     self._symbol_f = float._symbol_f
-        #     self._symbol_set = float._symbol_set
 
         _column._finalize(self, cls, name)
 
@@ -1330,11 +1343,25 @@ class function(_column):
         return result
 
     def get(self, cr, obj, ids, name, uid=False, context=None, values=None):
-        result = self._fnct(obj, cr, uid, ids, name, self._arg, context)
-        if result is None and ids:
-            raise osv.except_osv('Programming Error', 'Possibly no return for a functional field?')
+        if self.store and values:
+            result = {}
+            if self._multi:
+                names = name
+                for vd in values:
+                    result[vd['id']] = rd = {}
+                    for n in names:
+                        rd[n] = vd[n]
+            else:
+                for vd in values:
+                    result[vd['id']] = vd[name]
+        else:
+            result = self._fnct(obj, cr, uid, ids, name, self._arg, context)
+            if result is None and ids:
+                raise osv.except_osv('Programming Error', 'Possibly no return for a functional field?')
         for id in ids:
             if self._multi and id in result:
+                if not isinstance(result[id], dict):
+                    raise osv.except_osv('Programming Error', 'multi-field function %r should return a dictionary per ip, but received %r' % (self._field_name, result[id]))
                 for field, value in result[id].iteritems():
                     if value:
                         result[id][field] = self.postprocess(cr, uid, obj, field, value, context)
@@ -1355,6 +1382,7 @@ class function(_column):
         # Function fields are supposed to emulate a basic field type,
         # so they can delegate to the basic type for record name rendering
         return globals()[field._type]._as_display_name(field, cr, uid, obj, value, context=context)
+
 
 # ---------------------------------------------------------
 # Related fields
