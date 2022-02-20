@@ -82,6 +82,7 @@ def smoke_test(table, retest, type):
             )
     errors = []
     sample_limit = test_levels[type]
+    display(zero='d=defunct table    v=virtual table    e=error encountered')
     # get initial ids to test
     for model_name in sorted(models):
         display(one=model_name, end=' ... ')
