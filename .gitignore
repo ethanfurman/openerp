@@ -21,3 +21,4 @@ filestore/
 addons/fleet_hr/fleet_hr_view.xml
 addons/hr/hr_view*.xml
 addons/hr/hr_data.xml
+scripts/pulse.pyz
