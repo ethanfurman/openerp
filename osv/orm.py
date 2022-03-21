@@ -5687,12 +5687,18 @@ class BaseModel(object):
             raise Exception('_get_vars_ is only accessible to admin')
         res = {}
         for name in dir(self):
+            if name in ('__dict__', '_uid_cache', '_defaults', '_inherit'):
+                continue
             if name.isupper():
                 continue
             obj = getattr(self, name)
             if isinstance(obj, (bool, int, float, long, bytes, str, unicode, tuple)):
                 res[name] = obj
+            elif name in ('_inherits', ):
+                # dict attributes to send
+                res[name] = tuple(obj.items())
         return res
+    model_info = _get_vars_
 
 # keep this import here, at top it will cause dependency cycle errors
 import expression
