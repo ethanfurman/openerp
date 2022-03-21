@@ -47,7 +47,7 @@ import openerp
 import openerp.tools as tools
 from openerp.exceptions import ERPError
 from openerp.tools.translate import _
-from openerp.tools import Enum, issubclass, Sentinel, EnumAutoValue
+from openerp.tools import Enum, issubclass, Sentinel
 from openerp.tools import float_round, float_repr
 from openerp.tools import html_sanitize
 from openerp.tools import default, default_uninit, UnInit
@@ -1786,7 +1786,6 @@ class column_info(object):
 _raise_lookup = Sentinel('raise LookupError')
 
 class SelectionEnum(str, Enum):
-    _settings_ = EnumAutoValue
     _init_ = 'db user'
 
     def __new__(cls, *args, **kwds):
@@ -1795,6 +1794,12 @@ class SelectionEnum(str, Enum):
         obj._count = count
         obj._value_ = args
         return obj
+
+    @classmethod
+    def __init_subclass__(cls):
+        "make SelectionEnum class marshallable as string"
+        from xmlrpclib import Marshaller
+        Marshaller.dispatch[cls] = Marshaller.dump_unicode
 
     def __str__(self):
         return str(self.db)
