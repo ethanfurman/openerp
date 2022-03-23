@@ -1,0 +1,18 @@
+[submodule "addons/fnx"]
+	path = addons/fnx
+	url = /opt/whc/openerp/addons/fnx
+[submodule "addons/fnx_fs"]
+	path = addons/fnx_fs
+	url = /opt/whc/openerp/addons/fnx_fs
+[submodule "addons/fnx_hd"]
+	path = addons/fnx_hd
+	url = /opt/whc/openerp/addons/fnx_hd
+[submodule "addons/salesinq"]
+	path = addons/salesinq
+	url = /opt/whc/openerp/addons/salesinq
+[submodule "addons/sample"]
+	path = addons/sample
+	url = /opt/whc/openerp/addons/sample
+[submodule "addons/wholeherb_integration"]
+	path = addons/wholeherb_integration
+	url = /opt/whc/openerp/addons/wholeherb_integration
