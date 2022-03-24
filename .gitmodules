@@ -19,3 +19,6 @@
 [submodule "ip_map"]
 	path = ip_map
 	url = /opt/whc/openerp/addons/ip_map
+[submodule "addons/ip_map"]
+	path = addons/ip_map
+	url = /opt/whc/openerp/addons/ip_map
