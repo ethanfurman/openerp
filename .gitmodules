@@ -1,21 +1,21 @@
 [submodule "addons/fnx"]
 	path = addons/fnx
-	url = /opt/whc/openerp/addons/fnx
+	url = ssh://git@whc-oe/home/git/repos/fnx.git
 [submodule "addons/fnx_fs"]
 	path = addons/fnx_fs
-	url = /opt/whc/openerp/addons/fnx_fs
+	url = ssh://git@whc-oe/home/git/repos/fnx_fs.git
 [submodule "addons/fnx_hd"]
 	path = addons/fnx_hd
-	url = /opt/whc/openerp/addons/fnx_hd
+	url = ssh://git@whc-oe/home/git/repos/fnx_hd.git
 [submodule "addons/salesinq"]
 	path = addons/salesinq
-	url = /opt/whc/openerp/addons/salesinq
+	url = ssh://git@whc-oe/home/git/repos/salesinq.git
 [submodule "addons/sample"]
 	path = addons/sample
-	url = /opt/whc/openerp/addons/sample
+	url = ssh://git@whc-oe/home/git/repos/sample.git
 [submodule "addons/wholeherb_integration"]
 	path = addons/wholeherb_integration
-	url = /opt/whc/openerp/addons/wholeherb_integration
+	url = ssh://git@whc-oe/home/git/repos/wholeherb_integration.git
 [submodule "ip_map"]
 	path = ip_map
 	url = /opt/whc/openerp/addons/ip_map
