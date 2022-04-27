@@ -793,12 +793,12 @@ class task(base_stage, osv.osv):
 
     def _text2html(self, cr, uid, ids, field_name, arg, context=None):
         res = {}.fromkeys(ids, False)
-        for rec in self.browse(ids):
+        for rec in self.browse(cr, uid, ids, context=context):
             try:
                 res[rec['id']] = Document(rec['description']).to_html()
             except FormatError:
                 _logger.exception('stonemark unable to convert record %d', rec['id'])
-                res[rec['id']] = escape(['description'])
+                res[rec['id']] = escape(rec['description'])
         return res
 
     _columns = {
