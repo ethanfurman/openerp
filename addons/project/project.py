@@ -22,7 +22,9 @@
 from datetime import datetime, date
 from lxml import etree
 from fnx import date as fnx_date
+from stonemark import Document, FormatError, escape
 from textwrap import dedent
+import logging
 import time
 
 from openerp import SUPERUSER_ID
@@ -35,6 +37,8 @@ from openerp.exceptions import ERPError
 from openerp.addons.base_status.base_stage import base_stage
 from openerp.addons.resource.faces import task as Task
 
+_logger = logging.getLogger(__name__)
+ 
 _TASK_STATE = [('draft', 'New'), ('pending', 'Pending'), ('open', 'In Progress'), ('done', 'Done'), ('cancelled', 'Cancelled')]
 
 class project_task_type(osv.osv):
@@ -787,10 +791,25 @@ class task(base_stage, osv.osv):
             self.write(cr, 1, ids, {'date_warning': warn})
         return True
 
+    def _text2html(self, cr, uid, ids, field_name, arg, context=None):
+        res = {}.fromkeys(ids, False)
+        for rec in self.browse(ids):
+            try:
+                res[rec['id']] = Document(rec['description']).to_html()
+            except FormatError:
+                _logger.exception('stonemark unable to convert record %d', rec['id'])
+                res[rec['id']] = escape(['description'])
+        return res
+
     _columns = {
         'active': fields.function(_is_template, store=True, string='Not a Template Task', type='boolean', help="This field is computed automatically and have the same behavior than the boolean 'active' field: if the task is linked to a template or unactivated project, it will be hidden unless specifically asked."),
         'name': fields.char('Task Summary', size=128, required=True, select=True),
         'description': fields.text('Description'),
+        'description_html': fields.function(
+                _text2html,
+                type='html',
+                string='Description (HTML)'
+                ),
         'priority': fields.selection([('4','Very Low'), ('3','Low'), ('2','Normal'), ('1','High'), ('0','Highest')], 'Priority', select=True),
         'sequence': fields.integer('Sequence', select=True, help="Gives the sequence order when displaying a list of tasks."),
         'stage_id': fields.many2one('project.task.type', 'Stage', track_visibility='onchange',
