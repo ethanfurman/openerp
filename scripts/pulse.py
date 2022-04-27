@@ -38,7 +38,7 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
         self.msg_location = msg_location or os.getcwd()
         self.log_name = log_file
         self.prep_log_file()
-        self.today = time.localtime(time.time)[:3]
+        self.today = time.localtime(time.time())[:3]
         HTTPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate)
 
     def prep_log_file(self):
@@ -48,8 +48,8 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
         if not os.path.exists(dirs):
             os.path.mkdirs(dirs)
         if not os.path.exists(self.log_name):
-            self.log_file = io.open(self.log_name, 'w', encoding='utf-8')
             self.is_empty_log = True
+        self.log_file = io.open(self.log_name, 'a', encoding='utf-8')
 
     def emit_message(self, msg, timestamp):
         with self.log_lock:
@@ -61,12 +61,14 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
                 # time to rotate the file?
                 now = time.localtime(timestamp)[:3]
                 if not self.is_empty_log and self.today != now:
-                    new_name = '%s.%s%s%s' % ((self.log_name, ) + self.today)
                     self.log_file.close()
-                    shutil.move(self.log_name, new_name)
-                    self.log_file = io.open(self.log_name, 'w', encoding='utf-8')
+                    new_name = '%s.%04d%02d%02d' % ((self.log_name, ) + self.today)
+                    dirs, filename = os.path.split(self.log_name)
+                    shutil.move(self.log_name, os.path.join(dirs, new_name))
+                    self.log_file = io.open(self.log_name, 'a', encoding='utf-8')
                     self.today = now
                 self.log_file.write(msg)
+                self.log_file.flush()
 
     def handle_error(self, request, client_address):
         cls, exc, tb = sys.exc_info()
@@ -109,8 +111,8 @@ class PulseHTTPRequestHandler(BaseHTTPRequestHandler):
         if query is None:
             query = parse_qs(data.query)
         _, ip, freq, name = data.path.split(u'/', 3)
-        timestamp = time.localtime(time.time())[:6]
-        msg_file_name = u'IP-%s-%s-%04d%02d%02d_%02d%02d%02d.txt' % ((ip, name, ) + timestamp)
+        timestamp = time.localtime(time.time())
+        msg_file_name = self.server.msg_location + '/' + 'IP-%s-%s-%04d%02d%02d_%02d%02d%02d' % ((ip, name, ) + timestamp)
         # main portion of data for message file
         msg_file_data = [
             "{",
@@ -124,8 +126,9 @@ class PulseHTTPRequestHandler(BaseHTTPRequestHandler):
             msg_file_data.append("'%s': %r," % (key, value[0]))
         msg_file_data.append("}\n")
         msg_file_data = '\n'.join(msg_file_data).decode('utf-8')
-        with io.open(self.server.msg_location+'/'+msg_file_name, 'w', encoding='utf-8') as f:
+        with io.open(msg_file_name+'.tmp', 'w', encoding='utf-8') as f:
             f.write(msg_file_data)
+        shutil.move(msg_file_name+'.tmp', msg_file_name+'.txt')
 
     def log_message(self, format, *args):
         """
@@ -187,7 +190,7 @@ def parse_log(log_file, msg_location):
             if match(r'\[(\d\d/\w\w\w/\d\d\d\d \d\d:\d\d:\d\d)\] "GET /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/(\w+)/(.*) HTTP.*"', line):
                 timestamp, ip, freq, name = match().groups()
                 timestamp = datetime.strptime(timestamp, '%d/%b/%Y %H:%M:%S')
-                msg_file_name = u'IP-%s-%s-%04d%02d%02d_%02d%02d%02d.txt' % ((ip, name, ) + timestamp)
+                msg_file_name = timestamp.strftime('IP-%%s-%%s-%Y%m%d_%H%M%S.txt') % (ip, name, )
                 # main portion of data for message file
                 msg_file_data = [
                     "{",
