@@ -1715,16 +1715,9 @@ def field_to_dict(model, cr, user, field, context=None):
         res['fnct_inv_arg'] = field._fnct_inv_arg or False
     if isinstance(field, one2many):
         res['o2m_order'] = field._order or False
-    if isinstance(field, many2many):
-        (table, col1, col2) = field._sql_names(model)
-        res['m2m_join_columns'] = [col1, col2]
-        res['m2m_join_table'] = table
-    for arg in ('string', 'readonly', 'states', 'size', 'group_operator', 'required',
-            'change_default', 'translate', 'help', 'select', 'selectable', 'groups',
-            'deprecated', 'digits', 'invisible', 'filters'):
+    for arg in PUBLIC_FIELD_ATTRIBUTES:
         if getattr(field, arg, None):
             res[arg] = getattr(field, arg)
-
     if hasattr(field, 'selection'):
         if isinstance(field.selection, (tuple, list)) or issubclass(field.selection, SelectionEnum):
             res['selection'] = [(s[0], s[1]) for s in field.selection]
@@ -1735,12 +1728,15 @@ def field_to_dict(model, cr, user, field, context=None):
         res['relation'] = field._obj
         res['domain'] = field._domain(model) if callable(field._domain) else field._domain
         res['context'] = field._context
-
     if isinstance(field, one2many):
         res['relation_field'] = field._fields_id
-
     return res
 
+PUBLIC_FIELD_ATTRIBUTES = [
+        'string', 'readonly', 'states', 'size', 'group_operator', 'required',
+        'change_default', 'translate', 'help', 'select', 'selectable', 'groups',
+        'deprecated', 'digits', 'invisible', 'filters',
+        ]
 
 class column_info(object):
     """ Struct containing details about an osv column, either one local to
