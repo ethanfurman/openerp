@@ -19,16 +19,23 @@
 #
 ##############################################################################
 
-import time
+import pytz
+import datetime
+from openerp.tools.misc import SERVER_TIMEZONE
+
+UTC = pytz.timezone('UTC')
 
 functions = {
     'today': lambda n: (
-        time.strftime(
-            n.get('format', '%Y/%m/%d'),
-            time.localtime(),
-            ).decode('latin1')
-        )
-}
+            UTC.localize(
+                datetime.datetime.now()
+                ).astimezone(
+                    SERVER_TIMEZONE
+                    ).strftime(
+                        n.get('format', '%Y/%m/%d')
+                        ).decode('latin1')
+                        ),
+    }
 
 #
 # TODO: call an object internal function too

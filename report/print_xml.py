@@ -22,9 +22,11 @@
 from lxml import etree
 import openerp.tools as tools
 from openerp.tools.safe_eval import safe_eval
+from openerp.tools.misc import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_TIME_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT
 import print_fnc
 from openerp.osv.orm import browse_null, browse_record
 import openerp.pooler as pooler
+import datetime
 
 class InheritDict(dict):
     # Might be usefull when we're doing name lookup for call or eval.
@@ -73,11 +75,20 @@ class document(object):
 
         value = browser
 
-        for field in fields:
+        for i, field in enumerate(fields):
             if isinstance(value, list):
                 if len(value)==0:
                     return ''
-                value = value[0]
+                if len(value) > 1 and i == len(fields)-1:
+                    multivalue = []
+                    for rec in value:
+                        subvalue = getattr(rec, field, '')
+                        if subvalue:
+                            multivalue.append(str(subvalue))
+                    value = ', '.join(multivalue)
+                    return value
+                else:
+                    value = value[0]
             if isinstance(value, browse_null):
                 return ''
             else:
@@ -138,6 +149,16 @@ class document(object):
                     #TODO: test this
                     if value == '' and 'default' in attrs:
                         value = attrs['default']
+                    if 'format' in attrs:
+                        format = attrs['format']
+                        if '-' in value and ':' in value:
+                            value = datetime.datetime.strptime(value, DEFAULT_SERVER_DATETIME_FORMAT)
+                        elif '-' in value:
+                            value = datetime.datetime.strptime(value, DEFAULT_SERVER_DATE_FORMAT)
+                        elif ':' in value:
+                            value = datetime.datetime.strptime(value, DEFAULT_SERVER_TIME_FORMAT)
+                        if isinstance(value, (datetime.time, datetime.datetime, datetime.date)):
+                            value = value.strftime(format)
                     el = etree.SubElement(parent, node.tag)
                     el.text = tounicode(value)
                     #TODO: test this

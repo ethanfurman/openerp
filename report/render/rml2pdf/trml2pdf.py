@@ -728,7 +728,8 @@ class _rml_flowable(object):
             posy += 1
 
         if node.get('colWidths'):
-            assert length == len(node.get('colWidths').split(','))
+            if length != len(node.get('colWidths').split(',')):
+                raise ValueError('node length does not match colWidths [%r]' % (node.get('colWidths'), ))
             colwidths = [utils.unit_get(f.strip()) for f in node.get('colWidths').split(',')]
         if node.get('rowHeights'):
             rowheights = [utils.unit_get(f.strip()) for f in node.get('rowHeights').split(',')]
