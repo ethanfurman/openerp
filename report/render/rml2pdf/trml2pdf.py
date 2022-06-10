@@ -38,6 +38,7 @@ from reportlab.lib.units import inch,cm,mm
 from openerp.tools.misc import file_open
 from reportlab.pdfbase import pdfmetrics
 from reportlab.lib.pagesizes import A4, letter
+inch, cm, mm
 
 try:
     from cStringIO import StringIO
@@ -429,10 +430,12 @@ class _rml_canvas(object):
 
     def _curves(self, node):
         line_str = node.text.split()
-        lines = []
         while len(line_str)>7:
             self.canvas.bezier(*[utils.unit_get(l) for l in line_str[0:8]])
             line_str = line_str[8:]
+
+    def _line(self, node):
+        self.canvas.line(**utils.attr_get(node, ['x1','y1','x2','y2']))
 
     def _lines(self, node):
         line_str = node.text.split()
@@ -583,8 +586,11 @@ class _rml_canvas(object):
     def render(self, node):
         tags = {
             'drawCentredString': self._drawCenteredString,
+            'drawCenteredString': self._drawCenteredString,
             'drawRightString': self._drawRightString,
             'drawString': self._drawString,
+            'drawLine': self._line,
+            'drawBox': self._rect,
             'rect': self._rect,
             'ellipse': self._ellipse,
             'lines': self._lines,
@@ -728,7 +734,8 @@ class _rml_flowable(object):
             posy += 1
 
         if node.get('colWidths'):
-            assert length == len(node.get('colWidths').split(','))
+            if length != len(node.get('colWidths').split(',')):
+                raise ValueError('node length does not match colWidths [%r]' % (node.get('colWidths'), ))
             colwidths = [utils.unit_get(f.strip()) for f in node.get('colWidths').split(',')]
         if node.get('rowHeights'):
             rowheights = [utils.unit_get(f.strip()) for f in node.get('rowHeights').split(',')]
@@ -785,7 +792,7 @@ class _rml_flowable(object):
                 from reportlab.graphics.barcode import code39
                 from reportlab.graphics.barcode import code93
                 from reportlab.graphics.barcode import common
-                from reportlab.graphics.barcode import fourstate
+                # from reportlab.graphics.barcode import fourstate
                 from reportlab.graphics.barcode import usps
                 from reportlab.graphics.barcode import createBarcodeDrawing
 

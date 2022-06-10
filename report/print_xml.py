@@ -22,9 +22,15 @@
 from lxml import etree
 import openerp.tools as tools
 from openerp.tools.safe_eval import safe_eval
+from openerp.tools.misc import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_TIME_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT, SERVER_TIMEZONE
 import print_fnc
 from openerp.osv.orm import browse_null, browse_record
 import openerp.pooler as pooler
+import datetime
+import pytz
+
+UTC = pytz.timezone('UTC')
+
 
 class InheritDict(dict):
     # Might be usefull when we're doing name lookup for call or eval.
@@ -65,7 +71,7 @@ class document(object):
             return node.attrib
         return {}
 
-    def get_value(self, browser, field_path):
+    def get_value(self, browser, field_path, format=None):
         fields = field_path.split('.')
 
         if not len(fields):
@@ -73,11 +79,20 @@ class document(object):
 
         value = browser
 
-        for field in fields:
+        for i, field in enumerate(fields):
             if isinstance(value, list):
                 if len(value)==0:
                     return ''
-                value = value[0]
+                if len(value) > 1 and i == len(fields)-1:
+                    multivalue = []
+                    for rec in value:
+                        subvalue = getattr(rec, field, '')
+                        if subvalue:
+                            multivalue.append(str(subvalue))
+                    value = ', '.join(multivalue)
+                    return value
+                else:
+                    value = value[0]
             if isinstance(value, browse_null):
                 return ''
             else:
@@ -100,7 +115,19 @@ class document(object):
                         value = human_name
                         break
             elif column_type == 'boolean':
-                value = column.choice[bool(value)]
+                if format is None:
+                    value = column.choice[bool(value)]
+                else:
+                    value = (format.split(',')[bool(value)]).strip()
+            elif column_type == 'date':
+                value = datetime.datetime.strptime(value, DEFAULT_SERVER_DATE_FORMAT)
+                value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format).decode('latin1')
+            elif column_type == 'time':
+                value = datetime.datetime.strptime(value, DEFAULT_SERVER_TIME_FORMAT)
+                value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format).decode('latin1')
+            elif column_type == 'datetime':
+                value = datetime.datetime.strptime(value, DEFAULT_SERVER_DATETIME_FORMAT)
+                value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format).decode('latin1')
         except Exception:
             pass
 
@@ -134,7 +161,8 @@ class document(object):
             if 'type' in attrs:
                 if attrs['type']=='field':
                     field = attrs['name']
-                    value = self.get_value(browser, field)
+                    format = attrs.get('format')
+                    value = self.get_value(browser, field, format)
                     #TODO: test this
                     if value == '' and 'default' in attrs:
                         value = attrs['default']
