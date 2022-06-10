@@ -837,10 +837,12 @@ def detect_server_timezone():
        Defaults to UTC if no working timezone can be found.
        @return the timezone identifier as expected by pytz.timezone.
     """
+    global SERVER_TIMEZONE
     try:
         import pytz
+        SERVER_TIMEZONE = pytz.timezone('UTC')
     except Exception:
-        _logger.warning("Python pytz module is not available. "
+        _logger.error("Python pytz module is not available. "
             "Timezone will be set to UTC by default.")
         return 'UTC'
 
@@ -877,6 +879,7 @@ def detect_server_timezone():
             try:
                 tz = pytz.timezone(value)
                 _logger.info("Using timezone %s obtained from %s.", tz.zone, source)
+                SERVER_TIMEZONE = pytz.timezone(value)
                 return value
             except pytz.UnknownTimeZoneError:
                 _logger.warning("The timezone specified in %s (%s) is invalid, ignoring it.", source, value)
@@ -884,7 +887,10 @@ def detect_server_timezone():
     _logger.warning("No valid timezone could be detected, using default UTC "
         "timezone. You can specify it explicitly with option 'timezone' in "
         "the server configuration.")
+    SERVER_TIMEZONE = pytz.timezone('UTC')
     return 'UTC'
+
+detect_server_timezone()
 
 def get_server_timezone():
     return "UTC"
