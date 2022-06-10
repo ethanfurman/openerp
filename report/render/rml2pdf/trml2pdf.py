@@ -429,10 +429,12 @@ class _rml_canvas(object):
 
     def _curves(self, node):
         line_str = node.text.split()
-        lines = []
         while len(line_str)>7:
             self.canvas.bezier(*[utils.unit_get(l) for l in line_str[0:8]])
             line_str = line_str[8:]
+
+    def _line(self, node):
+        self.canvas.line(**utils.attr_get(node, ['x1','y1','x2','y2']))
 
     def _lines(self, node):
         line_str = node.text.split()
@@ -583,8 +585,11 @@ class _rml_canvas(object):
     def render(self, node):
         tags = {
             'drawCentredString': self._drawCenteredString,
+            'drawCenteredString': self._drawCenteredString,
             'drawRightString': self._drawRightString,
             'drawString': self._drawString,
+            'drawLine': self._line,
+            'drawBox': self._rect,
             'rect': self._rect,
             'ellipse': self._ellipse,
             'lines': self._lines,
@@ -909,7 +914,7 @@ class _rml_flowable(object):
             # </docIf>
             return platypus.flowables.DocIf(node.get('cond'), self.render(node))
         else:
-            sys.stderr.write('Warning: flowable not yet implemented: %s !\n' % (node.tag,))
+            # sys.stderr.write('Warning: flowable not yet implemented: %s !\n' % (node.tag,))
             return None
 
     def render(self, node_story):
