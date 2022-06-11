@@ -30,6 +30,7 @@ from dateutil.relativedelta import relativedelta
 from dbf import DateTime
 from antipathy import Path
 from scription import Job
+from stonemark import Document, FormatError, escape
 from tempfile import mkdtemp
 import shlex
 
@@ -37,7 +38,7 @@ import openerp
 from openerp import netsvc
 from openerp.exceptions import ERPError
 from openerp.osv import fields, osv
-from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
+from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT, self_ids
 from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
 
@@ -109,6 +110,17 @@ class ir_cron(osv.osv):
             res[id] = wait_time
         return res
 
+    def _text2html(self, cr, uid, ids, field_name, arg, context=None):
+        res = {}.fromkeys(ids, False)
+        for rec in self.browse(cr, uid, ids, context=context):
+            if rec['id']:
+                try:
+                    res[rec['id']] = Document(rec['description']).to_html()
+                except FormatError:
+                    _logger.exception('stonemark unable to convert record %d', rec['id'])
+                    res[rec['id']] = escape(rec['description'])
+        return res
+
     _columns = {
         'name': fields.char('Name', size=60, required=True),
         'type': fields.selection((
@@ -168,6 +180,15 @@ class ir_cron(osv.osv):
             sort_order='definition',
             ),
         'results': fields.text('Results'),
+        'description': fields.text('Description'),
+        'description_html': fields.function(
+                _text2html,
+                type='html',
+                string='Description (HTML)',
+                store={
+                    'ir.cron': (self_ids, ['description'], 10),
+                    }
+                ),
     }
 
     _defaults = {
