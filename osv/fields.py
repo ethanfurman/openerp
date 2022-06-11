@@ -305,9 +305,7 @@ class date(_column):
         elif isinstance(symb, unicode):
             symb = symb.encode('utf-8')
         if not isinstance(symb, str):
-            # had better be something that quacks like a datetime
-            if symb.tzinfo is not None:
-                symb = symb.astimezone(UTC)
+            # had better be something that quacks like a date
             symb = symb.strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
         return symb
     _symbol_set = (_symbol_c, _symbol_f)
