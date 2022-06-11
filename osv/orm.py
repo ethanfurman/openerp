@@ -4374,6 +4374,7 @@ class BaseModel(object):
         if uniq:
             return res[0]
         return res
+    meta_read = perm_read
 
     def _check_concurrency(self, cr, ids, context):
         if context is None:
