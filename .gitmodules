@@ -73,3 +73,6 @@
 [submodule "addons/sample"]
 	path = addons/sample
 	url = ssh://code.stoneleaf.us/repos/openerp_sample.git
+[submodule "addons/wiki"]
+	path = addons/wiki
+	url = ssh://git@fal_hub/home/git/repos/openerp_wiki.git
