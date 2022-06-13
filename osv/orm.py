@@ -1031,16 +1031,23 @@ class BaseModel(object):
                     new = copy.copy(getattr(parent_model, s, {}))
                     if s == '_columns':
                         for c in new.keys():
-                            if new[c].manual:
+                            nf = new[c]
+                            if nf.manual:
                                 # Don't _inherit custom fields.
                                 del new[c]
                                 continue
-                            if name in parent_names:
-                                # modifying existing table
-                                # bring parent settings forward, unless overridden
-                                f = _columns.get(c)
-                                if f is not None:
-                                    cls._field_finalize(c, f, new[c])
+                            # modifying existing table
+                            # bring parent's fields' attributes forward if types are the same, unless
+                            # individual attribute is overridden
+                            # special case self-referential m2m fields to match new table
+                            f = _columns.get(c)
+                            if name not in parent_names and isinstance(nf, fields.many2many) and nf._obj in parent_names:
+                                if f is None:
+                                    new[c] = f = copy.copy(nf)
+                                f._obj = name
+                                f._rel = '%s_%s' % (name.replace('.','_'), f._rel)
+                            if f is not None:
+                                cls._field_finalize(c, f, nf)
                         # Duplicate float fields because they have a .digits
                         # cache (which must be per-registry, not server-wide).
                         for c in new.keys():
