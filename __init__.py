@@ -34,6 +34,7 @@ import time              # ... *then* import time.
 BASE_DIR = os.path.split(__file__)[0]
 ROOT_DIR = os.path.split(BASE_DIR)[0]
 CONFIG_DIR = os.path.join(ROOT_DIR, 'config')
+VAR_DIR = os.path.join(ROOT_DIR, 'var')
 del os
 del time
 
