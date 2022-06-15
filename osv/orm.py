@@ -5881,6 +5881,7 @@ class BaseModel(object):
         return res
     model_info = _get_vars_
 
+
 # keep this import here, at top it will cause dependency cycle errors
 import expression
 

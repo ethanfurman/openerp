@@ -22,7 +22,6 @@
 from datetime import datetime, date
 from lxml import etree
 from fnx import date as fnx_date
-from stonemark import Document, FormatError, escape
 from textwrap import dedent
 import logging
 import time
@@ -30,7 +29,8 @@ import time
 from openerp import SUPERUSER_ID
 from openerp import tools
 from openerp.osv import fields, osv
-from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
+from openerp.tools import DEFAULT_SERVER_DATE_FORMAT, self_ids
+from openerp.tools.misc import stonemark2html
 from openerp.tools.translate import _
 from openerp.exceptions import ERPError
 
@@ -791,24 +791,19 @@ class task(base_stage, osv.osv):
             self.write(cr, 1, ids, {'date_warning': warn})
         return True
 
-    def _text2html(self, cr, uid, ids, field_name, arg, context=None):
-        res = {}.fromkeys(ids, False)
-        for rec in self.browse(cr, uid, ids, context=context):
-            try:
-                res[rec['id']] = Document(rec['description']).to_html()
-            except FormatError:
-                _logger.exception('stonemark unable to convert record %d', rec['id'])
-                res[rec['id']] = escape(rec['description'])
-        return res
 
     _columns = {
         'active': fields.function(_is_template, store=True, string='Not a Template Task', type='boolean', help="This field is computed automatically and have the same behavior than the boolean 'active' field: if the task is linked to a template or unactivated project, it will be hidden unless specifically asked."),
         'name': fields.char('Task Summary', size=128, required=True, select=True),
         'description': fields.text('Description'),
         'description_html': fields.function(
-                _text2html,
+                stonemark2html,
+                arg='description',
                 type='html',
-                string='Description (HTML)'
+                string='Description (HTML)',
+                store={
+                    'project.task': (self_ids, ['description'], 10),
+                    }
                 ),
         'priority': fields.selection([('4','Very Low'), ('3','Low'), ('2','Normal'), ('1','High'), ('0','Highest')], 'Priority', select=True),
         'sequence': fields.integer('Sequence', select=True, help="Gives the sequence order when displaying a list of tasks."),

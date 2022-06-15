@@ -46,6 +46,7 @@ from itertools import islice, izip
 from lxml import etree
 from which import which
 from threading import local
+import stonemark as sm
 
 try:
     from html2text import html2text
@@ -1056,6 +1057,17 @@ def get_and_group_by_field(cr, uid, obj, ids, field, context=None):
 def get_and_group_by_company(cr, uid, obj, ids, context=None):
     return get_and_group_by_field(cr, uid, obj, ids, field='company_id', context=context)
 
+def stonemark2html(self, cr, uid, ids, field_name, arg, context=None):
+    # for use in function fields
+    res = {}.fromkeys(ids, False)
+    for rec in self.browse(cr, uid, ids, context=context):
+        try:
+            res[rec['id']] = sm.Document(rec[arg]).to_html()
+        except sm.FormatError:
+            _logger.exception('stonemark unable to convert record %d', rec['id'])
+            res[rec['id']] = '<pre>' + sm.escape(rec[arg]) + '</pre>'
+    return res
+
 # port of python 2.6's attrgetter with support for dotted notation
 def resolve_attr(obj, attr):
     for name in attr.split("."):
@@ -1442,5 +1454,4 @@ class Period(timedelta, Enum):
         else:
             raise ValueError("forgot to update something! (period is %r)" % (self.period,))
         return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
-
 
