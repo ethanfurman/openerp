@@ -1062,7 +1062,7 @@ def stonemark2html(self, cr, uid, ids, field_name, arg, context=None):
     res = {}.fromkeys(ids, False)
     for rec in self.browse(cr, uid, ids, context=context):
         try:
-            res[rec['id']] = sm.Document(rec[arg]).to_html()
+            res[rec['id']] = sm.Document(rec[arg] or '').to_html()
         except sm.FormatError:
             _logger.exception('stonemark unable to convert record %d', rec['id'])
             res[rec['id']] = '<pre>' + sm.escape(rec[arg]) + '</pre>'
