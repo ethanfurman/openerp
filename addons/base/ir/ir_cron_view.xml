@@ -52,9 +52,9 @@
                     <hr/>
                     </notebook>
                     <div>
-                        <h4>Description</h4>
-                        <field name="description" class="oe_edit_only" placeholder="Description of job"/>
-                        <field name="description_html" class="oe_view_only" placeholder="Description of job"/>
+                        <h2>Notes</h2>
+                        <field name="description" class="oe_edit_only" placeholder="Notes for job"/>
+                        <field name="description_html" class="oe_view_only oe_note_view" placeholder="Notes for job"/>
                     </div>
                    </sheet>
                 </form>

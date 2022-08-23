@@ -169,12 +169,12 @@ class ir_cron(osv.osv):
             sort_order='definition',
             ),
         'results': fields.text('Results'),
-        'description': fields.text('Notes'),
+        'description': fields.text('Notes (commonmark)'),
         'description_html': fields.function(
                 stonemark2html,
                 arg='description',
                 type='html',
-                string='Notes (HTML)',
+                string='Notes',
                 store={
                     'ir.cron': (self_ids, ['description'], 10),
                     }
