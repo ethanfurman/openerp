@@ -112,7 +112,7 @@ class PulseHTTPRequestHandler(BaseHTTPRequestHandler):
             query = parse_qs(data.query)
         _, ip, freq, name = data.path.split(u'/', 3)
         timestamp = time.localtime(time.time())
-        msg_file_name = self.server.msg_location + '/' + 'IP-%s-%s-%04d%02d%02d_%02d%02d%02d' % ((ip, name, ) + timestamp)
+        msg_file_name = self.server.msg_location + '/' + 'IP-%s-%s-%04d%02d%02d_%02d%02d%02d' % ((ip, name, ) + timestamp[:6])
         # main portion of data for message file
         msg_file_data = [
             "{",
