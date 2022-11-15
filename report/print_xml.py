@@ -28,8 +28,10 @@ from openerp.osv.orm import browse_null, browse_record
 import openerp.pooler as pooler
 import datetime
 import pytz
+import logging
 
 UTC = pytz.timezone('UTC')
+_logger = logging.getLogger(__name__)
 
 
 class InheritDict(dict):
@@ -119,17 +121,23 @@ class document(object):
                     value = column.choice[bool(value)]
                 else:
                     value = (format.split(',')[bool(value)]).strip()
-            elif column_type == 'date':
+            elif column_type == 'date' and value:
                 value = datetime.datetime.strptime(value, DEFAULT_SERVER_DATE_FORMAT)
                 value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format).decode('latin1')
-            elif column_type == 'time':
+            elif column_type == 'time' and value:
                 value = datetime.datetime.strptime(value, DEFAULT_SERVER_TIME_FORMAT)
                 value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format).decode('latin1')
-            elif column_type == 'datetime':
+            elif column_type == 'datetime' and value:
                 value = datetime.datetime.strptime(value, DEFAULT_SERVER_DATETIME_FORMAT)
                 value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format).decode('latin1')
+            elif column_type == 'float':
+                spec = format or '%%%s.%sf' % column.digits
+                value = spec % value
+        except KeyError:
+            if field not in ('name', 'id'):
+                _logger.exception('unable to convert field %r with value %r', field_path, value)
         except Exception:
-            pass
+            _logger.exception('unable to convert field %r with value %r', field_path, value)
 
         return value and value or ''
 
