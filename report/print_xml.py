@@ -123,13 +123,13 @@ class document(object):
                     value = (format.split(',')[bool(value)]).strip()
             elif column_type == 'date' and value:
                 value = datetime.datetime.strptime(value, DEFAULT_SERVER_DATE_FORMAT)
-                value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format).decode('latin1')
+                value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format or DEFAULT_SERVER_DATE_FORMAT).decode('latin1')
             elif column_type == 'time' and value:
                 value = datetime.datetime.strptime(value, DEFAULT_SERVER_TIME_FORMAT)
-                value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format).decode('latin1')
+                value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format or DEFAULT_SERVER_TIME_FORMAT).decode('latin1')
             elif column_type == 'datetime' and value:
                 value = datetime.datetime.strptime(value, DEFAULT_SERVER_DATETIME_FORMAT)
-                value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format).decode('latin1')
+                value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format or DEFAULT_SERVER_DATETIME_FORMAT).decode('latin1')
             elif column_type == 'float':
                 spec = format or '%%%s.%sf' % column.digits
                 value = spec % value
