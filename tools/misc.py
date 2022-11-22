@@ -1006,6 +1006,24 @@ def server_to_local_timestamp(src_tstamp_str, src_format, dst_format, dst_tz_nam
     return res
 
 
+def all_in(desired, target):
+    """
+    check if all of the desired objects are in the target
+    """
+    for d in desired:
+        if d not in target:
+            return False
+    return True
+
+def any_in(desired, target):
+    """
+    check if any of the desired objects is in the target
+    """
+    for d in desired:
+        if d in target:
+            return True
+    return False
+ 
 def split_every(n, iterable, piece_maker=tuple):
     """Splits an iterable into length-n pieces. The last piece will be shorter
        if ``n`` does not evenly divide the iterable length.
