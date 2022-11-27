@@ -119,7 +119,7 @@ class PulseHTTPRequestHandler(BaseHTTPRequestHandler):
             "'ip_address': %r," % ip,
             "'job_name': %r," % name,
             "'frequency': %r," % freq,
-            "'timestamp': %r," % timestamp,
+            "'timestamp': (%d, %d, %d, %d, %d, %d)," % timestamp[:6],
             ]
         # possible query parameters
         for key, value in query.items():
