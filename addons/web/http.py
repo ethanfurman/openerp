@@ -145,7 +145,7 @@ class JsonRequest(WebRequest):
            "result": { "res1": "val1" },
            "id": null}
 
-    Request producing a error::
+    Request producing an error::
 
       --> {"jsonrpc": "2.0",
            "method": "call",
@@ -310,7 +310,7 @@ class HttpRequest(WebRequest):
             })))
         except Exception:
             logging.getLogger(__name__ + '.HttpRequest.dispatch').exception(
-                    "An error occurred while handling a http request")
+                    "An error occurred while handling an http request (params=%r)", params)
             r = werkzeug.exceptions.InternalServerError(cgi.escape(simplejson.dumps({
                 'code': 300,
                 'message': "OpenERP WebClient Error",
@@ -357,7 +357,7 @@ def httprequest(f):
     normal HTTP request (the exact request path is specified via the
     ``$(Controller._cp_path)/$methodname`` combination.
 
-    If the method is called, it will be provided with a :class:`HttpRequest`
+    If the method is called, it will be provided with an :class:`HttpRequest`
     instance and all ``params`` sent during the request (``GET`` and ``POST``
     merged in the same dictionary), apart from the ``session_id``, ``context``
     and ``debug`` keys (which are stripped out beforehand)
