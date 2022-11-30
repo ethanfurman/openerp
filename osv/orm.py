@@ -3633,7 +3633,8 @@ class BaseModel(object):
 
         cr.commit()     # start a new transaction
 
-        self._add_sql_constraints(cr)
+        if not isinstance(self, AbstractModel):
+            self._add_sql_constraints(cr)
 
         if create:
             self._execute_sql(cr)
