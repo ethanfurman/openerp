@@ -22,9 +22,6 @@
 [submodule "addons/fnx"]
 	path = addons/fnx
 	url = ssh://code.stoneleaf.us/repos/openerp_fnx.git
-[submodule "addons/fnx_pd"]
-	path = addons/fnx_pd
-	url = ssh://code.stoneleaf.us/repos/openerp_fnx_pd.git
 [submodule "addons/fnx_qa"]
 	path = addons/fnx_qa
 	url = ssh://code.stoneleaf.us/repos/openerp_fnx_qa.git
