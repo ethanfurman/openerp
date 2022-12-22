@@ -10,15 +10,9 @@
 [submodule "addons/cmms_ip_map"]
 	path = addons/cmms_ip_map
 	url = ssh://code.stoneleaf.us/repos/openerp_cmms_ip_map.git
-[submodule "addons/fis_integration"]
-	path = addons/fis_integration
-	url = ssh://code.stoneleaf.us/repos/openerp_fis_integration.git
 [submodule "addons/fnx_checklist"]
 	path = addons/fnx_checklist
 	url = ssh://code.stoneleaf.us/repos/openerp_fnx_checklist.git
-[submodule "addons/fnx_customer_portal"]
-	path = addons/fnx_customer_portal
-	url = ssh://code.stoneleaf.us/repos/openerp_fnx_customer_portal.git
 [submodule "addons/fnx_fs"]
 	path = addons/fnx_fs
 	url = ssh://code.stoneleaf.us/repos/openerp_fnx_fs.git
@@ -37,9 +31,6 @@
 [submodule "addons/fnx_sanitation"]
 	path = addons/fnx_sanitation
 	url = ssh://code.stoneleaf.us/repos/openerp_fnx_sanitation.git
-[submodule "addons/fnx_sr"]
-	path = addons/fnx_sr
-	url = ssh://code.stoneleaf.us/repos/openerp_fnx_sr.git
 [submodule "addons/hatta"]
 	path = addons/hatta
 	url = ssh://code.stoneleaf.us/repos/openerp_hatta.git
@@ -67,12 +58,6 @@
 [submodule "addons/salesinq"]
 	path = addons/salesinq
 	url = ssh://code.stoneleaf.us/repos/openerp_salesinq.git
-[submodule "addons/sample_crm"]
-	path = addons/sample_crm
-	url = ssh://code.stoneleaf.us/repos/openerp_sample_crm.git
-[submodule "addons/sample"]
-	path = addons/sample
-	url = ssh://code.stoneleaf.us/repos/openerp_sample.git
 [submodule "addons/wiki"]
 	path = addons/wiki
 	url = ssh://git@fal_hub/home/git/repos/openerp_wiki.git
