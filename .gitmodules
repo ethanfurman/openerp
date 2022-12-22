@@ -1,9 +1,3 @@
-[submodule "addons/automated_clearing_house"]
-	path = addons/automated_clearing_house
-	url = ssh://code.stoneleaf.us/repos/openerp_automated_clearing_house.git
-[submodule "addons/automated_clearing_house_hr"]
-	path = addons/automated_clearing_house_hr
-	url = ssh://code.stoneleaf.us/repos/openerp_automated_clearing_house_hr.git
 [submodule "addons/cmms"]
 	path = addons/cmms
 	url = ssh://code.stoneleaf.us/repos/openerp_cmms.git
@@ -28,9 +22,6 @@
 [submodule "addons/fnx_sanitation"]
 	path = addons/fnx_sanitation
 	url = ssh://code.stoneleaf.us/repos/openerp_fnx_sanitation.git
-[submodule "addons/hatta"]
-	path = addons/hatta
-	url = ssh://code.stoneleaf.us/repos/openerp_hatta.git
 [submodule "addons/hr_insurance"]
 	path = addons/hr_insurance
 	url = ssh://code.stoneleaf.us/repos/openerp_hr_insurance.git
@@ -40,9 +31,6 @@
 [submodule "addons/hr_workers_comp"]
 	path = addons/hr_workers_comp
 	url = ssh://code.stoneleaf.us/repos/openerp_hr_workers_comp.git
-[submodule "addons/ip_map"]
-	path = addons/ip_map
-	url = ssh://code.stoneleaf.us/repos/openerp_ip_map.git
 [submodule "addons/ip_network"]
 	path = addons/ip_network
 	url = ssh://code.stoneleaf.us/repos/openerp_ip_network.git

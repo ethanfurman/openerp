@@ -28,13 +28,10 @@ from openerp.osv.orm import browse_null, browse_record
 import openerp.pooler as pooler
 import datetime
 import pytz
-
 import logging
  
 UTC = pytz.timezone('UTC')
 _logger = logging.getLogger(__name__)
-
-
 
 class InheritDict(dict):
     # Might be usefull when we're doing name lookup for call or eval.
@@ -140,7 +137,6 @@ class document(object):
                 _logger.exception('unable to convert field %r with value %r', field_path, value)
         except Exception:
             _logger.exception('unable to convert field %r with value %r', field_path, value)
-
 
         return value and value or ''
 

@@ -25,7 +25,6 @@ from openerp.tools.misc import SERVER_TIMEZONE
 
 UTC = pytz.timezone('UTC')
 
-
 functions = {
     'today': lambda n: (
             UTC.localize(datetime.datetime.now())

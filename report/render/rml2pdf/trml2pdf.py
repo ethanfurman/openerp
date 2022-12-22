@@ -915,7 +915,7 @@ class _rml_flowable(object):
             # </docIf>
             return platypus.flowables.DocIf(node.get('cond'), self.render(node))
         else:
-            sys.stderr.write('Warning: flowable not yet implemented: %s !\n' % (node.tag,))
+            # sys.stderr.write('Warning: flowable not yet implemented: %s !\n' % (node.tag,))
             return None
 
     def render(self, node_story):
