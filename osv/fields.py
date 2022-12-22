@@ -272,6 +272,9 @@ class html(text):
 
     _symbol_set = (_symbol_c, _symbol_f)
 
+class raw_html(text):
+    _type = 'html'
+
 import __builtin__
 
 class float(_column):
