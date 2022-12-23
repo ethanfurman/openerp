@@ -1,48 +1,48 @@
 [submodule "addons/cmms"]
 	path = addons/cmms
-	url = ssh://code.stoneleaf.us/repos/openerp_cmms.git
+	url = git@github.com:ethanfurman/openerp_cmms.git
 [submodule "addons/cmms_ip_map"]
 	path = addons/cmms_ip_map
-	url = ssh://code.stoneleaf.us/repos/openerp_cmms_ip_map.git
+	url = git@github.com:ethanfurman/openerp_cmms_ip_network.git
 [submodule "addons/fnx_checklist"]
 	path = addons/fnx_checklist
-	url = ssh://code.stoneleaf.us/repos/openerp_fnx_checklist.git
+	url = git@github.com:ethanfurman/openerp_fnx_checklist.git
 [submodule "addons/fnx_fs"]
 	path = addons/fnx_fs
-	url = ssh://code.stoneleaf.us/repos/openerp_fnx_fs.git
+	url = git@github.com:ethanfurman/openerp_fnx_fs.git
 [submodule "addons/fnx_hd"]
 	path = addons/fnx_hd
-	url = ssh://code.stoneleaf.us/repos/openerp_fnx_hd.git
+	url = git@github.com:ethanfurman/openerp_fnx_hd.git
 [submodule "addons/fnx"]
 	path = addons/fnx
-	url = ssh://code.stoneleaf.us/repos/openerp_fnx.git
+	url = git@github.com:ethanfurman/openerp_fnx.git
 [submodule "addons/fnx_qa"]
 	path = addons/fnx_qa
-	url = ssh://code.stoneleaf.us/repos/openerp_fnx_qa.git
+	url = git@github.com:ethanfurman/openerp_fnx_qa.git
 [submodule "addons/fnx_sanitation"]
 	path = addons/fnx_sanitation
-	url = ssh://code.stoneleaf.us/repos/openerp_fnx_sanitation.git
+	url = git@github.com:ethanfurman/openerp_fnx_sanitation.git
 [submodule "addons/hr_insurance"]
 	path = addons/hr_insurance
-	url = ssh://code.stoneleaf.us/repos/openerp_hr_insurance.git
+	url = git@github.com:ethanfurman/openerp_hr_insurance.git
 [submodule "addons/hr_training"]
 	path = addons/hr_training
-	url = ssh://code.stoneleaf.us/repos/openerp_hr_training.git
+	url = git@github.com:ethanfurman/openerp_hr_training.git
 [submodule "addons/hr_workers_comp"]
 	path = addons/hr_workers_comp
-	url = ssh://code.stoneleaf.us/repos/openerp_hr_workers_comp.git
+	url = git@github.com:ethanfurman/openerp_hr_workers_comp.git
 [submodule "addons/ip_network"]
 	path = addons/ip_network
-	url = ssh://code.stoneleaf.us/repos/openerp_ip_network.git
+	url = git@github.com:ethanfurman/openerp_ip_network.git
 [submodule "addons/lockdown"]
 	path = addons/lockdown
-	url = ssh://code.stoneleaf.us/repos/openerp_lockdown.git
+	url = git@github.com:ethanfurman/openerp_lockdown.git
 [submodule "addons/safe_quality_food"]
 	path = addons/safe_quality_food
-	url = ssh://code.stoneleaf.us/repos/openerp_safe_quality_food.git
+	url = git@github.com:ethanfurman/openerp_safe_quality_food.git
 [submodule "addons/salesinq"]
 	path = addons/salesinq
-	url = ssh://code.stoneleaf.us/repos/openerp_salesinq.git
+	url = git@github.com:ethanfurman/openerp_salesinq.git
 [submodule "addons/wiki"]
 	path = addons/wiki
-	url = ssh://git@fal_hub/home/git/repos/openerp_wiki.git
+	url = git@github.com:ethanfurman/openerp_wiki.git
