@@ -22,3 +22,9 @@
 [submodule "addons/ip_map"]
 	path = addons/ip_map
 	url = /opt/whc/openerp/addons/ip_map
+[submodule "addons/wiki"]
+	path = addons/wiki
+	url = ssh://192.168.2.243/home/git/repos/wiki.git
+[submodule "addons/ip_network"]
+	path = addons/ip_network
+	url = ssh://git@192.168.2.243/home/git/repos/ip_network
