@@ -1,0 +1,62 @@
+#!/usr/local/sbin/suid-python --virtualenv
+from __future__ import print_function
+
+from scription import *
+from antipathy import Path
+
+import os
+import psutil
+import re
+
+virtualenv = os.environ['VIRTUAL_ENV']
+CP = '/bin/cp'
+
+@Script()
+def main():
+    if not parent_is_openerp():
+        abort('I can only be run from OpenERP')
+
+
+@Command(
+        )
+def print_environment():
+    for k, v in os.environ.items():
+        echo('%s -> %r' % (k, v))
+
+
+@Command(
+        src=Spec('source file(s)'),
+        dst=Spec('destination'),
+        force=Spec('remove destination file if unable to open', FLAG),
+        archive=Spec('do not follow sym links; recurse directories; preserve permissions', FLAG),
+        )
+def cp(src, dst, force, archive):
+    """
+    use CP to copy files
+    """
+    with user_ids(0, 0):
+        args = []
+        if force:
+            args.append('-f')
+        if archive:
+            args.append('-a')
+        args.extend(Path.glob(src))
+        cmdline = [CP] + args + [dst]
+        job = Execute(cmdline, interactive='echo')
+        job
+
+
+def parent_is_openerp():
+    python = virtualenv + '/bin/python'
+    openerp = '^/usr/(local/s)?bin/openerp-server$'
+    self = psutil.Process()
+    parent = self.parent()
+    try:
+        interpreter, script = parent.cmdline()[:2]
+        if interpreter == python and re.search(openerp, script):
+            return True
+    except ValueError:
+        error('error processing\n  %r' % (parent.cmdline(), ))
+    return False
+
+Run()

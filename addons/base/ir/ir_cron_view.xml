@@ -18,18 +18,23 @@
                         <field name="priority" />
                     </group>
                     <notebook>
-                    <page string="Information">
+                    <page string="Schedule">
                         <group col="4">
-                            <field name="interval_number"/>
-                            <field name="interval_type"/>
+                            <field name="schedule_type"/>
+                            <separator colspan="2"/>
+                            <field name="cron_schedule" attrs="{'invisible': [('schedule_type','!=','crontab')]}" on_change="onchange_cron_schedule(cron_schedule)"/>
+                        </group>
+                        <group col="4">
+                            <field name="interval_number" attrs="{'invisible': [('schedule_type','!=','internal')]}"/>
+                            <field name="interval_type" attrs="{'invisible': [('schedule_type','!=','internal')]}"/>
                             <newline/>
                             <field name="nextcall"/>
-                            <field name="numbercall"/>
+                            <field name="numbercall" attrs="{'invisible': [('schedule_type','!=','internal')]}"/>
                             <field name="doall"/>
                             <field name="partial"/>
                         </group>
                     </page>
-                    <page string="Technical Data" groups="base.group_no_one">
+                    <page string="Job" groups="base.group_no_one">
                         <group>
                             <field name="type"/>
                             <field name="model" attrs="{'invisible': [('type','!=','internal')]}"/>
@@ -44,7 +49,13 @@
                     <page string="Last Results" groups="base.group_no_one">
                         <field name="results" readonly="1" class="oe_monospace"/>
                     </page>
+                    <hr/>
                     </notebook>
+                    <div>
+                        <h2>Notes</h2>
+                        <field name="description" class="oe_edit_only" placeholder="Notes for job"/>
+                        <field name="description_html" class="oe_view_only oe_note_view" placeholder="Notes for job"/>
+                    </div>
                    </sheet>
                 </form>
             </field>

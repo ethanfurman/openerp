@@ -89,7 +89,7 @@ class report_custom(report_rml):
         obj_emp = pooler.get_pool(cr.dbname).get('hr.employee')
         depts=[]
         emp_id={}
-#        done={}
+        # done={}
         rpt_obj = pooler.get_pool(cr.dbname).get('hr.holidays')
         rml_obj=report_sxw.rml_parse(cr, uid, rpt_obj._name,context)
         cr.execute("SELECT name FROM res_company")
@@ -125,7 +125,7 @@ class report_custom(report_rml):
         date_xml.append('<type>%s</type>'%(type))
         date_xml.append('<name>%s</name>'%(name))
 
-#        date_xml=[]
+        # date_xml=[]
         for l in range(0,len(legend)):
             date_xml += ['<legend row="%d" id="%d" name="%s" color="%s" />' % (l+1,legend[l][0],_(legend[l][1]),legend[l][2])]
         date_xml += ['<date month="%s" year="%d" />' % (som.strftime('%B'), som.year),'<days>']

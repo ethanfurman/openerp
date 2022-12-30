@@ -374,6 +374,8 @@ class mail_thread(osv.AbstractModel):
             visibility = getattr(column_info.column, 'track_visibility', False)
             if name in self._track:
                 lst.append(name)
+            elif visibility and visibility in ('initial_and_change_only', 'initial_and_onchange'):
+                lst.append(name)
             elif visibility and not track_only:
                 lst.append(name)
         if not lst:
@@ -384,7 +386,7 @@ class mail_thread(osv.AbstractModel):
         res = {}.fromkeys(ids)
         if tracked_fields:
             many_fields = [n for n, f in tracked_fields.items() if f['type'] in ('one2many','many2many')]
-            for rec in self.read(cr, uid, ids, tracked_fields.keys(), context=context):
+            for rec in self.read(cr, SUPERUSER_ID, ids, tracked_fields.keys(), context=context):
                 id = rec['id']
                 res[id] = values = {}
                 for field_name in tracked_fields:
@@ -506,7 +508,9 @@ class mail_thread(osv.AbstractModel):
                 # meanings of 'track_visibility':
                 # - 'always' --> show current and (if possible) old value
                 # - 'onchange' --> show old and new value (only if value changed)
+                # - 'initial_and_onchange' --> even on create
                 # - 'change_only' --> show new value (only if value changed)
+                # - 'initial_and_change_only' --> even on create
                 # - 'on_set' --> show new value if truthy
 
                 tracking = getattr(self._all_columns[field_name].column, 'track_visibility', None)
@@ -522,7 +526,11 @@ class mail_thread(osv.AbstractModel):
                 elif current_field_value != initial_field_value:
                     if tracking:
                         tracking_info = {'col_info': field_info['string']}
-                        if tracking in ('always', 'onchange') or is_many_field:
+                        if (
+                                (tracking == 'always')
+                             or (tracking in ('onchange', 'initial_and_onchange') and initial_field_value)
+                             or (is_many_field and initial_field_value)
+                             ):
                             tracking_info['old_value'] = convert_for_display(initial_field_value, field_info)
                         tracking_info['new_value'] = convert_for_display(current_field_value, field_info)
                         tracking_info['id'] = id
@@ -1386,8 +1394,10 @@ class mail_thread(osv.AbstractModel):
             provided, subscribe uid instead. """
         if user_ids is None:
             user_ids = [uid]
-        if isinstance(user_ids, (int, long)):
+        elif isinstance(user_ids, (int, long)):
             user_ids = [user_ids]
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         partner_ids = [user.partner_id.id for user in self.pool.get('res.users').browse(cr, uid, user_ids, context=context)]
         return self.message_subscribe(cr, uid, ids, partner_ids, subtype_ids=subtype_ids, context=context)
 
@@ -1395,7 +1405,12 @@ class mail_thread(osv.AbstractModel):
         """ Add partners to the records followers. """
         if isinstance(ids, (int, long)):
             ids = [ids]
-        user_pid = self.pool.get('res.users').read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
+        res_users = self.pool.get('res.users')
+        # ensure that SUPERUSER is not in partner_ids
+        spid = res_users.read(cr, SUPERUSER_ID, SUPERUSER_ID, ['partner_id'], context=context)['partner_id'][0]
+        partner_ids = [pid for pid in partner_ids if pid != spid]
+        #
+        user_pid = res_users.read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
         if set(partner_ids) == set([user_pid]):
             self.check_access_rights(cr, uid, 'read')
         else:
@@ -1417,6 +1432,8 @@ class mail_thread(osv.AbstractModel):
             provided, unsubscribe uid instead. """
         if user_ids is None:
             user_ids = [uid]
+        elif isinstance(user_ids, (int, long)):
+            user_ids = [user_ids]
         if isinstance(ids, (int, long)):
             ids = [ids]
         partner_ids = [user.partner_id.id for user in self.pool.get('res.users').browse(cr, uid, user_ids, context=context)]

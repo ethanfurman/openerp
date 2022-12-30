@@ -21,21 +21,28 @@
 
 from lxml import etree
 
+from openerp.exceptions import ERPError
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
 
-class survey_name_wiz(osv.osv_memory):
+class survey_name_wiz(osv.TransientModel):
     _name = 'survey.name.wiz'
 
     _columns = {
-        'survey_id': fields.many2one('survey', 'Survey', required=True, ondelete='cascade', domain= [('state', '=', 'open')]),
+        'survey_id': fields.many2one(
+                'survey', 'Survey',
+                required = True,
+                ondelete ='cascade',
+                domain = [('state', '=', 'open')],
+                ),
         'page_no': fields.integer('Page Number'),
         'note': fields.text("Description"),
-        'page': fields.char('Page Position',size = 12),
+        'page': fields.char('Page Position', size = 12),
         'transfer': fields.boolean('Page Transfer'),
         'store_ans': fields.text('Store Answer'),
-        'response': fields.char('Answer',size=16)
-    }
+        'response': fields.char('Answer', size=16)
+        }
+
     _defaults = {
         'page_no': -1,
         'page': 'next',
@@ -43,7 +50,7 @@ class survey_name_wiz(osv.osv_memory):
         'response': 0,
         'survey_id': lambda self,cr,uid,context:context.get('survey_id',False),
         'store_ans': '{}' #Setting the default pattern as '{}' as the field is of type text. The field always gets the value in dict format
-    }
+        }
 
     def fields_view_get(self, cr, uid, view_id=None, view_type='form', context=None, toolbar=False, submenu=False):
         res = super(survey_name_wiz, self).fields_view_get(cr, uid, view_id=view_id, view_type=view_type, context=context, toolbar=toolbar, submenu=False)
@@ -66,23 +73,32 @@ class survey_name_wiz(osv.osv_memory):
         """
         survey_obj = self.pool.get('survey')
         search_obj = self.pool.get('ir.ui.view')
-        if context is None: context = {}
-
+        context = context or {}
         this = self.browse(cr, uid, ids, context=context)[0]
         survey_id = this.survey_id.id
         context.update({'survey_id': survey_id, 'sur_name_id': this.id})
-        cr.execute('select count(id) from survey_history where user_id=%s\
-                    and survey_id=%s' % (uid,survey_id))
+        cr.execute(
+                'select count(id) from survey_history where user_id=%s and survey_id=%s'
+                % (uid,survey_id)
+                )
 
         res = cr.fetchone()[0]
         sur_rec = survey_obj.browse(cr,uid,survey_id,context=context)
         if sur_rec.response_user and res >= sur_rec.response_user:
-            raise osv.except_osv(_('Warning!'),_("You cannot give response for this survey more than %s times.") % (sur_rec.response_user))
+            raise ERPError(
+                    _('Warning!'),
+                    _("You cannot give response for this survey more than %s times.")
+                        % (sur_rec.response_user)
+                        )
 
         if sur_rec.max_response_limit and sur_rec.max_response_limit <= sur_rec.tot_start_survey:
-            raise osv.except_osv(_('Warning!'),_("You cannot give more responses. Please contact the author of this survey for further assistance."))
+            raise ERPError(
+                    _('Warning!'),
+                    _("You cannot give more responses. Please contact the author "
+                      "of this survey for further assistance.")
+                    )
 
-        search_id = search_obj.search(cr,uid,[('model','=','survey.question.wiz'),('name','=','Survey Search')])
+        search_id = search_obj.search(cr, uid, [('model','=','survey.question.wiz'),('name','=','Survey Search')])
         return {
             'view_type': 'form',
             "view_mode": 'form',
@@ -91,11 +107,11 @@ class survey_name_wiz(osv.osv_memory):
             'target': 'new',
             'search_view_id': search_id[0],
             'context': context
-        }
+            }
 
     def on_change_survey(self, cr, uid, ids, survey_id, context=None):
         """
-            on change event of survey_id field, if note is available in selected survey then display this note in note fields.
+        on change event of survey_id field, if note is available in selected survey then display this note in note fields.
         """
         if not survey_id:
             return {}

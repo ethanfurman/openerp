@@ -20,6 +20,7 @@
 ##############################################################################
 
 from openerp.osv import fields, osv
+from textwrap import dedent
 
 def location_name_search(self, cr, user, name='', args=None, operator='ilike',
                          context=None, limit=100):
@@ -46,15 +47,18 @@ class Country(osv.osv):
         'name': fields.char('Country Name', size=64,
             help='The full name of the country.', required=True, translate=True),
         'code': fields.char('Country Code', size=2,
-            help='The ISO country code in two chars.\n'
-            'You can use this field for quick search.'),
-        'address_format': fields.text('Address Format', help="""You can state here the usual format to use for the \
-addresses belonging to this country.\n\nYou can use the python-style string patern with all the field of the address \
-(for example, use '%(street)s' to display the field 'street') plus
-            \n%(state_name)s: the name of the state
-            \n%(state_code)s: the code of the state
-            \n%(country_name)s: the name of the country
-            \n%(country_code)s: the code of the country"""),
+            help='The ISO country code in two chars.\nYou can use this field for quick search.'),
+        'address_format': fields.text('Address Format', help=dedent("""\
+                You can state here the usual format to use for the addresses belonging to this country.\n
+                You can use the python-style string patern with all the field of the address:
+
+                - %(street)s ->  the name of the street
+                - %(state_name)s ->  the name of the state
+                - %(state_code)s ->  the code of the state
+                - %(country_name)s ->  the name of the country
+                - %(country_code)s ->  the code of the country
+                """),
+                ),
         'currency_id': fields.many2one('res.currency', 'Currency'),
     }
     _sql_constraints = [

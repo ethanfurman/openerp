@@ -1,0 +1,100 @@
+from __future __ import print_function
+
+from scription import *
+from antipathy import Path
+
+@Command(
+        )
+def pre_commit():
+    """
+    Runs first.
+
+    Good place for linters, tests, etc.  Can be ignored with --no-verify.
+    """
+
+@Command(
+        msg_file=('file with commit message thus far', ),
+        commit_type=('type of commit', ),
+        sha1=('SHA-1 hash if amended commit', ),
+        )
+def prepare_commit_msg(msg_file, commit_type, sha1):
+    """
+    Runs second.
+
+    Allows the default commit message to be modified.
+    """
+
+@Command(
+        msg_file=('file with commit message thus  far', )
+        )
+def commit_msg(msg_file):
+    """
+    Runs third.
+
+    Allows the final commit message to be validated.
+    """
+
+@Command(
+        )
+def post_commit():
+    """
+    Runs fourth.
+
+    Generally used to notify interested parties of commits.
+    """
+
+@Command(
+        upstream=('the upstream the series was forked from', ),
+        rebase_branch=('the branch being rebased (empty if current branch)', ),
+        )
+def pre_rebase(usptream, rebase_branch=None):
+    """
+    Runs before a rebase occurs.
+    """
+
+@Command(
+        invoking_command=('command being run', ),
+        )
+def post_rewrite(invoking_command):
+    """
+    Runs for commands that replace commits such as --amend and rebase.
+
+    See also post-checkout and post-merge.
+    """
+
+@Command(
+        )
+def post_checkout():
+    """
+    Runs after a checkout.
+
+    Can be used to set up working environment.
+    """
+
+@Command(
+        )
+def post_merge():
+    """
+    Runs after a merge.
+
+    Can be used to restore un-tracked data such as permissions.
+    """
+
+@Command(
+        remote=('remote being pushed to', ),
+        url=('url being used', ),
+        )
+def pre_push(remote, url):
+    """
+    Runs after updating remote refs, but before object transafer.
+
+    Lines on stdin:
+      <local ref> <local sha1> <remote ref> <remote sha1>
+    """
+
+@Command(
+        )
+def pre_auto_gc():
+    """
+    Runs before garbage collection takes place.
+    """

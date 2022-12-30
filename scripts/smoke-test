@@ -1,0 +1,256 @@
+#!/usr/local/bin/suid-python --virtualenv
+
+# imports
+from __future__ import print_function
+from scription import *
+
+import os
+import random
+import sys
+import textwrap
+import traceback
+
+from antipathy import Path
+from ast import literal_eval
+from openerplib import get_connection, get_records
+from xmlrpclib import Fault
+from scription import empty
+
+# globals
+
+virtual_env = Path(os.environ['VIRTUAL_ENV'])
+addons = virtual_env/'openerp/addons'
+config = virtual_env/'config/fnx.ini'
+failures = virtual_env/'config/smoke-test.failures'
+
+TESTS = []
+
+ALL= [(1,'=',1)]
+
+skip_tables = ['calendar.attendee', ] #'crm.meeting']
+
+test_levels = {
+        'quick': 101,
+        'slow': 1001,
+        'extensive': 5001,
+        'complete': 0,
+        }
+
+# API
+
+@Script(
+        )
+def main():
+    global oe
+    cfg = OrmFile(config, types={'_path':Path})
+    oe = get_connection(
+            hostname=cfg.openerp.host,
+            database=cfg.openerp.db,
+            login=cfg.openerp.user,
+            password=cfg.openerp.pw,
+            )
+
+@Command(
+        table=Spec('test specific table', OPTION, radio='table'),
+        retest=Spec('test last failed tables', FLAG, radio='table'),
+        type=Spec('type of test to perform', choices=['quick','slow','extensive','complete'], force_default='quick', radio='test-type'),
+        quick=Spec('do a quick test (apx 100 records per table)', FLAG, radio='test-type', target='type', default='quick'),
+        slow=Spec('do a longer test (apx 1000 records per table)', FLAG, radio='test-type', target='type', default='slow'),
+        extensive=Spec('do a very long test (apx 5000 records per table)', FLAG, radio='test-type', target='type', default='extensive'),
+        complete=Spec('test every record', FLAG, radio='test-type', target='type', default='complete'),
+        )
+def smoke_test(table, retest, type):
+    """
+    check a few records of each table for problems
+    """
+    print('doing a %s check of openerp tables' % type)
+    global errors
+    # get last round of failures, if any
+    prev_failed = get_failures()
+    if table:
+        model_domain = [('model','=',table)]
+    elif retest:
+        model_domain = [('model','in',prev_failed.keys())]
+    else:
+        model_domain = [('osv_memory','=',False),('model','not in',skip_tables)]
+    models = dict(
+            (m.model, [])
+            for m in get_records(
+                    oe, 'ir.model',
+                    domain=model_domain,
+                    fields=['model'])
+            )
+    errors = []
+    sample_limit = test_levels[type]
+    display(zero='d=defunct table    v=virtual table    e=error encountered')
+    # get initial ids to test
+    for model_name in sorted(models):
+        display(one=model_name, end=' ... ')
+        try:
+            model = oe.get_model(model_name)
+        except Fault as e:
+            if ("Object %s doesn't exist" % model_name) in e.faultCode:
+                display(zero='d', end='')
+                display(one='defunct table')
+            elif ('relation "%s" does not exist' % model_name.replace('.','_')) in e.faultCode:
+                display(zero='v', end='')
+                display(one='(not db backed)')
+            else:
+                display(zero='e', end='')
+                display(one='error')
+                add_error(model_name, "get_model failed with:", e)
+            models.pop(model_name)
+            continue
+        except Exception as e:
+            display(zero='e', end='')
+            display(one='error')
+            add_error(model_name, "get_model failed with:", e)
+            models.pop(model_name)
+            continue
+        ids = model.search(domain=ALL, context={'active_test': False})
+        sampling = random.sample(ids, min(5000, len(ids)))
+        if not sampling:
+            display(one='(empty table)')
+            models.pop(model_name)
+            continue
+        elif not isinstance(sampling[0], (int, long)):
+            display(one='(non-ids returned)')
+            models.pop(model_name)
+            continue
+        if model_name in prev_failed:
+            sampling[0:0] = prev_failed.pop(model_name)
+        models[model_name] = sampling
+        display(zero='.', end='')
+        display(one='ok  (%d ids saved)' % len(sampling))
+    # and test 'em
+    offset = -13
+    for sample_size in cycle(sample_limit):
+        if errors or not models:
+            break
+        display(zero='||', end='')
+        display(one='-' * 50)
+        offset += sample_size
+        for model_name, model_ids in sorted(models.items()):
+            model = oe.get_model(model_name)
+            try:
+                display(one=model_name, end=' ... ')
+                sampling = model_ids[offset:offset+sample_size]
+                model.read(ids=sampling)
+                display(zero='.', end='')
+                display(one='ok  (%d records checked)' % len(sampling))
+                # if we've tested all available records, no need to keep testing
+                if len(sampling) < sample_size:
+                    models.pop(model_name)
+                continue
+            except Fault as e:
+                display(zero='e', end='')
+                display(one='error')
+                problem_ids, msg = test_individual_ids(model, sampling)
+                add_error(
+                        model_name,
+                        "failed while retrieving %r:" % (problem_ids or sampling, ),
+                        e,
+                        msg,
+                        )
+            except Exception as e:
+                display(zero='e', end='')
+                display(one='error')
+                problem_ids, msg = test_individual_ids(model, sampling)
+                add_error(
+                        model_name,
+                        "failed while retrieving %r:" % (problem_ids or sampling, ),
+                        e,
+                        msg,
+                        )
+            prev_failed[model_name] = sampling
+    save_failures(prev_failed)
+    display(zero='')
+    if errors:
+        errors.insert(0, ('model', 'error'))
+        error(errors, border='table')
+
+# helpers
+
+def add_error(model_name, *err):
+    errors.append(None)
+    strings = []
+    strings.append(wrap(err[0], 80))
+    for e in err[1:]:
+        strings.append(' ')
+        if isinstance(e, Exception):
+            e = get_traceback(e)
+        elif e is None:
+            continue
+        strings.append(e)
+    errors.append((model_name, '\n'.join(strings)))
+
+def cycle(limit):
+    """
+    product integers until count >= limit, with a minimum of 101
+    """
+    yield 13
+    yield 29
+    yield 59
+    count = 101
+    while not limit or count <= limit:
+        yield 99
+        count += 99
+
+def display(zero=empty, one=empty, two=empty, **kwds):
+    if zero is not empty and script_verbosity == 0:
+        print(zero, verbose=0, **kwds)
+    if one is not empty and script_verbosity == 1:
+        print(one, verbose=1, **kwds)
+    if two is not empty and script_verbosity == 2:
+        print(two, verbose=2, **kwds)
+
+def get_failures():
+    res = {}
+    with open(failures) as f:
+        for line in f:
+            table, ids = line.split(': ')
+            res[table] = literal_eval(ids)
+    return res
+
+def get_repos(*path):
+    """
+    yields paths which are git repos
+    """
+    if not path:
+        path = [virtual_env]
+    for p in path:
+        for current, dirs, files in p.walk():
+            print('looking in', current, verbose=3)
+            if '.bak/' in current or current.endswith('.bak') or 'tmp' in current:
+                dirs[:] = []
+            if '.git' in dirs or '.git' in files:
+                yield current
+
+def get_traceback(e):
+    if isinstance(e, Fault) and e.faultString:
+        return e.faultString.replace('\\n','\n')
+    else:
+        return ''.join(traceback.format_exception(*sys.exc_info()))
+
+def save_failures(failed):
+    with open(failures, 'w') as f:
+        for table, ids in sorted(failed.items()):
+            f.write('%s: %r\n' % (table, ids))
+
+def test_individual_ids(model, ids):
+    # if we get here, an error occurred -- weed out the good ids
+    problem_ids = []
+    for id in ids:
+        try:
+            model.read(id)
+        except Exception:
+            problem_ids.append(id)
+    if not problem_ids:
+        return [], '--> error not present when ids queried individually <--'
+    else:
+        return problem_ids, None
+
+def wrap(string, size):
+    return '\n'.join(textwrap.wrap(string, size, subsequent_indent='  ')) + '\n\n'
+
+Main()

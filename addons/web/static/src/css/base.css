@@ -193,6 +193,13 @@
 .openerp .oe_bounce_container {
   display: inline-block;
 }
+.openerp .oe_note_view {
+  border: 1px solid;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  padding: 10px 20px;
+}
 .openerp .text-tag .text-button {
   height: auto !important;
   min-height: 16px;

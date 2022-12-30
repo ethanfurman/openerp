@@ -24,8 +24,10 @@ import threading
 import time
 import traceback
 import psycopg2
+import pytz
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from dbf import DateTime
 from antipathy import Path
 from scription import Job
 from tempfile import mkdtemp
@@ -35,7 +37,8 @@ import openerp
 from openerp import netsvc
 from openerp.exceptions import ERPError
 from openerp.osv import fields, osv
-from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
+from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT, self_ids
+from openerp.tools.misc import stonemark2html
 from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
 
@@ -78,7 +81,7 @@ class ir_cron(osv.osv):
             time = rec['timeout_display']
             if not time:
                 res[id] = 0
-                return res
+                continue
             text = time
             if text[0] == '-':
                 raise ERPError('Field Error', 'invalid wait time: <%s>' % time)
@@ -117,6 +120,14 @@ class ir_cron(osv.osv):
             sort_order='definition',
             required=True,
             ),
+        'schedule_type': fields.selection((
+            ('internal', 'OpenERP'),
+            ('crontab', 'Cron'),
+            ),
+            'Schedule Type',
+            sort_order='definition',
+            required=True,
+            ),
         'timeout_display': fields.char('Time-out', size=20, help='maximum time to run'),
         'timeout': fields.function(
             _calc_timeout,
@@ -127,11 +138,20 @@ class ir_cron(osv.osv):
                 'ir.cron': (lambda s, c, u, ids, ctx: ids, ['timeout_display'], 10)
                 },
             ),
+        'cron_schedule': fields.char('Cron Timing', size=128, help="minute  hour  day-of-month  month  day-of-week"),
         'user_id': fields.many2one('res.users', 'User', required=True),
         'active': fields.boolean('Active'),
         'interval_number': fields.integer('Interval Number',help="Repeat every x."),
-        'interval_type': fields.selection( [('minutes', 'Minutes'),
-            ('hours', 'Hours'), ('work_days','Work Days'), ('days', 'Days'),('weeks', 'Weeks'), ('months', 'Months')], 'Interval Unit'),
+        'interval_type': fields.selection([
+            ('minutes', 'Minutes'),
+            ('hours', 'Hours'),
+            ('work_days','Work Days'),
+            ('days', 'Days'),
+            ('weeks', 'Weeks'),
+            ('months', 'Months')
+            ],
+            string='Interval Unit',
+            ),
         'numbercall': fields.integer('Number of Calls', help='How many times the method is called,\na negative number indicates no limit.'),
         'doall' : fields.boolean('Repeat Missed', help="Specify if missed occurrences should be executed when the server restarts."),
         'nextcall' : fields.datetime('Next Execution Date', required=True, help="Next planned execution date for this job."),
@@ -149,6 +169,16 @@ class ir_cron(osv.osv):
             sort_order='definition',
             ),
         'results': fields.text('Results'),
+        'description': fields.text('Notes (commonmark)'),
+        'description_html': fields.function(
+                stonemark2html,
+                arg='description',
+                type='html',
+                string='Notes',
+                store={
+                    'ir.cron': (self_ids, ['description'], 10),
+                    }
+                ),
     }
 
     _defaults = {
@@ -163,6 +193,7 @@ class ir_cron(osv.osv):
         'partial' : False,
         'state' : 'waiting',
         'type' : 'internal',
+        'schedule_type': 'internal',
     }
 
     def __init__(self, pool, cr):
@@ -273,31 +304,36 @@ class ir_cron(osv.osv):
             must not be committed/rolled back!
         """
         try:
-            now = datetime.now()
-            nextcall = datetime.strptime(job['nextcall'], DEFAULT_SERVER_DATETIME_FORMAT)
-            numbercall = job['numbercall']
-
-            ok = False
-            while nextcall < now and numbercall or force:
-                if not ok or job['doall']:
-                    result = self._callback(job_cr, job['user_id'], job['model'], job['function'], job['args'], job['id'], job['name'], job['type'], job['timeout'])
+            scheduled = Scheduled(job)
+            while scheduled or force:
+                result = self._callback(job_cr, scheduled.user_id, scheduled.model, scheduled.function, scheduled.args, scheduled.id, scheduled.name, scheduled.type, scheduled.timeout)
                 if force:
                     break
-                if numbercall > 0:
-                    numbercall -= 1
-                if numbercall:
-                    nextcall += _intervalTypes[job['interval_type']](job['interval_number'])
-                ok = True
+            #
             addsql = ''
-            if not numbercall:
+            if not scheduled.numbercall:
                 addsql = ', active=False'
+            if scheduled.schedule_type == 'internal':
+                next_call = scheduled.nextcall.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+            elif scheduled.schedule_type == 'crontab':
+                # get time in server's timezone
+                now = fields.datetime.server_time(self, job_cr)
+                cron_entry = CronEntry(scheduled.cron_schedule)
+                next_call = cron_entry.next_occurance(now)
+                # switch back to UTC
+                next_call = next_call.astimezone(pytz.UTC).strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+            else:
+                cron_cr.execute("UPDATE ir_cron SET active=False WHERE id=%s", (scheduled.id, ))
+                raise ERPError('Job %r' % scheduled.id, 'Unknown scheduling type: %r' % (scheduled.schedule_type, ))
+            #
             cron_cr.execute(
                     "UPDATE ir_cron SET state='waiting', results=%s, nextcall=%s, numbercall=%s"+addsql+" WHERE id=%s",
-                    (result, nextcall.strftime(DEFAULT_SERVER_DATETIME_FORMAT), numbercall, job['id']),
+                    (result, next_call, scheduled.numbercall, scheduled.id),
                     )
         finally:
             job_cr.commit()
             cron_cr.commit()
+
 
     def button_submit(self, cr, uid, ids, context=None):
         if isinstance(ids, (int, long)):
@@ -469,13 +505,38 @@ class ir_cron(osv.osv):
                                  _("This cron task is currently being executed and may not be modified, "
                                   "please try again in a few minutes"))
 
+    def onchange_cron_schedule(self, cr, uid, ids, schedule, context=None):
+        res = {}
+        if schedule:
+            if len(schedule.split()) > 5:
+                res['warning'] = {
+                        'title': 'Bad Value',
+                        'message': 'cron entry should have five space-separated items',
+                        }
+            else:
+                # get time in server's timezone
+                now = fields.datetime.server_time(self, cr)
+                cron_entry = CronEntry(schedule)
+                next_call = cron_entry.next_occurance(now)
+                # switch back to UTC
+                next_call = next_call.astimezone(pytz.UTC).strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+                value = {
+                    'cron_schedule': cron_entry,
+                    'nextcall': next_call,
+                    'numbercall': -1,
+                    }
+                res['value'] = value
+        return res
+
     def create(self, cr, uid, vals, context=None):
+        # TODO: handle schedule_type of crontab
         if 'active' in vals and not vals['active']:
             vals['state'] = 'inactive'
         res = super(ir_cron, self).create(cr, uid, vals, context=context)
         return res
 
     def write(self, cr, uid, ids, vals, context=None):
+        # TODO: handle schedule_type of crontab
         self._try_lock(cr, uid, ids, context)
         if 'active' in vals:
             if vals['active']:
@@ -490,3 +551,98 @@ class ir_cron(osv.osv):
         res = super(ir_cron, self).unlink(cr, uid, ids, context=context)
         return res
 
+
+class Scheduled(object):
+
+    def __init__(self, job):
+        self.__dict__.update(job)
+        self.nextcall = datetime.strptime(self.nextcall, DEFAULT_SERVER_DATETIME_FORMAT)
+        self._once = False
+        self._now = datetime.now()
+
+    def __nonzero__(self):
+        "calculate next run date/time and return True if before now()"
+        # emergency exit for crontab jobs without a crontab setting
+        if self.schedule_type == 'crontab' and not self.cron_schedule:
+            return False
+        # only update after initial passthrough
+        if self._once and self.numbercall:
+            # put this here so it happens after the initial True result
+            if self.numbercall > 0:
+                self.numbercall -= 1
+            # only update nextcall if numbercall is nonzero
+            while self.numbercall:
+                self.nextcall += _intervalTypes[self.interval_type](self.interval_number)
+                if self.doall or self.nextcall > self._now:
+                    break
+        self._once = True
+        return self.numbercall and self.nextcall <= self._now
+
+
+class CronEntry(str):
+    "minute  hour  day-of-month  month  day-of-week"
+
+    def __new__(cls, line):
+        if not line:
+            raise ERPError('Cron Error', 'No timing specified.')
+        line = '  '.join((line.split() + ['*', '*', '*', '*', '*'])[:5])
+        ce = super(CronEntry, CronEntry).__new__(cls, line)
+        minute, hour, day_of_month, month, day_of_week = line.split()
+        ce.minute = ce._get_range(minute, range(60))
+        ce.hour = ce._get_range(hour, range(24))
+        ce.day_of_month = ce._get_range(day_of_month, range(1, 32))
+        ce.month = ce._get_range(month, range(1, 13))
+        ce.day_of_week = ce._get_range(day_of_week, range(7))
+        return ce
+
+    def __repr__(self):
+        return 'CronEntry(%s)' % super(CronEntry, self).__repr__()
+
+    def _get_range(self, value, valid_range):
+        #
+        # *
+        # */2
+        # 0-15
+        # 10,12,15
+        # 0-15/5
+        # 0-15/5,30-45/5
+        # */3,*/5
+        #
+        if value == '*':
+            return set(valid_range)
+        values = value.split(',')
+        final = []
+        for val in values:
+            if '/' in val:
+                val, step = val.split('/')
+                step = int(step)
+            else:
+                step = 1
+            if val == '*':
+                val = valid_range[::step]
+            elif '-' in val:
+                start, stop = val.split('-')
+                start = int(start)
+                stop = int(stop) + 1
+                val = range(start, stop, step)
+            else:
+                val = [int(val)]
+            final.extend(val)
+        return set(final)
+
+    def is_valid(self, timestamp):
+        # crontab has Sunday at 0, Monday at 1, but isoweekday has Sunday at 7, Monday at 1
+        weekday = (0, 1, 2, 3, 4, 5, 6, 0)[timestamp.isoweekday()]
+        return (
+                timestamp.minute in self.minute
+            and timestamp.hour in self.hour
+            and timestamp.day in self.day_of_month
+            and timestamp.month in self.month
+            and weekday in self.day_of_week
+            )
+
+    def next_occurance(self, timestamp):
+        timestamp = DateTime(timestamp).replace(second=0, delta_minute=+1)
+        while not self.is_valid(timestamp):
+            timestamp = timestamp.replace(delta_minute=+1)
+        return timestamp.datetime()

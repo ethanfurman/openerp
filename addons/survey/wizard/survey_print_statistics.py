@@ -20,20 +20,24 @@
 ##############################################################################
 
 from openerp.osv import fields, osv
-from openerp.tools.translate import _
 
-class survey_print_statistics(osv.osv_memory):
+class survey_print_statistics(osv.TransientModel):
     _name = 'survey.print.statistics'
+
     _columns = {
-        'survey_ids': fields.many2many('survey', string="Survey", required="1"),
-    }
+        'survey_ids': fields.many2many(
+                'survey',
+                'survey_print_statistics_rel', 'statistic_id', 'survey_id',
+                string="Survey",
+                required=True,
+                ),
+        }
 
     def action_next(self, cr, uid, ids, context=None):
         """
         Print Survey Statistics in pdf format.
         """
-        if context is None:
-            context = {}
+        context = context or {}
         datas = {'ids': context.get('active_ids', [])}
         res = self.read(cr, uid, ids, ['survey_ids'], context=context)
         res = res and res[0] or {}
@@ -43,7 +47,4 @@ class survey_print_statistics(osv.osv_memory):
             'type': 'ir.actions.report.xml',
             'report_name': 'survey.analysis',
             'datas': datas,
-        }
-
-survey_print_statistics()
-
+            }

@@ -38,6 +38,7 @@ from reportlab.lib.units import inch,cm,mm
 from openerp.tools.misc import file_open
 from reportlab.pdfbase import pdfmetrics
 from reportlab.lib.pagesizes import A4, letter
+inch, cm, mm
 
 try:
     from cStringIO import StringIO
@@ -791,7 +792,7 @@ class _rml_flowable(object):
                 from reportlab.graphics.barcode import code39
                 from reportlab.graphics.barcode import code93
                 from reportlab.graphics.barcode import common
-                from reportlab.graphics.barcode import fourstate
+                # from reportlab.graphics.barcode import fourstate
                 from reportlab.graphics.barcode import usps
                 from reportlab.graphics.barcode import createBarcodeDrawing
 

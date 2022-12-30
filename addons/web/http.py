@@ -145,7 +145,7 @@ class JsonRequest(WebRequest):
            "result": { "res1": "val1" },
            "id": null}
 
-    Request producing a error::
+    Request producing an error::
 
       --> {"jsonrpc": "2.0",
            "method": "call",
@@ -228,7 +228,7 @@ class JsonRequest(WebRequest):
             }
         except Exception:
             logging.getLogger(__name__ + '.JSONRequest.dispatch').exception\
-                ("An error occured while handling a json request")
+                ("An error occured while handling a json request\n   method: %r\n   params: %r", method, self.params)
             error = {
                 'code': 300,
                 'message': "OpenERP WebClient Error",
@@ -287,6 +287,16 @@ class HttpRequest(WebRequest):
         _logger.debug("%s --> %s.%s %r", self.httprequest.method, method.im_class.__name__, method.__name__, akw)
         try:
             r = method(self, **self.params)
+            if r is None:
+                r = werkzeug.exceptions.InternalServerError(cgi.escape(simplejson.dumps({
+                    'code': 300,
+                    'message': 'OpenERP Module Error',
+                    'data': {
+                        'type': 'server_exception',
+                        'fault_code': -1,
+                        'debug': 'error in %s.%s' % (self.__class__.__name__, method.__name__),
+                        },
+                    })))
         except xmlrpclib.Fault, e:
             r = werkzeug.exceptions.InternalServerError(cgi.escape(simplejson.dumps({
                 'code': 200,
@@ -300,7 +310,7 @@ class HttpRequest(WebRequest):
             })))
         except Exception:
             logging.getLogger(__name__ + '.HttpRequest.dispatch').exception(
-                    "An error occurred while handling a http request")
+                    "An error occurred while handling an http request (params=%r)", params)
             r = werkzeug.exceptions.InternalServerError(cgi.escape(simplejson.dumps({
                 'code': 300,
                 'message': "OpenERP WebClient Error",
@@ -347,7 +357,7 @@ def httprequest(f):
     normal HTTP request (the exact request path is specified via the
     ``$(Controller._cp_path)/$methodname`` combination.
 
-    If the method is called, it will be provided with a :class:`HttpRequest`
+    If the method is called, it will be provided with an :class:`HttpRequest`
     instance and all ``params`` sent during the request (``GET`` and ``POST``
     merged in the same dictionary), apart from the ``session_id``, ``context``
     and ``debug`` keys (which are stripped out beforehand)

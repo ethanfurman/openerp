@@ -174,8 +174,7 @@ class res_users(osv.osv):
             help='The company this user is currently working for.', context={'user_preference': True}),
         'company_ids':fields.many2many('res.company','res_company_users_rel','user_id','cid','Companies'),
         # backward compatibility fields
-        'user_email': fields.related('email', type='char',
-            deprecated='Use the email field instead of user_email. This field will be removed with OpenERP 7.1.'),
+        'user_email': fields.related('email', type='char'),
     }
 
     def on_change_company_id(self, cr, uid, ids, company_id):
@@ -204,18 +203,6 @@ class res_users(osv.osv):
         """
         partner_ids = [user.partner_id.id for user in self.browse(cr, uid, ids, context=context)]
         return self.pool.get('res.partner').onchange_address(cr, uid, partner_ids, use_parent_address, parent_id, context=context)
-
-    def onchange_partner(self, cr, uid, ids, partner_id, context=None):
-        """
-        Update name and email fields from selected partner record.
-        """
-        partner = self.pool.get('res.partner').browse(cr, uid, partner_id, context=context)
-        res = {}
-        if partner:
-            res['value'] = values = {}
-            values['name'] = partner.name
-            values['email'] = partner.email
-        return res
 
     def _check_company(self, cr, uid, ids, context=None):
         return all(((this.company_id in this.company_ids) or not this.company_ids) for this in self.browse(cr, uid, ids, context))
@@ -252,17 +239,8 @@ class res_users(osv.osv):
             return False
 
     def _get_group(self,cr, uid, context=None):
-        dataobj = self.pool.get('ir.model.data')
-        result = []
-        try:
-            dummy,group_id = dataobj.get_object_reference(cr, SUPERUSER_ID, 'base', 'group_user')
-            result.append(group_id)
-            dummy,group_id = dataobj.get_object_reference(cr, SUPERUSER_ID, 'base', 'group_partner_manager')
-            result.append(group_id)
-        except ValueError:
-            # If these groups does not exists anymore
-            pass
-        return result
+        # NO
+        return []
 
     _defaults = {
         'password': '',

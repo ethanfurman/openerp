@@ -26,29 +26,31 @@ from openerp.osv import fields, osv
 from openerp.tools.translate import _
 from openerp.tools import email_re
 from openerp import SUPERUSER_ID
+from textwrap import dedent
 
 _logger = logging.getLogger(__name__)
 
 # welcome email sent to portal users
 # (note that calling '_' has no effect except exporting those strings for translation)
 WELCOME_EMAIL_SUBJECT = _("Your OpenERP account at %(company)s")
-WELCOME_EMAIL_BODY = _("""Dear %(name)s,
+WELCOME_EMAIL_BODY = _(dedent("""\
+        Dear %(name)s,
 
-You have been given access to %(portal)s.
+        You have been given access to %(portal)s.
 
-Your login account data is:
-Database: %(db)s
-Username: %(login)s
+        Your login account data is:
+        Database: %(db)s
+        Username: %(login)s
 
-In order to complete the signin process, click on the following url:
-%(url)s
+        In order to complete the signin process, click on the following url:
+        %(url)s
 
-%(welcome_message)s
+        %(welcome_message)s
 
---
-OpenERP - Open Source Business Applications
-http://www.openerp.com
-""")
+        --
+        OpenERP - Open Source Business Applications
+        http://www.openerp.com
+        """))
 
 
 def extract_email(email):

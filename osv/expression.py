@@ -371,11 +371,11 @@ def normalize_leaf(element):
         operator = '!='
     if isinstance(right, bool) and operator in ('in', 'not in'):
         _logger.warning("The domain term '%s' should use the '=' or '!=' operator." % ((left, original, right),))
-        _logger.warning('\n' + traceback.extract_stack())
+        _logger.warning('\n' + ''.join(traceback.format_stack()))
         operator = '=' if operator == 'in' else '!='
     if isinstance(right, (list, tuple)) and operator in ('=', '!='):
         _logger.warning("The domain term '%s' should use the 'in' or 'not in' operator." % ((left, original, right),))
-        _logger.warning('\n' + traceback.extract_stack())
+        _logger.warning('\n' + ''.join(traceback.format_stack()))
         operator = 'in' if operator == '=' else 'not in'
     return left, operator, right
 
@@ -1098,7 +1098,7 @@ class expression(object):
             # abuse and handled for backward compatibility.
             if isinstance(right, bool):
                 _logger.warning("The domain term '%s' should use the '=' or '!=' operator." % (leaf,))
-                _logger.warning('\n' + traceback.extract_stack())
+                _logger.warning('\n' + ''.join(traceback.format_stack()))
                 if operator == 'in':
                     r = 'NOT NULL' if right else 'NULL'
                 else:
