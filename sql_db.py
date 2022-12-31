@@ -162,8 +162,8 @@ class Cursor(object):
         return wrapper
 
     def __new__(cls, pool, dbname, serialized=True):
-        # only allow connections to *sunridgefarms
-        if dbname not in ('postgres', 'sunridgefarms', 'test_sunridgefarms'):
+        # only allow connections to *sunridgefarms and *wholeherb
+        if dbname not in ('postgres', 'sunridgefarms', 'test_sunridgefarms','wholeherb','test_wholeherb'):
             raise ValueError('refusing to connect to %r' % (dbname, ))
         return super(cls, Cursor).__new__(cls, pool, dbname, serialized=serialized)
 
