@@ -21,4 +21,7 @@ filestore/
 addons/fleet_hr/fleet_hr_view.xml
 addons/hr/hr_view*.xml
 addons/hr/hr_data.xml
+addons/ip_map
+addons/sample
+addons/wholeherb_integration
 scripts/pulse.pyz
