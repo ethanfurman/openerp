@@ -34,6 +34,7 @@ import logging
 import os
 import pytz
 import socket
+import stonemark as sm
 import sys
 import threading
 import time
@@ -837,13 +838,14 @@ def detect_server_timezone():
        Defaults to UTC if no working timezone can be found.
        @return the timezone identifier as expected by pytz.timezone.
     """
-    global SERVER_TIMEZONE
+    global SERVER_TIMEZONE, UTC
     try:
         import pytz
-    except Exception:
-        _logger.warning("Python pytz module is not available. "
-            "Timezone will be set to UTC by default.")
         SERVER_TIMEZONE = pytz.timezone('UTC')
+        UTC = pytz.timezone('UTC')
+    except Exception:
+        _logger.error("Python pytz module is not available. "
+            "Timezone will be set to UTC by default.")
         return 'UTC'
 
     # Option 1: the configuration option (did not exist before, so no backwards compatibility issue)
@@ -1073,6 +1075,17 @@ def get_and_group_by_field(cr, uid, obj, ids, field, context=None):
 def get_and_group_by_company(cr, uid, obj, ids, context=None):
     return get_and_group_by_field(cr, uid, obj, ids, field='company_id', context=context)
 
+def stonemark2html(self, cr, uid, ids, field_name, arg, context=None):
+    # for use in function fields
+    res = {}.fromkeys(ids, False)
+    for rec in self.browse(cr, uid, ids, context=context):
+        try:
+            res[rec['id']] = sm.Document(rec[arg] or '').to_html()
+        except Exception:
+            _logger.exception('stonemark unable to convert record %d', rec['id'])
+            res[rec['id']] = '<pre>' + sm.escape(rec[arg]) + '</pre>'
+    return res
+
 # port of python 2.6's attrgetter with support for dotted notation
 def resolve_attr(obj, attr):
     for name in attr.split("."):
@@ -1209,8 +1222,58 @@ def self_ids(table, cr, uid, ids, context=None):
 def self_uid(table, cr, uid, ids, context=None):
     return uid
 
+def get_ids(records, *fields):
+    """
+    field should be a list of browse records or None
+    """
+    if not records:
+        return []
+    if not isinstance(records, (tuple, list)):
+        records = [records]
+    new_records = []
+    for field in fields:
+        for rec in records:
+            if not rec:
+                continue
+            more = getattr(rec, field)
+            if not more:
+                continue
+            if isinstance(more, (list, tuple)):
+                new_records.extend(more)
+            else:
+                new_records.append(more)
+        records = new_records
+        new_records = []
+    return [r.id for r in records]
+
+def merge_dicts(*dicts):
+    """
+    return a new dictionary with all keys from all dicts (recursively)
+    """
+    new = dicts[0].copy()
+    for d in dicts[1:]:
+        for k, v in d.items():
+            seen = new.get(k)
+            if isinstance(seen, dict) and not isinstance(v, dict):
+                # dict wins
+                pass
+            elif isinstance(v, dict) and not isinstance(seen, dict):
+                # dict still wins
+                new[k] = v
+            elif isinstance(seen, dict) and isinstance(v, dict):
+                # merge 'em
+                new[k] = merge_dicts(seen, v)
+            else:
+                # most recent wins
+                new[k] = v
+    return new
+
 class OrderBy(unicode):
     "string for pass-through order-by statements"
+
+from xmlrpclib import Marshaller
+Marshaller.dispatch[OrderBy] = Marshaller.dump_unicode
+
 
 def Singleton(cls):
     "transforms class into a Singleton object"
@@ -1267,6 +1330,45 @@ default_none = default(None)
 default_true = default(True)
 default_false = default(False)
 default_uninit = default(UnInit)
+
+class NamedLock(object):
+    "create locks by argument"
+    #
+    def __init__(self):
+        self._locks = {}
+        self._own_lock = threading.Lock()
+        self._cleanup = 111
+    #
+    def __call__(self, *args):
+        with self._own_lock:
+            self._cleanup -= 1
+            if not self._cleanup:
+                self._cleanup = 111
+                for name, lock in list(self._locks.items()):
+                    if not lock.locked():
+                        # trim it out
+                        self._locks.pop(name)
+            if args in self._locks:
+                lock = self._locks[args]
+            else:
+                lock = self._locks[args] = threading.Lock()
+        return lock
+
+
+class Bomb(object):
+    "helper for testing thread safety"
+    #
+    _bombs = {}
+    #
+    def __init__(self, name):
+        self._name = name
+        if name in self._bombs:
+            raise RuntimeError("BOOM!")
+        self._bombs[name] = True
+    #
+    def release(self):
+        del self._bombs[self._name]
+
 
 # periods for domain searches
 class Period(timedelta, Enum):
@@ -1369,5 +1471,4 @@ class Period(timedelta, Enum):
         else:
             raise ValueError("forgot to update something! (period is %r)" % (self.period,))
         return start.strftime(DEFAULT_SERVER_DATE_FORMAT), stop.strftime(DEFAULT_SERVER_DATE_FORMAT)
-
 

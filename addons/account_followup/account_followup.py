@@ -21,6 +21,7 @@
 
 from openerp.osv import fields, osv
 from lxml import etree
+from textwrap import dedent
 
 from openerp.tools.translate import _
 
@@ -68,16 +69,16 @@ class followup_line(osv.osv):
         'send_email': True,
         'send_letter': True,
         'manual_action':False,
-        'description': """
+        'description': dedent("""\
         Dear %(partner_name)s,
 
-Exception made if there was a mistake of ours, it seems that the following amount stays unpaid. Please, take appropriate measures in order to carry out this payment in the next 8 days.
+        Exception made if there was a mistake of ours, it seems that the following amount stays unpaid. Please, take appropriate measures in order to carry out this payment in the next 8 days.
 
-Would your payment have been carried out after this mail was sent, please ignore this message. Do not hesitate to contact our accounting department.
+        Would your payment have been carried out after this mail was sent, please ignore this message. Do not hesitate to contact our accounting department.
 
-Best Regards,
-""",
-    'email_template_id': _get_default_template,
+        Best Regards,
+        """),
+        'email_template_id': _get_default_template,
     }
 
 

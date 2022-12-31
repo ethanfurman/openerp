@@ -41,6 +41,13 @@ def toxml(value):
     return unicode_value.replace('&', '&amp;').replace('<','&lt;').replace('>','&gt;')
 
 class report_int(netsvc.Service):
+
+    _filename = None
+
+    @property
+    def filename(self):
+        return self._filename
+
     def __init__(self, name):
         assert not self.exists(name), 'The report "%s" already exists!' % name
         super(report_int, self).__init__(name)

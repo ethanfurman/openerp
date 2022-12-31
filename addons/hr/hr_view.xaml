@@ -78,6 +78,8 @@
                                         ~separator $Miscellaneous colspan='2'
                                         @blueshield_id $Blue_Cross_No
                                         @marital
+                                ~separator $Tests_and_Checks
+                                @tests_checks_ids nolabel='1'
                             ~page $Employee_Relations groups='base.group_hr_manager'
                                 ~group
                                     ~group $Events
@@ -378,3 +380,61 @@
 
         ~menuitem @Recruitment #base.menu_crm_case_job_req_main groups='base.group_hr_user' parent='menu_hr_root'
         ~menuitem #menu_hr_job action='action_hr_job' parent='hr.menu_hr_configuration' sequence='6'
+
+
+        ~record model='ir.ui.view' #view_hr_test_type_form
+            @name: Test Type
+            @model: hr.test.type
+            @arch type='xml'
+                ~form $Test_Type
+                    @name
+                    @result_type
+                    @description
+
+        ~record model='ir.ui.view' #view_hr_test_type_tree
+            @name: Test Type
+            @model: hr.test.type
+            @arch type='xml'
+                ~tree $Test_Type
+                    @name
+                    @result_type
+                    @description
+
+        ~record model='ir.actions.act_window' #action_hr_test_type
+            @name: Test Types
+            @res_model: hr.test.type
+            @view_type: form
+            @view_mode: tree,form
+
+        ~menuitem #menu_hr_test_type action='action_hr_test_type' parent='hr.menu_hr_configuration'
+
+
+        ~record model='ir.ui.view' #view_hr_test_tree
+            @name: Test
+            @model: hr.test
+            @arch type='xml'
+                ~tree $Test
+                    @test_type
+                    @test_date
+                    @result
+
+        ~record model='ir.ui.view' #view_hr_test_form
+            @name: Test
+            @model: hr.test
+            @arch type='xml'
+                ~form $Test version='7.0'
+                    @result_type invisible='1'
+                    @create_date invisible='1'
+                    ~group col='6' colspan='4'
+                        ~group col='2' colspan='2'
+                            @test_type on_change="onchange_test(test_type)" required='1' attrs="{'readonly': [('create_date','!=',False)]}"
+                            @test_date
+                            @result_pass_fail attrs="{'invisible': [('result_type','!=','pass_fail')]}" on_change="onchange_result(result_type, result_pass_fail)"
+                            @result_grade attrs="{'invisible': [('result_type','!=','grade')]}" on_change="onchange_result(result_type, result_grade)"
+                            @result_percent attrs="{'invisible': [('result_type','!=','percent')]}" on_change="onchange_result(result_type, result_percent)"
+                            @result attrs="{'invisible': [('test_type','!=',False)]}"
+                        ~group col='2' colspan='4'
+                            @result_description readonly='1'
+                    ~group
+                        ~label for='notes' $Notes
+                        @notes nolabel='1'

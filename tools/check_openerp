@@ -1,10 +1,28 @@
 #!/usr/local/sbin/suid-python --virtualenv
+"""
+Checks if OpenERP is still running.
+
+If not, kill all processes attempting to communicate with OpenERP (except this
+one), then restart OpenERP.
+
+Test 1: check that heartbeat file is less than three minutes old.
+Test 2: check that a connection takes less than 60 seconds.
+
+Issue an alert after each failed test.
+
+TODO:
+> examine system during a failure to see what information is available as
+> to which processes to kill.
+
+Issue an all-clear once OpenERP is up and running again.
+"""
 from __future__ import print_function
 
 from scription import *
 from openerplib import get_connection, AttrDict
 import os
 import socket
+import time
 
 CONFIG = OrmFile('%s/config/fnx.ini' % os.environ['VIRTUAL_ENV'], section='openerp')
 
@@ -16,16 +34,33 @@ def connect():
 @Command()
 def check_openerp():
     "simple heart-beat test by attempting to connect to OpenERP"
-    try:
-        print('connecting...', end=' ')
-        connect()
-        print('success!')
-    except socket.error as exc:
-        if exc.errno == 111:
-            print('OpenERP is not running, restarting')
-            with user_ids(0, 0):
-                os.system('/etc/init.d/openerp start')
-        else:
-            raise
+    now = time.time()
+    restart_at = now + 7 * 60
+    print('connecting...', end=' ')
+    first_time = True
+    while 'waiting for signs of life':
+        try:
+            connect()
+            print('success!')
+            break
+        except socket.error as exc:
+            if exc.errno == 111:
+                if first_time:
+                    print('\n  OpenERP is not running...')
+                    first_time = False
+                else:
+                    print()
+                if time.time() < restart_at:
+                    print('    waiting a bit...', end=' ')
+                    time.sleep(60)
+                    continue
+                else:
+                    print('\n    restarting.')
+                    with user_ids(0, 0):
+                        os.system('/etc/init.d/openerp start')
+                    break
+            else:
+                # unknown error
+                raise
 
 Main()

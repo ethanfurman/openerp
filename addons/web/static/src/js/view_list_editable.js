@@ -342,7 +342,9 @@ openerp.web.list_editable = function (instance) {
                 cancel: false
             }, function () {
                 return this.editor.cancel(force).then(function (attrs) {
-                    if (attrs.id) {
+                    if (attrs == null) {
+                        return;
+                    } else if (attrs.id) {
                         var record = self.records.get(attrs.id);
                         if (!record) {
                             // Record removed by third party during edition

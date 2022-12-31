@@ -2,7 +2,7 @@
 <openerp>
     <data>
        <menuitem name="Knowledge" id="knowledge.menu_document"/>
-       <menuitem name="Pages" id="menu_wiki" parent="knowledge.menu_document" sequence="20" />
+       <menuitem name="Documents" id="menu_wiki" parent="knowledge.menu_document" sequence="20" />
 
         <!-- wiki tree view -->
         <record id="view_wiki_tree_children" model="ir.ui.view">
@@ -79,7 +79,7 @@
         </record>
         <!-- page action -->
         <record id="action_page" model="ir.actions.act_window">
-            <field name="name">Pages</field>
+            <field name="name">Documents</field>
             <field name="res_model">document.page</field>
             <field name="domain">[('type','=','content')]</field>
             <field name="context">{'default_type': 'content'}</field>
@@ -89,9 +89,9 @@
             <field name="search_view_id" ref="view_wiki_filter"/>
             <field name="help">Create web pages</field>
         </record>
-        <menuitem id="menu_page" parent="menu_wiki" name="Pages" action="action_page" sequence="10"/>
+        <menuitem id="menu_page" parent="menu_wiki" name="Documents" action="action_page" sequence="10"/>
         <record id="action_category" model="ir.actions.act_window">
-            <field name="name">Category</field>
+            <field name="name">Document Categories</field>
             <field name="res_model">document.page</field>
             <field name="domain">[('type','=','category')]</field>
             <field name="context">{'default_type': 'category'}</field>
@@ -131,12 +131,12 @@
         </record>
         <!-- History Action  -->
         <record model="ir.actions.act_window" id="action_history">
-            <field name="name">Page history</field>
+            <field name="name">Document History</field>
             <field name="res_model">document.page.history</field>
             <field name="view_type">form</field>
             <field name="view_mode">tree,form</field>
         </record>
-        <menuitem id="menu_page_history" parent="menu_wiki" name="Pages history" action="action_history" sequence="30" groups="base.group_no_one"/>
+        <menuitem id="menu_page_history" parent="menu_wiki" name="History" action="action_history" sequence="30" groups="base.group_no_one"/>
         <act_window
             id="action_related_page_history"
             context="{'search_default_page_id': [active_id], 'default_page_id': active_id}"

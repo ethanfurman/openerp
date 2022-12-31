@@ -286,7 +286,11 @@ class ir_ui_menu(osv.osv):
             that uses the needaction mechanism. """
         res = dict.fromkeys(ids, False)
         for menu in self.browse(cr, uid, ids, context=context):
-            if menu.action and menu.action.type in ('ir.actions.act_window', 'ir.actions.client') and menu.action.res_model:
+            if (
+                    menu.action
+                    and menu.action.type in ('ir.actions.act_window', 'ir.actions.client')
+                    and menu.action.res_model
+                ):
                 obj = self.pool.get(menu.action.res_model)
                 if obj and obj._needaction:
                     res[menu.id] = True
@@ -304,7 +308,11 @@ class ir_ui_menu(osv.osv):
                 'needaction_enabled': False,
                 'needaction_counter': False,
             }
-            if menu.action and menu.action.type in ('ir.actions.act_window', 'ir.actions.client') and menu.action.res_model:
+            if (
+                    menu.action
+                    and menu.action.type in ('ir.actions.act_window', 'ir.actions.client')
+                    and menu.action.res_model
+                ):
                 obj = self.pool.get(menu.action.res_model)
                 if obj and obj._needaction:
                     if menu.action.type == 'ir.actions.act_window':

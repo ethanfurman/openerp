@@ -29,10 +29,9 @@ import openerp.pooler as pooler
 import datetime
 import pytz
 import logging
-
+ 
 UTC = pytz.timezone('UTC')
 _logger = logging.getLogger(__name__)
-
 
 class InheritDict(dict):
     # Might be usefull when we're doing name lookup for call or eval.

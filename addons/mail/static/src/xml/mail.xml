@@ -317,11 +317,13 @@
         mail.compose_message.button_top_bar
         render of the button on the user bar for open wizard compose message
         -->
+    <!-- remove top mail button
     <t t-name="mail.ComposeMessageTopButton">
         <div title='Compose new Message' class="oe_topbar_item oe_topbar_compose_full_email">
             <button class="oe_e">%</button>
         </div>
     </t>
+    -->
 
     <!-- mail.thread.message.vote
         Template used to display Like/Unlike in a mail.message

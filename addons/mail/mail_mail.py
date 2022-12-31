@@ -189,7 +189,7 @@ class mail_mail(osv.Model):
                 url = urljoin(base_url, "?%s#%s" % (urlencode(query), urlencode(fragment)))
                 text = _("""<p>Access this document <a href="%s">directly in OpenERP</a></p>""") % url
                 body = tools.append_content_to_html(body, ("<div><p>%s</p></div>" % text), plaintext=False)
-            except except_orm, e:
+            except except_orm:
                 pass
         return body
 
@@ -236,14 +236,11 @@ class mail_mail(osv.Model):
         body_alternative = tools.html2plaintext(body)
 
         # generate email_to, heuristic:
-        # 1. if 'partner' is specified and there is a related document: Followers of 'Doc' <email>
+        # NO, THIS IS STUPID. 1. if 'partner' is specified and there is a related document: Followers of 'Doc' <email>
         # 2. if 'partner' is specified, but no related document: Partner Name <email>
         # 3; fallback on mail.email_to that we split to have an email addresses list
-        if partner and mail.record_name:
-            sanitized_record_name = re.sub(r'[^\w+.]+', '-', mail.record_name)
-            email_to = [_('"Followers of %s" <%s>') % (sanitized_record_name, partner.email)]
-        elif partner:
-            email_to = ['%s <%s>' % (partner.name, partner.email)]
+        if partner:
+            email_to = ['"%s" <%s>' % (partner.name, partner.email)]
         else:
             email_to = tools.email_split(mail.email_to)
 
@@ -283,9 +280,11 @@ class mail_mail(osv.Model):
                     attachments.append((attach.datas_fname, base64.b64decode(attach.datas)))
                 # specific behavior to customize the send email for notified partners
                 email_list = []
+                display_cc = []
                 if recipient_ids:
                     for partner in self.pool.get('res.partner').browse(cr, SUPERUSER_ID, recipient_ids, context=context):
                         email_list.append(self.send_get_email_dict(cr, uid, mail, partner=partner, context=context))
+                    display_cc = [cc for addr in [m['email_to'] for m in email_list] for cc in addr]
                 else:
                     email_list.append(self.send_get_email_dict(cr, uid, mail, context=context))
 
@@ -305,8 +304,12 @@ class mail_mail(osv.Model):
                         object_id = mail.res_id and ('%s-%s' % (mail.res_id, mail.model)),
                         subtype = 'html',
                         subtype_alternative = 'plain')
-                    res = ir_mail_server.send_email(cr, uid, msg,
-                        mail_server_id=mail.mail_server_id.id, context=context)
+                    res = ir_mail_server.send_email(
+                            cr, uid, msg,
+                            mail_server_id=mail.mail_server_id.id,
+                            display_cc=display_cc,
+                            context=context,
+                            )
                 if res:
                     mail.write({'state': 'sent', 'message_id': res})
                     mail_sent = True

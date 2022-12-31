@@ -243,7 +243,7 @@ class module(osv.osv):
         return res
 
     def _get_graph(self, cr, uid, ids, field_name=None, arg=None, context=None):
-        res = dict.fromkeys(ids, '')
+        res = dict.fromkeys(ids, False)
         for rec in self.read(cr, uid, ids, fields=['id', 'name'], context=context):
             fh, fn = tempfile.mkstemp(suffix='.png')
             os.close(fh)
@@ -252,7 +252,7 @@ class module(osv.osv):
                         rec['name'],
                         fn,
                         )
-            _logger.debug('running graph command: %r', command)
+            _logger.warning('running graph command: %r', command)
             job = Execute(command, timeout=90, pty=True)
             if job.returncode or job.stderr:
                 print '-' * 50
@@ -266,7 +266,7 @@ class module(osv.osv):
                         )
                 if job.stderr:
                     _logger.error('%s', job.stderr)
-                raise ExecuteError(job.stderr)
+                continue
             with open(fn, 'rb') as graph:
                 res[rec['id']] = graph.read()
         return res

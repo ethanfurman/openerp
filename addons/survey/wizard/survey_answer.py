@@ -26,6 +26,7 @@ import os
 from time import strftime
 
 from openerp import addons, netsvc, tools
+from openerp.exceptions import ERPError
 from openerp.osv import fields, osv
 from openerp.tools import to_xml
 from openerp.tools.translate import _
@@ -33,19 +34,19 @@ from openerp.tools.safe_eval import safe_eval
 
 class survey_question_wiz(osv.osv_memory):
     _name = 'survey.question.wiz'
+
     _columns = {
         'name': fields.integer('Number'),
-    }
+        }
 
     def fields_view_get(self, cr, uid, view_id=None, view_type='form', context=None, toolbar=False, submenu=False):
         """
         Fields View Get method :- generate the new view and display the survey pages of selected survey.
         """
-        if context is None:
-            context = {}
+        context = context or {}
         result = super(survey_question_wiz, self).fields_view_get(cr, uid, view_id, \
                                         view_type, context, toolbar,submenu)
-
+        #
         surv_name_wiz = self.pool.get('survey.name.wiz')
         survey_obj = self.pool.get('survey')
         page_obj = self.pool.get('survey.page')
@@ -55,7 +56,7 @@ class survey_question_wiz(osv.osv_memory):
         que_col_head = self.pool.get('survey.question.column.heading')
         user_obj = self.pool.get('res.users')
         mail_message = self.pool.get('mail.message')
-
+        #
         if view_type in ['form']:
             wiz_id = 0
             sur_name_rec = None
@@ -68,14 +69,12 @@ class survey_question_wiz(osv.osv_memory):
                     'page': 'next',
                     'transfer': 1,
                     'response': 0
-                }
+                    }
                 wiz_id = surv_name_wiz.create(cr, uid, res_data)
                 sur_name_rec = surv_name_wiz.browse(cr, uid, wiz_id, context=context)
                 context.update({'sur_name_id' :wiz_id})
-
-            if context.has_key('active_id'):
-                context.pop('active_id')
-
+            #
+            context.pop('active_id', None)
             survey_id = context.get('survey_id', False)
             if not survey_id:
                 # Try one more time to find it
@@ -87,22 +86,25 @@ class survey_question_wiz(osv.osv_memory):
                     # its context, it makes no sense to return any view.
                     # Just return the default, empty view for this object,
                     # in order to please random calls to this fn().
-                    return super(survey_question_wiz, self).\
-                                fields_view_get(cr, uid, view_id=view_id, view_type=view_type, context=context,
-                                        toolbar=toolbar, submenu=submenu)
+                    return super(
+                            survey_question_wiz, self
+                            ).fields_view_get(
+                                    cr, uid,
+                                    view_id=view_id, view_type=view_type,
+                                    context=context, toolbar=toolbar, submenu=submenu,
+                                    )
             sur_rec = survey_obj.browse(cr, uid, survey_id, context=context)
             p_id = map(lambda x:x.id, sur_rec.page_ids)
             total_pages = len(p_id)
             pre_button = False
             readonly = 0
-
-            if context.get('response_id', False) \
-                            and int(context['response_id'][0]) > 0:
+            #
+            if context.get('response_id', False) and int(context['response_id'][0]) > 0:
                 readonly = 1
-
-            if not sur_name_rec.page_no + 1 :
+            #
+            if not sur_name_rec.page_no + 1:
                 surv_name_wiz.write(cr, uid, [context['sur_name_id'],], {'store_ans':{}})
-
+            #
             sur_name_read = surv_name_wiz.browse(cr, uid, context['sur_name_id'], context=context)
             page_number = int(sur_name_rec.page_no)
             if sur_name_read.transfer or not sur_name_rec.page_no + 1:
@@ -111,23 +113,49 @@ class survey_question_wiz(osv.osv_memory):
                 fields = {}
                 if sur_name_read.page == "next" or sur_name_rec.page_no == -1:
                     if total_pages > sur_name_rec.page_no + 1:
-                        if ((context.has_key('active') and not context.get('active', False)) \
-                                    or not context.has_key('active')) and not sur_name_rec.page_no + 1:
+                        if (
+                                ((
+                                    context.has_key('active') and not context.get('active', False)
+                                    )
+                                    or not context.has_key('active')
+                                    )
+                                and not sur_name_rec.page_no + 1
+                            ):
                             if sur_rec.state != "open" :
-                                raise osv.except_osv(_('Warning!'),_("You cannot answer because the survey is not open."))
-                            cr.execute('select count(id) from survey_history where user_id=%s\
-                                                    and survey_id=%s', (uid,survey_id))
+                                raise ERPError(
+                                        _('Warning!'),
+                                        _("You cannot answer because the survey is not open."),
+                                        )
+                            cr.execute(
+                                    'select count(id) from survey_history where user_id=%s and survey_id=%s',
+                                    (uid,survey_id),
+                                    )
                             res = cr.fetchone()[0]
                             user_limit = survey_obj.browse(cr, uid, survey_id)
                             user_limit = user_limit.response_user
                             if user_limit and res >= user_limit:
-                                raise osv.except_osv(_('Warning!'),_("You cannot answer this survey more than %s times.") % (user_limit))
-
-                        if sur_rec.max_response_limit and sur_rec.max_response_limit <= sur_rec.tot_start_survey and not sur_name_rec.page_no + 1:
-                            survey_obj.write(cr, uid, survey_id, {'state':'close', 'date_close':strftime("%Y-%m-%d %H:%M:%S")})
-
+                                raise ERPError(
+                                        _('Warning!'),
+                                        _("You cannot answer this survey more than %s times.") % (user_limit),
+                                        )
+                        #
+                        if (
+                                sur_rec.max_response_limit
+                                and sur_rec.max_response_limit <= sur_rec.tot_start_survey
+                                and not sur_name_rec.page_no + 1
+                            ):
+                            survey_obj.write(
+                                    cr, uid,
+                                    survey_id,
+                                    {'state':'close', 'date_close':strftime("%Y-%m-%d %H:%M:%S")},
+                                    )
+                        #
                         p_id = p_id[sur_name_rec.page_no + 1]
-                        surv_name_wiz.write(cr, uid, [context['sur_name_id'],], {'page_no' : sur_name_rec.page_no + 1})
+                        surv_name_wiz.write(
+                                cr, uid,
+                                [context['sur_name_id'], ],
+                                {'page_no' : sur_name_rec.page_no + 1},
+                                )
                         flag = True
                         page_number += 1
                     if sur_name_rec.page_no > - 1:
@@ -137,11 +165,13 @@ class survey_question_wiz(osv.osv_memory):
                 else:
                     if sur_name_rec.page_no != 0:
                         p_id = p_id[sur_name_rec.page_no - 1]
-                        surv_name_wiz.write(cr, uid, [context['sur_name_id'],],\
-                                             {'page_no' : sur_name_rec.page_no - 1})
+                        surv_name_wiz.write(
+                                cr, uid,
+                                [context['sur_name_id'], ],
+                                {'page_no' : sur_name_rec.page_no - 1},
+                                )
                         flag = True
                         page_number -= 1
-
                     if sur_name_rec.page_no > 1:
                         pre_button = True
                 if flag:
@@ -156,77 +186,225 @@ class survey_question_wiz(osv.osv_memory):
                         title = sur_rec.title
                     xml_form = etree.Element('form', {'string': tools.ustr(title)})
                     if context.has_key('active') and context.get('active',False) and context.has_key('edit'):
-                        context.update({'page_id' : tools.ustr(p_id),'page_number' : sur_name_rec.page_no , 'transfer' : sur_name_read.transfer})
-                        xml_group3 = etree.SubElement(xml_form, 'group', {'col': '4', 'colspan': '4'})
-                        etree.SubElement(xml_group3, 'button', {'string' :'Add Page','icon': "gtk-new", 'type' :'object','name':"action_new_page", 'context' : tools.ustr(context)})
-                        etree.SubElement(xml_group3, 'button', {'string' :'Edit Page','icon': "gtk-edit", 'type' :'object','name':"action_edit_page", 'context' : tools.ustr(context)})
-                        etree.SubElement(xml_group3, 'button', {'string' :'Delete Page','icon': "gtk-delete", 'type' :'object','name':"action_delete_page", 'context' : tools.ustr(context)})
-                        etree.SubElement(xml_group3, 'button', {'string' :'Add Question','icon': "gtk-new", 'type' :'object','name':"action_new_question", 'context' : tools.ustr(context)})
-
+                        context.update({
+                                'page_id': tools.ustr(p_id),
+                                'page_number': sur_name_rec.page_no,
+                                'transfer': sur_name_read.transfer,
+                                })
+                        xml_group3 = etree.SubElement(
+                                xml_form,
+                                'group',
+                                {'col': '4', 'colspan': '4'},
+                                )
+                        etree.SubElement(
+                                xml_group3,
+                                'button',
+                                {
+                                    'string': 'Add Page',
+                                    'icon': "gtk-new",
+                                    'type': 'object',
+                                    'name': "action_new_page",
+                                    'context': tools.ustr(context),
+                                    })
+                        etree.SubElement(
+                                xml_group3,
+                                'button',
+                                {
+                                    'string':'Edit Page',
+                                    'icon': "gtk-edit",
+                                    'type': 'object',
+                                    'name': "action_edit_page",
+                                    'context': tools.ustr(context),
+                                    })
+                        etree.SubElement(
+                                xml_group3,
+                                'button',
+                                {
+                                    'string': 'Delete Page',
+                                    'icon': "gtk-delete",
+                                    'type': 'object',
+                                    'name': "action_delete_page",
+                                    'context': tools.ustr(context),
+                                    })
+                        etree.SubElement(
+                                xml_group3,
+                                'button',
+                                {
+                                    'string': 'Add Question',
+                                    'icon': "gtk-new",
+                                    'type': 'object',
+                                    'name': "action_new_question",
+                                    'context': tools.ustr(context),
+                                    })
                     # FP Note
                     xml_group = xml_form
-
-                    if context.has_key('response_id') and context.get('response_id', False) \
-                         and int(context.get('response_id',0)[0]) > 0:
+                    if context.get('response_id', False) and int(context['response_id'][0]) > 0:
                         # TODO: l10n, cleanup this code to make it readable. Or template?
-                        xml_group = etree.SubElement(xml_form, 'group', {'col': '40', 'colspan': '4'})
+                        xml_group = etree.SubElement(
+                                xml_form,
+                                'group',
+                                {
+                                    'col': '40',
+                                    'colspan': '4',
+                                    })
                         record = sur_response_obj.browse(cr, uid, context['response_id'][context['response_no']])
-                        etree.SubElement(xml_group, 'label', {'string': to_xml(tools.ustr('Answer Of :- ' + record.user_id.name + ',  Date :- ' + record.date_create.split('.')[0]  )), 'align':"0.0"})
-                        etree.SubElement(xml_group, 'label', {'string': to_xml(tools.ustr(" Answer :- " + str(context.get('response_no',0) + 1) +"/" + str(len(context.get('response_id',0))) )), 'align':"0.0"})
-                        if context.get('response_no',0) > 0:
-                            etree.SubElement(xml_group, 'button', {'colspan':"1",'icon':"gtk-go-back",'name':"action_forward_previous",'string': tools.ustr("Previous Answer"),'type':"object"})
-                        if context.get('response_no',0) + 1 < len(context.get('response_id',0)):
-                            etree.SubElement(xml_group, 'button', {'colspan':"1",'icon': "gtk-go-forward", 'name':"action_forward_next",'string': tools.ustr("Next Answer") ,'type':"object",'context' : tools.ustr(context)})
-
+                        etree.SubElement(
+                                xml_group,
+                                'label',
+                                {
+                                    'string': to_xml(tools.ustr(
+                                            'Answer Of :- '
+                                            + record.user_id.name
+                                            + ',  Date :- '
+                                            + record.date_create.split('.')[0]
+                                            )),
+                                    'align': "0.0",
+                                    })
+                        etree.SubElement(
+                                xml_group,
+                                'label',
+                                {
+                                    'string': to_xml(tools.ustr(
+                                            " Answer :- "
+                                            + str(context.get('response_no', 0) + 1)
+                                            + "/"
+                                            + str(len(context.get('response_id', 0)))
+                                            )),
+                                    'align': "0.0",
+                                    })
+                        if context.get('response_no', 0) > 0:
+                            etree.SubElement(
+                                    xml_group,
+                                    'button',
+                                    {
+                                        'colspan': "1",
+                                        'icon': "gtk-go-back",
+                                        'name': "action_forward_previous",
+                                        'string': tools.ustr("Previous Answer"),
+                                        'type':"object",
+                                        })
+                        if context.get('response_no', 0) + 1 < len(context.get('response_id', 0)):
+                            etree.SubElement(
+                                    xml_group,
+                                    'button',
+                                    {
+                                        'colspan': "1",
+                                        'icon': "gtk-go-forward",
+                                        'name': "action_forward_next",
+                                        'string': tools.ustr("Next Answer") ,
+                                        'type': "object",
+                                        'context': tools.ustr(context),
+                                        })
                     if wiz_id:
                         fields["wizardid_" + str(wiz_id)] = {'type':'char', 'size' : 255, 'string':"", 'views':{}}
-                        etree.SubElement(xml_form, 'field', {'invisible':'1','name': "wizardid_" + str(wiz_id),'default':str(lambda *a: 0),'modifiers':'{"invisible":true}'})
-
+                        etree.SubElement(
+                                xml_form,
+                                'field',
+                                {
+                                    'invisible': '1',
+                                    'name': "wizardid_" + str(wiz_id),
+                                    'default': str(lambda *a: 0),
+                                    'modifiers': '{"invisible":true}',
+                                    })
                     if note:
                         xml_group_note = etree.SubElement(xml_form, 'group', {'col': '1','colspan': '4'})
                         for que_test in note.split('\n'):
-                            etree.SubElement(xml_group_note, 'label', {'string': to_xml(tools.ustr(que_test)), 'align':"0.0"})
+                            etree.SubElement(
+                                    xml_group_note,
+                                    'label',
+                                    {
+                                        'string': to_xml(tools.ustr(que_test)),
+                                        'align': "0.0",
+                                        })
                     que_ids = question_ids
                     qu_no = 0
-
                     for que in que_ids:
                         qu_no += 1
                         que_rec = que_obj.browse(cr, uid, que.id, context=context)
                         descriptive_text = ""
                         separator_string = tools.ustr(qu_no) + "." + tools.ustr(que_rec.question)
-                        if ((context.has_key('active') and not context.get('active',False)) or not context.has_key('active')) and que_rec.is_require_answer:
+                        if (
+                                ((context.has_key('active') and not context.get('active',False))
+                                   or not context.has_key('active'))
+                                and que_rec.is_require_answer
+                            ):
                             star = '*'
                         else:
                             star = ''
-                        if context.has_key('active') and context.get('active',False) and \
-                                    context.has_key('edit'):
-                            etree.SubElement(xml_form, 'separator', {'string': star+to_xml(separator_string)})
-
+                        if context.get('active', False) and context.has_key('edit'):
+                            etree.SubElement(
+                                xml_form,
+                                'separator',
+                                {
+                                    'string': star+to_xml(separator_string),
+                                    })
                             xml_group1 = etree.SubElement(xml_form, 'group', {'col': '2', 'colspan': '2'})
-                            context.update({'question_id' : tools.ustr(que.id),'page_number': sur_name_rec.page_no , 'transfer' : sur_name_read.transfer, 'page_id' : p_id})
-                            etree.SubElement(xml_group1, 'button', {'string':'','icon': "gtk-edit", 'type' :'object', 'name':"action_edit_question", 'context' : tools.ustr(context)})
-                            etree.SubElement(xml_group1, 'button', {'string':'','icon': "gtk-delete", 'type' :'object','name':"action_delete_question", 'context' : tools.ustr(context)})
+                            context.update({
+                                'question_id': tools.ustr(que.id),
+                                'page_number': sur_name_rec.page_no,
+                                'transfer': sur_name_read.transfer,
+                                'page_id': p_id,
+                                })
+                            etree.SubElement(
+                                xml_group1,
+                                'button',
+                                {
+                                    'string': '',
+                                    'icon': "gtk-edit",
+                                    'type': 'object',
+                                    'name': "action_edit_question",
+                                    'context': tools.ustr(context),
+                                    })
+                            etree.SubElement(
+                                xml_group1,
+                                'button',
+                                {
+                                    'string': '',
+                                    'icon': "gtk-delete",
+                                    'type': 'object',
+                                    'name': "action_delete_question",
+                                    'context': tools.ustr(context),
+                                    })
                         else:
                             etree.SubElement(xml_form, 'newline')
                             etree.SubElement(xml_form, 'separator', {'string': star+to_xml(separator_string)})
-
                         ans_ids = que_rec.answer_choice_ids
                         xml_group = etree.SubElement(xml_form, 'group', {'col': '1', 'colspan': '4'})
-
                         if que_rec.type == 'multiple_choice_only_one_ans':
                             selection = []
                             for ans in ans_ids:
                                 selection.append((tools.ustr(ans.id), ans.answer))
                             xml_group = etree.SubElement(xml_group, 'group', {'col': '2', 'colspan': '2'})
-                            etree.SubElement(xml_group, 'field', {'readonly':str(readonly), 'name': tools.ustr(que.id) + "_selection"})
-                            fields[tools.ustr(que.id) + "_selection"] = {'type':'selection', 'selection' :selection, 'string':"Answer"}
-
+                            etree.SubElement(
+                                    xml_group,
+                                    'field',
+                                    {
+                                        'readonly': str(readonly),
+                                        'name': tools.ustr(que.id) + "_selection",
+                                        })
+                            fields[
+                                    tools.ustr(que.id) + "_selection"
+                                    ] = {
+                                            'type': 'selection',
+                                            'selection': selection,
+                                            'string': "Answer",
+                                            }
                         elif que_rec.type == 'multiple_choice_multiple_ans':
                             xml_group = etree.SubElement(xml_group, 'group', {'col': '4', 'colspan': '4'})
                             for ans in ans_ids:
-                                etree.SubElement(xml_group, 'field', {'readonly':str(readonly), 'name': tools.ustr(que.id) + "_" + tools.ustr(ans.id)})
-                                fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id)] = {'type':'boolean', 'string':ans.answer}
-
+                                etree.SubElement(
+                                        xml_group,
+                                        'field',
+                                        {
+                                            'readonly': str(readonly),
+                                            'name': tools.ustr(que.id) + "_" + tools.ustr(ans.id),
+                                            })
+                                fields[
+                                        tools.ustr(que.id) + "_" + tools.ustr(ans.id)
+                                        ] = {
+                                                'type': 'boolean',
+                                                'string': ans.answer,
+                                                }
                         elif que_rec.type in ['matrix_of_choices_only_one_ans', 'rating_scale']:
                             if que_rec.comment_column:
                                 col = "4"
@@ -234,44 +412,167 @@ class survey_question_wiz(osv.osv_memory):
                             else:
                                col = "2"
                                colspan = "2"
-                            xml_group = etree.SubElement(xml_group, 'group', {'col': tools.ustr(col), 'colspan': tools.ustr(colspan)})
+                            xml_group = etree.SubElement(
+                                    xml_group,
+                                    'group',
+                                    {
+                                        'col': tools.ustr(col),
+                                        'colspan': tools.ustr(colspan),
+                                        })
                             for row in ans_ids:
                                 etree.SubElement(xml_group, 'newline')
-                                etree.SubElement(xml_group, 'field', {'readonly': str(readonly), 'name': tools.ustr(que.id) + "_selection_" + tools.ustr(row.id),'string':to_xml(tools.ustr(row.answer))})
+                                etree.SubElement(
+                                        xml_group,
+                                        'field',
+                                        {
+                                            'readonly': str(readonly),
+                                            'name': (
+                                                    tools.ustr(que.id)
+                                                    + "_selection_"
+                                                    + tools.ustr(row.id)
+                                                    ),
+                                            'string': to_xml(tools.ustr(row.answer)),
+                                            })
                                 selection = [('','')]
                                 for col in que_rec.column_heading_ids:
                                     selection.append((str(col.id), col.title))
-                                fields[tools.ustr(que.id) + "_selection_" + tools.ustr(row.id)] = {'type':'selection', 'selection' : selection, 'string': "Answer"}
+                                fields[
+                                        tools.ustr(que.id) + "_selection_" + tools.ustr(row.id)
+                                        ] = {
+                                                'type': 'selection',
+                                                'selection': selection,
+                                                'string': "Answer",
+                                                }
                                 if que_rec.comment_column:
-                                   fields[tools.ustr(que.id) + "_commentcolumn_"+tools.ustr(row.id) + "_field"] = {'type':'char', 'size' : 255, 'string':tools.ustr(que_rec.column_name), 'views':{}}
-                                   etree.SubElement(xml_group, 'field', {'readonly' :str(readonly), 'name': tools.ustr(que.id) + "_commentcolumn_"+tools.ustr(row.id)+ "_field"})
-
+                                   fields[
+                                           tools.ustr(que.id) + "_commentcolumn_" + tools.ustr(row.id) + "_field"
+                                           ] = {
+                                                   'type': 'char',
+                                                   'size': 255,
+                                                   'string': tools.ustr(que_rec.column_name),
+                                                   'views': {},
+                                                   }
+                                   etree.SubElement(
+                                           xml_group,
+                                           'field',
+                                           {
+                                               'readonly': str(readonly),
+                                               'name': (
+                                                    tools.ustr(que.id)
+                                                    + "_commentcolumn_"
+                                                    + tools.ustr(row.id)
+                                                    + "_field"
+                                                    ),
+                                               })
                         elif que_rec.type == 'matrix_of_choices_only_multi_ans':
-                            xml_group = etree.SubElement(xml_group, 'group', {'col': str(len(que_rec.column_heading_ids) + 1), 'colspan': '4'})
+                            xml_group = etree.SubElement(
+                                    xml_group,
+                                    'group',
+                                    {
+                                        'col': str(len(que_rec.column_heading_ids) + 1),
+                                        'colspan': '4',
+                                        })
                             etree.SubElement(xml_group, 'separator', {'string': '.','colspan': '1'})
                             for col in que_rec.column_heading_ids:
-                                etree.SubElement(xml_group, 'separator', {'string': tools.ustr(col.title),'colspan': '1'})
+                                etree.SubElement(
+                                        xml_group,
+                                        'separator',
+                                        {
+                                            'string': tools.ustr(col.title),
+                                            'colspan': '1',
+                                            })
                             for row in ans_ids:
-                                etree.SubElement(xml_group, 'label', {'string': to_xml(tools.ustr(row.answer)) +' :-', 'align': '0.0'})
-                                for col in que_col_head.browse(cr, uid, [head.id for head in  que_rec.column_heading_ids]):
-                                    etree.SubElement(xml_group, 'field', {'readonly' :str(readonly), 'name': tools.ustr(que.id) + "_" + tools.ustr(row.id) + "_" + tools.ustr(col.id), 'nolabel':"1"})
-                                    fields[tools.ustr(que.id) + "_" + tools.ustr(row.id)  + "_" + tools.ustr(col.id)] = {'type':'boolean', 'string': col.title}
-
+                                etree.SubElement(
+                                        xml_group,
+                                        'label',
+                                        {
+                                            'string': to_xml(tools.ustr(row.answer)) + ' :-',
+                                            'align': '0.0',
+                                            })
+                                for col in que_col_head.browse(
+                                        cr, uid,
+                                        [head.id for head in que_rec.column_heading_ids]
+                                    ):
+                                    etree.SubElement(
+                                            xml_group,
+                                            'field',
+                                            {
+                                                'readonly': str(readonly),
+                                                'name': (
+                                                        tools.ustr(que.id)
+                                                        + "_"
+                                                        + tools.ustr(row.id)
+                                                        + "_" +
+                                                        tools.ustr(col.id)
+                                                        ),
+                                                'nolabel': "1",
+                                                })
+                                    fields[
+                                            tools.ustr(que.id)
+                                            + "_"
+                                            + tools.ustr(row.id)
+                                            + "_"
+                                            + tools.ustr(col.id)
+                                            ] = {
+                                                    'type': 'boolean',
+                                                    'string': col.title,
+                                                    }
                         elif que_rec.type == 'matrix_of_drop_down_menus':
-                            xml_group = etree.SubElement(xml_group, 'group', {'col': str(len(que_rec.column_heading_ids) + 1), 'colspan': '4'})
+                            xml_group = etree.SubElement(
+                                    xml_group,
+                                    'group',
+                                    {
+                                        'col': str(len(que_rec.column_heading_ids) + 1),
+                                        'colspan': '4',
+                                        })
                             etree.SubElement(xml_group, 'separator', {'string': '.','colspan': '1'})
                             for col in que_rec.column_heading_ids:
-                                etree.SubElement(xml_group, 'separator', {'string': tools.ustr(col.title),'colspan': '1'})
+                                etree.SubElement(
+                                        xml_group,
+                                        'separator',
+                                        {
+                                            'string': tools.ustr(col.title),
+                                            'colspan': '1',
+                                            })
                             for row in ans_ids:
-                                etree.SubElement(xml_group, 'label', {'string': to_xml(tools.ustr(row.answer))+' :-', 'align': '0.0'})
+                                etree.SubElement(
+                                        xml_group,
+                                        'label',
+                                        {
+                                            'string': to_xml(tools.ustr(row.answer)) +' :-',
+                                            'align': '0.0',
+                                            })
                                 for col in que_rec.column_heading_ids:
                                     selection = []
                                     if col.menu_choice:
                                         for item in col.menu_choice.split('\n'):
-                                            if item and not item.strip() == '': selection.append((item ,item))
-                                    etree.SubElement(xml_group, 'field', {'readonly' :str(readonly), 'name': tools.ustr(que.id) + "_" + tools.ustr(row.id) + "_" + tools.ustr(col.id),'nolabel':'1'})
-                                    fields[tools.ustr(que.id) + "_" + tools.ustr(row.id)  + "_" + tools.ustr(col.id)] = {'type':'selection', 'string': col.title, 'selection':selection}
-
+                                            if item and not item.strip() == '':
+                                                selection.append((item, item))
+                                    etree.SubElement(
+                                            xml_group,
+                                            'field',
+                                            {
+                                                'readonly' :str(readonly),
+                                                'name': (
+                                                    tools.ustr(que.id)
+                                                    + "_"
+                                                    + tools.ustr(row.id)
+                                                    + "_"
+                                                    + tools.ustr(col.id)
+                                                    ),
+                                                'nolabel': '1',
+                                                })
+                                    fields[
+                                            tools.ustr(que.id)
+                                            + "_"
+                                            + tools.ustr(row.id)
+                                            + "_"
+                                            + tools.ustr(col.id)
+                                            ] = {
+                                                    'type':'selection',
+                                                    'string': col.title,
+                                                    'selection':selection,
+                                                    }
                         elif que_rec.type == 'multiple_textboxes':
                             xml_group = etree.SubElement(xml_group, 'group', {'col': '4', 'colspan': '4'})
                             type = "char"
@@ -283,81 +584,353 @@ class survey_question_wiz(osv.osv_memory):
                                 elif que_rec.validation_type in ['must_be_date']:
                                     type = "date"
                             for ans in ans_ids:
-                                etree.SubElement(xml_group, 'field', {'readonly': str(readonly), 'width':"300",'colspan': '1','name': tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_multi"})
+                                etree.SubElement(
+                                        xml_group,
+                                        'field',
+                                        {
+                                            'readonly': str(readonly),
+                                            'width': "300",
+                                            'colspan': '1',
+                                            'name': (
+                                                    tools.ustr(que.id)
+                                                    + "_"
+                                                    + tools.ustr(ans.id)
+                                                    + "_multi"
+                                                    ),
+                                            })
                                 if type == "char" :
-                                    fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_multi"] = {'type':'char', 'size':255, 'string':ans.answer}
+                                    fields[
+                                            tools.ustr(que.id)
+                                            + "_"
+                                            + tools.ustr(ans.id)
+                                            + "_multi"
+                                            ] = {
+                                                    'type': 'char',
+                                                    'size': 255,
+                                                    'string':ans.answer,
+                                                    }
                                 else:
-                                    fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_multi"] = {'type': str(type), 'string':ans.answer}
-
+                                    fields[
+                                            tools.ustr(que.id)
+                                            + "_"
+                                            + tools.ustr(ans.id)
+                                            + "_multi"
+                                            ] = {
+                                                    'type': str(type),
+                                                    'string': ans.answer,
+                                                    }
                         elif que_rec.type == 'numerical_textboxes':
                             xml_group = etree.SubElement(xml_group, 'group', {'col': '4', 'colspan': '4'})
                             for ans in ans_ids:
-                                etree.SubElement(xml_group, 'field', {'readonly': str(readonly), 'width':"300",'colspan': '1','name': tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_numeric"})
-                                fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_numeric"] = {'type':'integer', 'string':ans.answer}
-
+                                etree.SubElement(
+                                        xml_group,
+                                        'field',
+                                        {
+                                            'readonly': str(readonly),
+                                            'width': "300",
+                                            'colspan': '1',
+                                            'name': (
+                                                    tools.ustr(que.id)
+                                                    + "_"
+                                                    + tools.ustr(ans.id)
+                                                    + "_numeric"
+                                                    ),
+                                            })
+                                fields[
+                                        tools.ustr(que.id)
+                                        + "_"
+                                        + tools.ustr(ans.id)
+                                        + "_numeric"
+                                        ] = {
+                                                'type': 'integer',
+                                                'string': ans.answer,
+                                                }
                         elif que_rec.type == 'date':
                             xml_group = etree.SubElement(xml_group, 'group', {'col': '4', 'colspan': '4'})
                             for ans in ans_ids:
-                                etree.SubElement(xml_group, 'field', {'readonly': str(readonly), 'width':"300",'colspan': '1','name': tools.ustr(que.id) + "_" + tools.ustr(ans.id)})
-                                fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id)] = {'type':'date', 'string':ans.answer}
-
+                                etree.SubElement(
+                                        xml_group,
+                                        'field',
+                                        {
+                                            'readonly': str(readonly),
+                                            'width': "300",
+                                            'colspan': '1',
+                                            'name': tools.ustr(que.id) + "_" + tools.ustr(ans.id),
+                                            })
+                                fields[
+                                        tools.ustr(que.id)
+                                        + "_"
+                                        + tools.ustr(ans.id)
+                                        ] = {
+                                                'type': 'date',
+                                                'string': ans.answer
+                                                }
                         elif que_rec.type == 'date_and_time':
                             xml_group = etree.SubElement(xml_group, 'group', {'col': '4', 'colspan': '4'})
                             for ans in ans_ids:
-                                etree.SubElement(xml_group, 'field', {'readonly': str(readonly), 'width':"300",'colspan': '1','name': tools.ustr(que.id) + "_" + tools.ustr(ans.id)})
-                                fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id)] = {'type':'datetime', 'string':ans.answer}
-
+                                etree.SubElement(
+                                        xml_group,
+                                        'field',
+                                        {
+                                            'readonly': str(readonly),
+                                            'width': "300",
+                                            'colspan': '1',
+                                            'name': tools.ustr(que.id) + "_" + tools.ustr(ans.id),
+                                            })
+                                fields[
+                                        tools.ustr(que.id)
+                                        + "_"
+                                        + tools.ustr(ans.id)
+                                        ] = {
+                                                'type': 'datetime',
+                                                'string': ans.answer,
+                                                }
                         elif que_rec.type == 'descriptive_text':
                             if que_rec.descriptive_text:
                                 for que_test in que_rec.descriptive_text.split('\n'):
-                                    etree.SubElement(xml_group, 'label', {'string': to_xml(tools.ustr(que_test)), 'align':"0.0"})
-
+                                    etree.SubElement(
+                                            xml_group,
+                                            'label',
+                                            {
+                                                'string': to_xml(tools.ustr(que_test)),
+                                                'align': "0.0",
+                                                })
                         elif que_rec.type == 'single_textbox':
-                            etree.SubElement(xml_group, 'field', {'readonly' :str(readonly), 'name': tools.ustr(que.id) + "_single", 'nolabel':"1" ,'colspan':"4"})
-                            fields[tools.ustr(que.id) + "_single"] = {'type':'char', 'size': 255, 'string':"single_textbox", 'views':{}}
-
+                            etree.SubElement(
+                                    xml_group,
+                                    'field',
+                                    {
+                                        'readonly': str(readonly),
+                                        'name': tools.ustr(que.id) + "_single",
+                                        'nolabel': "1",
+                                        'colspan': "4",
+                                        })
+                            fields[
+                                    tools.ustr(que.id)
+                                    + "_single"
+                                    ] = {
+                                            'type': 'char',
+                                            'size': 255,
+                                            'string': "single_textbox",
+                                            'views':{},
+                                            }
                         elif que_rec.type == 'comment':
-                            etree.SubElement(xml_group, 'field', {'readonly' :str(readonly), 'name': tools.ustr(que.id) + "_comment", 'nolabel':"1" ,'colspan':"4"})
-                            fields[tools.ustr(que.id) + "_comment"] = {'type':'text', 'string':"Comment/Eassy Box", 'views':{}}
+                            etree.SubElement(
+                                    xml_group,
+                                    'field',
+                                    {
+                                        'readonly': str(readonly),
+                                        'name': tools.ustr(que.id) + "_comment",
+                                        'nolabel': "1",
+                                        'colspan': "4",
+                                        })
+                            fields[
+                                    tools.ustr(que.id)
+                                    + "_comment"
+                                    ] = {
+                                            'type': 'text',
+                                            'string': "Comment/Eassy Box",
+                                            'views': {},
+                                            }
 
                         elif que_rec.type == 'table':
-                            xml_group = etree.SubElement(xml_group, 'group', {'col': str(len(que_rec.column_heading_ids)), 'colspan': '4'})
+                            xml_group = etree.SubElement(
+                                    xml_group,
+                                    'group',
+                                    {
+                                        'col': str(len(que_rec.column_heading_ids)),
+                                        'colspan': '4',
+                                        })
                             for col in que_rec.column_heading_ids:
-                                etree.SubElement(xml_group, 'separator', {'string': tools.ustr(col.title),'colspan': '1'})
+                                etree.SubElement(
+                                        xml_group,
+                                        'separator',
+                                        {
+                                            'string': tools.ustr(col.title),
+                                            'colspan': '1',
+                                            })
                             for row in range(0,que_rec.no_of_rows):
                                 for col in que_rec.column_heading_ids:
-                                    etree.SubElement(xml_group, 'field', {'readonly' :str(readonly), 'name': tools.ustr(que.id) + "_table_" + tools.ustr(col.id) +"_"+ tools.ustr(row), 'nolabel':"1"})
-                                    fields[tools.ustr(que.id) + "_table_" + tools.ustr(col.id) +"_"+ tools.ustr(row)] = {'type':'char','size':255,'views':{}}
-
+                                    etree.SubElement(
+                                            xml_group,
+                                            'field',
+                                            {
+                                                'readonly': str(readonly),
+                                                'name': (
+                                                    tools.ustr(que.id)
+                                                    + "_table_"
+                                                    + tools.ustr(col.id)
+                                                    + "_"
+                                                    + tools.ustr(row)
+                                                    ),
+                                                'nolabel': "1",
+                                                })
+                                    fields[
+                                            tools.ustr(que.id)
+                                            + "_table_"
+                                            + tools.ustr(col.id)
+                                            + "_"
+                                            + tools.ustr(row)
+                                            ] = {
+                                                    'type': 'char',
+                                                    'size': 255,
+                                                    'views': {},
+                                                    }
                         elif que_rec.type == 'multiple_textboxes_diff_type':
                             xml_group = etree.SubElement(xml_group, 'group', {'col': '4', 'colspan': '4'})
                             for ans in ans_ids:
                                 if ans.type == "email" :
-                                    fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_multi"] = {'type':'char', 'size':255, 'string':ans.answer}
-                                    etree.SubElement(xml_group, 'field', {'readonly': str(readonly), 'widget':'email','width':"300",'colspan': '1','name': tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_multi"})
+                                    fields[
+                                            tools.ustr(que.id)
+                                            + "_"
+                                            + tools.ustr(ans.id)
+                                            + "_multi"
+                                            ] = {
+                                                    'type': 'char',
+                                                    'size': 255,
+                                                    'string': ans.answer,
+                                                    }
+                                    etree.SubElement(
+                                            xml_group,
+                                            'field',
+                                            {
+                                                'readonly': str(readonly),
+                                                'widget': 'email',
+                                                'width': "300",
+                                                'colspan': '1',
+                                                'name': (
+                                                    tools.ustr(que.id)
+                                                    + "_"
+                                                    + tools.ustr(ans.id)
+                                                    + "_multi"
+                                                    ),
+                                                })
                                 else:
-                                    etree.SubElement(xml_group, 'field', {'readonly': str(readonly), 'width':"300",'colspan': '1','name': tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_multi"})
+                                    etree.SubElement(
+                                            xml_group,
+                                            'field',
+                                            {
+                                                'readonly': str(readonly),
+                                                'width': "300",
+                                                'colspan': '1',
+                                                'name': (
+                                                    tools.ustr(que.id)
+                                                    + "_"
+                                                    + tools.ustr(ans.id)
+                                                    + "_multi"
+                                                    ),
+                                                })
                                     if ans.type == "char" :
-                                        fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_multi"] = {'type':'char', 'size':255, 'string':ans.answer}
+                                        fields[
+                                                tools.ustr(que.id)
+                                                + "_"
+                                                + tools.ustr(ans.id)
+                                                + "_multi"
+                                                ] = {
+                                                        'type': 'char',
+                                                        'size': 255,
+                                                        'string': ans.answer,
+                                                        }
                                     elif ans.type in ['integer','float','date','datetime']:
-                                        fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_multi"] = {'type': str(ans.type), 'string':ans.answer}
+                                        fields[
+                                                tools.ustr(que.id)
+                                                + "_"
+                                                + tools.ustr(ans.id)
+                                                + "_multi"
+                                                ] = {
+                                                        'type': str(ans.type),
+                                                        'string': ans.answer,
+                                                        }
                                     else:
                                         selection = []
                                         if ans.menu_choice:
                                             for item in ans.menu_choice.split('\n'):
                                                 if item and not item.strip() == '': selection.append((item ,item))
-                                        fields[tools.ustr(que.id) + "_" + tools.ustr(ans.id) + "_multi"] = {'type':'selection', 'selection' : selection, 'string':ans.answer}
-
-                        if que_rec.type in ['multiple_choice_only_one_ans', 'multiple_choice_multiple_ans', 'matrix_of_choices_only_one_ans', 'matrix_of_choices_only_multi_ans', 'matrix_of_drop_down_menus', 'rating_scale'] and que_rec.is_comment_require:
-                            if que_rec.type in ['multiple_choice_only_one_ans', 'multiple_choice_multiple_ans'] and que_rec.comment_field_type in ['char','text'] and que_rec.make_comment_field:
-                                etree.SubElement(xml_group, 'field', {'readonly' :str(readonly), 'name': tools.ustr(que.id) + "_otherfield", 'colspan':"4"})
-                                fields[tools.ustr(que.id) + "_otherfield"] = {'type':'boolean', 'string':que_rec.comment_label, 'views':{}}
+                                        fields[
+                                                tools.ustr(que.id)
+                                                + "_"
+                                                + tools.ustr(ans.id)
+                                                + "_multi"
+                                                ] = {
+                                                        'type': 'selection',
+                                                        'selection': selection,
+                                                        'string': ans.answer,
+                                                        }
+                        if (
+                                que_rec.type in [
+                                    'multiple_choice_only_one_ans',
+                                    'multiple_choice_multiple_ans',
+                                    'matrix_of_choices_only_one_ans',
+                                    'matrix_of_choices_only_multi_ans',
+                                    'matrix_of_drop_down_menus',
+                                    'rating_scale'
+                                    ]
+                                and que_rec.is_comment_require
+                            ):
+                            if (
+                                    que_rec.type in [
+                                    'multiple_choice_only_one_ans',
+                                    'multiple_choice_multiple_ans',
+                                    ]
+                                    and que_rec.comment_field_type in ['char','text']
+                                    and que_rec.make_comment_field
+                                ):
+                                etree.SubElement(
+                                        xml_group,
+                                        'field',
+                                        {
+                                            'readonly': str(readonly),
+                                            'name': (
+                                                    tools.ustr(que.id)
+                                                    + "_otherfield"
+                                                    ),
+                                            'colspan': "4",
+                                            })
+                                fields[
+                                        tools.ustr(que.id)
+                                        + "_otherfield"
+                                        ] = {
+                                                'type': 'boolean',
+                                                'string': que_rec.comment_label,
+                                                'views': {},
+                                                }
                                 if que_rec.comment_field_type == 'char':
-                                    etree.SubElement(xml_group, 'field', {'readonly' :str(readonly), 'name': tools.ustr(que.id) + "_other", 'nolabel':"1" ,'colspan':"4"})
-                                    fields[tools.ustr(que.id) + "_other"] = {'type': 'char', 'string': '', 'size':255, 'views':{}}
+                                    etree.SubElement(
+                                            xml_group,
+                                            'field',
+                                            {
+                                                'readonly': str(readonly),
+                                                'name': tools.ustr(que.id) + "_other",
+                                                'nolabel': "1",
+                                                'colspan': "4",
+                                                })
+                                    fields[
+                                            tools.ustr(que.id)
+                                            + "_other"
+                                            ] = {
+                                                    'type': 'char',
+                                                    'string': '',
+                                                    'size': 255,
+                                                    'views': {}
+                                                    }
                                 elif que_rec.comment_field_type == 'text':
-                                    etree.SubElement(xml_group, 'field', {'readonly' :str(readonly), 'name': tools.ustr(que.id) + "_other", 'nolabel':"1" ,'colspan':"4"})
-                                    fields[tools.ustr(que.id) + "_other"] = {'type': 'text', 'string': '', 'views':{}}
+                                    etree.SubElement(
+                                            xml_group,
+                                            'field',
+                                            {
+                                                'readonly': str(readonly),
+                                                'name': tools.ustr(que.id) + "_other",
+                                                'nolabel': "1",
+                                                'colspan':"4",
+                                                })
+                                    fields[
+                                            tools.ustr(que.id)
+                                            + "_other"
+                                            ] = {
+                                                    'type': 'text',
+                                                    'string': '',
+                                                    'views': {},
+                                                    }
                             else:
                                 if que_rec.comment_field_type == 'char':
                                     etree.SubElement(xml_group, 'label', {'string': to_xml(tools.ustr(que_rec.comment_label)),'colspan':"4"})
@@ -492,8 +1065,7 @@ class survey_question_wiz(osv.osv_memory):
         Assign Default value in particular field. If Browse Answers wizard run then read the value into database and Assigne to a particular fields.
         """
         value = {}
-        if context is None:
-            context = {}
+        context = context or {}
         for field in fields_list:
             if field.split('_')[0] == 'progress':
                 tot_page_id = self.pool.get('survey').browse(cr, uid, context.get('survey_id',False))
@@ -565,8 +1137,7 @@ class survey_question_wiz(osv.osv_memory):
         """
         Create the Answer of survey and store in survey.response object, and if set validation of question then check the value of question if value is wrong then raise the exception.
         """
-        if context is None: context = {}
-
+        context = context or {}
         survey_question_wiz_id = super(survey_question_wiz,self).create(cr, uid, {'name': vals.get('name')}, context=context)
         if context.has_key('active') and context.get('active',False):
             return survey_question_wiz_id
@@ -636,7 +1207,7 @@ class survey_question_wiz(osv.osv_memory):
                         'date_create': datetime.datetime.now(),
                         'state': 'done',
                         'response_id': response_id
-                    }
+                        }
                     resp_id = resp_obj.create(cr, uid, res_data)
                     resp_id_list.append(resp_id)
                     sur_name_read['store_ans'].update({resp_id:{'question_id':que_id}})
@@ -1022,13 +1593,16 @@ class survey_question_wiz(osv.osv_memory):
         """
         New survey.Question form.
         """
-        if context is None:
-            context = {}
-        for key,val in context.items():
-            if type(key) == type(True):
+        context = context or {}
+        for key, val in context.items():
+            if isinstance(key, bool):
                 context.pop(key)
-        view_id = self.pool.get('ir.ui.view').search(cr,uid,[('model','=','survey.question'),\
-                            ('name','=','survey_question_wizard_test')])
+        view_id = self.pool.get(
+                'ir.ui.view'
+                ).search(
+                        cr, uid,
+                        [('model','=','survey.question'),('name','=','survey_question_wizard_test')],
+                        )
         return {
             'view_type': 'form',
             "view_mode": 'form',
@@ -1036,20 +1610,23 @@ class survey_question_wiz(osv.osv_memory):
             'type': 'ir.actions.act_window',
             'target': 'new',
             'view_id': view_id,
-            'context': context
-        }
+            'context': context,
+            }
 
     def action_new_page(self, cr, uid, ids, context=None):
         """
         New survey.Page form.
         """
-        if context is None:
-            context = {}
-        for key,val in context.items():
-            if type(key) == type(True):
+        context = context or {}
+        for key, val in context.items():
+            if isinstance(key, bool):
                 context.pop(key)
-        view_id = self.pool.get('ir.ui.view').search(cr,uid,[('model','=','survey.page'),\
-                                        ('name','=','survey_page_wizard_test')])
+        view_id = self.pool.get(
+                'ir.ui.view'
+                ).search(
+                        cr, uid,
+                        [('model','=','survey.page'),('name','=','survey_page_wizard_test')],
+                        )
         return {
             'view_type': 'form',
             "view_mode": 'form',
@@ -1057,20 +1634,23 @@ class survey_question_wiz(osv.osv_memory):
             'type': 'ir.actions.act_window',
             'target': 'new',
             'view_id': view_id,
-            'context': context
-        }
+            'context': context,
+            }
 
     def action_edit_page(self, cr, uid, ids, context=None):
         """
         Edit survey.page.
         """
-        if context is None:
-            context = {}
-        for key,val in context.items():
+        context = context or {}
+        for key, val in context.items():
             if type(key) == type(True):
                 context.pop(key)
-        view_id = self.pool.get('ir.ui.view').search(cr,uid,[('model','=','survey.page'),\
-                                ('name','=','survey_page_wizard_test')])
+        view_id = self.pool.get(
+                'ir.ui.view'
+                ).search(
+                        cr, uid,
+                        [('model','=','survey.page'),('name','=','survey_page_wizard_test')],
+                        )
         return {
             'view_type': 'form',
             "view_mode": 'form',
@@ -1079,29 +1659,41 @@ class survey_question_wiz(osv.osv_memory):
             'target': 'new',
             'res_id': int(context.get('page_id',0)),
             'view_id': view_id,
-            'context': context
-        }
+            'context': context,
+            }
 
     def action_delete_page(self, cr, uid, ids, context=None):
         """
         Delete survey.page.
         """
-        if context is None:
-            context = {}
-        for key,val in context.items():
+        context = context or {}
+        for key, val in context.items():
             if type(key) == type(True):
                 context.pop(key)
-
         self.pool.get('survey.page').unlink(cr, uid, [context.get('page_id',False)])
-        for survey in self.pool.get('survey').browse(cr, uid, [context.get('survey_id',False)], context=context):
+        for survey in self.pool.get(
+                'survey'
+                ).browse(
+                        cr, uid,
+                        [context.get('survey_id',False)],
+                        context=context,
+                        ):
             if not survey.page_ids:
-                return {'type':'ir.actions.act_window_close'}
-
-        search_id = self.pool.get('ir.ui.view').search(cr,uid,[('model','=','survey.question.wiz'),\
-                                            ('name','=','Survey Search')])
+                return {'type': 'ir.actions.act_window_close'}
+        search_id = self.pool.get(
+                'ir.ui.view'
+                ).search(
+                        cr, uid,
+                        [('model','=','survey.question.wiz'),('name','=','Survey Search')],
+                        )
         surv_name_wiz = self.pool.get('survey.name.wiz')
-        surv_name_wiz.write(cr, uid, [context.get('sur_name_id',False)], \
-                    {'transfer':True, 'page_no' : context.get('page_number',False) })
+        surv_name_wiz.write(
+                cr, uid,
+                [context.get('sur_name_id',False)],
+                {
+                    'transfer': True,
+                    'page_no': context.get('page_number',False),
+                    })
         return {
             'view_type': 'form',
             "view_mode": 'form',
@@ -1109,20 +1701,23 @@ class survey_question_wiz(osv.osv_memory):
             'type': 'ir.actions.act_window',
             'target': 'new',
             'search_view_id':search_id[0],
-            'context': context
-        }
+            'context': context,
+            }
 
     def action_edit_question(self, cr, uid, ids, context=None):
         """
         Edit survey.question.
         """
-        if context is None:
-            context = {}
+        context = context or {}
         for key,val in context.items():
             if type(key) == type(True):
                 context.pop(key)
-        view_id = self.pool.get('ir.ui.view').search(cr,uid,[('model','=','survey.question'),\
-                                ('name','=','survey_question_wizard_test')])
+        view_id = self.pool.get(
+                'ir.ui.view'
+                ).search(
+                        cr, uid,
+                        [('model','=','survey.question'),('name','=','survey_question_wizard_test')],
+                        )
         return {
             'view_type': 'form',
             "view_mode": 'form',
@@ -1131,26 +1726,33 @@ class survey_question_wiz(osv.osv_memory):
             'target': 'new',
             'res_id' : int(context.get('question_id',0)),
             'view_id': view_id,
-            'context': context
-        }
+            'context': context,
+            }
 
     def action_delete_question(self, cr, uid, ids, context=None):
         """
         Delete survey.question.
         """
-        if context is None:
-            context = {}
+        context = context or {}
         for key,val in context.items():
             if type(key) == type(True):
                 context.pop(key)
-
         que_obj = self.pool.get('survey.question')
-        que_obj.unlink(cr, uid, [context.get('question_id',False)])
-        search_id = self.pool.get('ir.ui.view').search(cr,uid,[('model','=','survey.question.wiz'),\
-                                        ('name','=','Survey Search')])
+        que_obj.unlink(cr, uid, [context.get('question_id', False)])
+        search_id = self.pool.get(
+                'ir.ui.view'
+                ).search(
+                        cr, uid,
+                        [('model','=','survey.question.wiz'),('name','=','Survey Search')],
+                        )
         surv_name_wiz = self.pool.get('survey.name.wiz')
-        surv_name_wiz.write(cr, uid, [context.get('sur_name_id',False)],\
-                     {'transfer':True, 'page_no' : context.get('page_number',0) })
+        surv_name_wiz.write(
+                cr, uid,
+                [context.get('sur_name_id', False)],
+                {
+                    'transfer': True,
+                    'page_no': context.get('page_number',0),
+                    })
         return {
                 'view_type': 'form',
                 "view_mode": 'form',
@@ -1158,23 +1760,34 @@ class survey_question_wiz(osv.osv_memory):
                 'type': 'ir.actions.act_window',
                 'target': 'new',
                 'search_view_id': search_id[0],
-                'context': context
+                'context': context,
                 }
 
     def action_forward_previous(self, cr, uid, ids, context=None):
         """
         Goes to previous Survey Answer.
         """
-        if context is None:
-            context = {}
+        context = context or {}
         search_obj = self.pool.get('ir.ui.view')
         surv_name_wiz = self.pool.get('survey.name.wiz')
-        search_id = search_obj.search(cr,uid,[('model','=','survey.question.wiz'),\
-                                              ('name','=','Survey Search')])
-        wiz_id = surv_name_wiz.create(cr,uid, {'survey_id': context.get('survey_id',False),'page_no' :-1,'page':'next','transfer' :1,'response':0})
-        context.update({'sur_name_id' :wiz_id, 'response_no': context.get('response_no',0) - 1})
-
-        if context.get('response_no',0) + 1 > len(context.get('response_id',0)):
+        search_id = search_obj.search(
+                cr, uid,
+                [('model','=','survey.question.wiz'),('name','=','Survey Search')],
+                )
+        wiz_id = surv_name_wiz.create(
+                cr, uid,
+                {
+                    'survey_id': context.get('survey_id', False),
+                    'page_no': -1,
+                    'page': 'next',
+                    'transfer': 1,
+                    'response': 0,
+                    })
+        context.update({
+                'sur_name_id': wiz_id,
+                'response_no': context.get('response_no', 0) - 1,
+                })
+        if context.get('response_no', 0) + 1 > len(context.get('response_id', 0)):
             return {}
         return {
             'view_type': 'form',
@@ -1183,23 +1796,34 @@ class survey_question_wiz(osv.osv_memory):
             'type': 'ir.actions.act_window',
             'target': 'new',
             'search_view_id': search_id[0],
-            'context': context
-        }
+            'context': context,
+            }
 
     def action_forward_next(self, cr, uid, ids, context=None):
         """
         Goes to Next Survey Answer.
         """
-        if context is None:
-            context = {}
+        context = context or {}
         search_obj = self.pool.get('ir.ui.view')
         surv_name_wiz = self.pool.get('survey.name.wiz')
-        search_id = search_obj.search(cr,uid,[('model','=','survey.question.wiz'),\
-                                    ('name','=','Survey Search')])
-        wiz_id = surv_name_wiz.create(cr,uid, {'survey_id' : context.get('survey_id',False),'page_no' :-1,'page':'next','transfer' :1,'response':0})
-        context.update({'sur_name_id' :wiz_id, 'response_no' : context.get('response_no',0) + 1})
-
-        if context.get('response_no',0) + 1 > len(context.get('response_id',0)):
+        search_id = search_obj.search(
+                cr, uid,
+                [('model','=','survey.question.wiz'),('name','=','Survey Search')],
+                )
+        wiz_id = surv_name_wiz.create(
+                cr, uid,
+                {
+                    'survey_id': context.get('survey_id', False),
+                    'page_no': -1,
+                    'page': 'next',
+                    'transfer': 1,
+                    'response': 0,
+                    })
+        context.update({
+                'sur_name_id': wiz_id,
+                'response_no': context.get('response_no',0) + 1,
+                })
+        if context.get('response_no', 0) + 1 > len(context.get('response_id', 0)):
             return {}
         return {
             'view_type': 'form',
@@ -1208,19 +1832,25 @@ class survey_question_wiz(osv.osv_memory):
             'type': 'ir.actions.act_window',
             'target': 'new',
             'search_view_id': search_id[0],
-            'context': context
-        }
+            'context': context,
+            }
 
     def action_next(self, cr, uid, ids, context=None):
         """
         Goes to Next page.
         """
-        if context is None:
-            context = {}
+        context = context or {}
         surv_name_wiz = self.pool.get('survey.name.wiz')
         search_obj = self.pool.get('ir.ui.view')
-        search_id = search_obj.search(cr,uid,[('model','=','survey.question.wiz'),('name','=','Survey Search')])
-        surv_name_wiz.write(cr, uid, [context.get('sur_name_id',False)], {'transfer':True, 'page':'next'})
+        search_id = search_obj.search(
+                cr, uid,
+                [('model','=','survey.question.wiz'),('name','=','Survey Search')],
+                )
+        surv_name_wiz.write(
+                cr, uid,
+                [context.get('sur_name_id', False)],
+                {'transfer': True, 'page': 'next'},
+                )
         return {
             'view_type': 'form',
             "view_mode": 'form',
@@ -1228,20 +1858,25 @@ class survey_question_wiz(osv.osv_memory):
             'type': 'ir.actions.act_window',
             'target': 'new',
             'search_view_id': search_id[0],
-            'context': context
-        }
+            'context': context,
+            }
 
     def action_previous(self, cr, uid, ids, context=None):
         """
         Goes to previous page.
         """
-        if context is None:
-            context = {}
+        context = context or {}
         surv_name_wiz = self.pool.get('survey.name.wiz')
         search_obj = self.pool.get('ir.ui.view')
-        search_id = search_obj.search(cr,uid,[('model','=','survey.question.wiz'),\
-                                    ('name','=','Survey Search')])
-        surv_name_wiz.write(cr, uid, [context.get('sur_name_id',False)], {'transfer':True, 'page':'previous'})
+        search_id = search_obj.search(
+                cr, uid,
+                [('model','=','survey.question.wiz'),('name','=','Survey Search')],
+                )
+        surv_name_wiz.write(
+                cr, uid,
+                [context.get('sur_name_id', False)],
+                {'transfer': True, 'page': 'previous'},
+                )
         return {
             'view_type': 'form',
             "view_mode": 'form',
@@ -1249,8 +1884,8 @@ class survey_question_wiz(osv.osv_memory):
             'type': 'ir.actions.act_window',
             'target': 'new',
             'search_view_id': search_id[0],
-            'context': context
-        }
+            'context': context,
+            }
 
 survey_question_wiz()
 

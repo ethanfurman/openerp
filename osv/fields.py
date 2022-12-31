@@ -47,7 +47,7 @@ import openerp
 import openerp.tools as tools
 from openerp.exceptions import ERPError
 from openerp.tools.translate import _
-from openerp.tools import Enum, issubclass, Sentinel
+from openerp.tools import Enum, issubclass, Sentinel, OrderBy
 from openerp.tools import float_round, float_repr
 from openerp.tools import html_sanitize
 from openerp.tools import default, default_uninit, UnInit
@@ -84,8 +84,8 @@ class _column(object):
     _type = 'unknown'
     _obj = None
     _multi = False
-    _symbol_c = '%s'
-    _symbol_f = _symbol_set
+    _symbol_c = '%s'                            # %-replacement for field name in sql statement
+    _symbol_f = _symbol_set                     # value of field in sql statement
     _symbol_set = (_symbol_c, _symbol_f)
     _symbol_get = None
 
@@ -129,13 +129,14 @@ class _column(object):
         self.group_operator = args.get('group_operator', default_false)
         self.groups = default_false  # CSV list of ext IDs of groups that can access this field
         self.deprecated = default_false # Optional deprecation warning
+        self.store = default_none
         for a, v in args.items():
             setattr(self, a, v)
 
     def __repr__(self):
-        return "<openerp.osv.fields.%s(%s)" % (
+        return "<openerp.osv.fields.%s(string=%r)" % (
                 self.__class__.__name__,
-                ', '.join(['%s=%r' % (k, v) for k, v in self.__dict__.items()])
+                self.string,
                 )
 
     def _finalize(self, cls, name):
@@ -144,6 +145,7 @@ class _column(object):
                 if v.value is UnInit:
                     raise ValueError("%s.%s:%s -- %r is a required field" % (cls.__module__, cls.__name__, name, a))
                 setattr(self, a, v.value)
+        return self
 
     def restart(self):
         pass
@@ -237,7 +239,7 @@ class reference(_column):
 class char(_column):
     _type = 'char'
 
-    def __init__(self, string=default('???'), size=default_none, **args):
+    def __init__(self, string=default('???'), size=default(128), **args):
         _column.__init__(self, string=string, size=size, **args)
         self._symbol_set = (self._symbol_c, self._symbol_set_char)
 
@@ -270,6 +272,9 @@ class html(text):
 
     _symbol_set = (_symbol_c, _symbol_f)
 
+class raw_html(text):
+    _type = 'html'
+
 import __builtin__
 
 class float(_column):
@@ -296,6 +301,17 @@ class float(_column):
 
 class date(_column):
     _type = 'date'
+    _symbol_c = '%s'
+    def _symbol_f(symb):
+        if symb is None or symb == False:
+            return None
+        elif isinstance(symb, unicode):
+            symb = symb.encode('utf-8')
+        if not isinstance(symb, str):
+            # had better be something that quacks like a date
+            symb = symb.strftime(tools.DEFAULT_SERVER_DATE_FORMAT)
+        return symb
+    _symbol_set = (_symbol_c, _symbol_f)
 
     @staticmethod
     def today(model, cr, *args, **kwds):
@@ -377,6 +393,27 @@ class datetime(_column):
             symb = symb.strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT)
         return symb
     _symbol_set = (_symbol_c, _symbol_f)
+
+    @staticmethod
+    def server_time(model, cr, timestamp=None):
+        # timestamp should be in UTC
+        timestamp = timestamp or DT.datetime.now()
+        if isinstance(timestamp, basestring):
+            timestamp = DT.datetime.strptime(timestamp, tools.DEFAULT_SERVER_DATETIME_FORMAT)
+        try:
+            tz_name = model.pool.get('ir.config_parameter').read(cr, 1, ids=[('key','=','database.time_zone')])[0]['value']
+        except IndexError:
+            _logger.error('missing system parameter: database.time_zone')
+            raise ERPError('Missing System Parametor', 'database.time_zone missing: unable to calculate server time')
+        try:
+            db_tz = pytz.timezone(tz_name)
+            utc_timestamp = UTC.localize(timestamp, is_dst=False) # UTC = no DST
+            tz_timestamp = utc_timestamp.astimezone(db_tz)
+        except Exception:
+            _logger.exception("failed to compute server timestamp")
+            raise ERPError('Unknown Failure', 'unable to calculate server time; examine logs for details')
+        return tz_timestamp
+
 
     @staticmethod
     def now(model, cr, *args, **kwds):
@@ -514,12 +551,12 @@ class selection(_column):
         if self.selection is not default_uninit and self.sort_order is default_none:
             if issubclass(self.selection, SelectionEnum):
                 self.sort_order = 'definition'
-        _column._finalize(self, cls, name)
+        return _column._finalize(self, cls, name)
 
 # ---------------------------------------------------------
 # Relationals fields
 # ---------------------------------------------------------
-
+#
 #
 # Values: (0, 0,  { fields })    create
 #         (1, ID, { fields })    update
@@ -541,6 +578,7 @@ class many2one(_column):
         _column.__init__(self, string=string, **args)
         self._obj = obj
         self._auto_join = auto_join
+        # if not specified, ondelete = 'set null'
 
     def get(self, cr, obj, ids, name, user=None, context=None, values=None):
         if context is None:
@@ -754,6 +792,7 @@ class many2many(_column):
         self._id2 = id2
         self._limit = limit
         self._order = order
+	# m2m fields are automatically and unavoidably ondelete='cascade'
 
     def _finalize(self, cls, name):
         _column._finalize(self, cls, name)
@@ -764,6 +803,7 @@ class many2many(_column):
             "Field: %s.%s.%s" % (
                 rel, cls.__module__, cls.__name__, name,
                 )))
+        return self
 
     def _sql_names(self, source_model):
         """Return the SQL names defining the structure of the m2m relationship table
@@ -837,8 +877,11 @@ class many2many(_column):
         # (https://github.com/odoo/odoo/issues/531)
         order = self._order or obj._order
         order_by = []
-        for t in order.split(','):
-            order_by.append('"%s".%s' % (obj._table, t.strip()))
+        if isinstance(order, OrderBy):
+            order_by.append('"%s".id' % (obj._table, ))
+        else:
+            for t in order.split(','):
+                order_by.append('"%s".%s' % (obj._table, t.strip()))
         order_by = " ORDER BY %s" % ",".join(order_by)
 
         limit_str = ''
@@ -1167,16 +1210,23 @@ class function(_column):
         #
         self._obj = obj
         self._fnct = fnct
-        self._fnct_inv = fnct_inv
         self._arg = arg
+        self._fnct_inv = fnct_inv
+        self._fnct_inv_arg = fnct_inv_arg
+        self._fnct_search = fnct_search
         self._multi = multi
         if 'relation' in args:
             self._obj = args['relation']
-
-        self._fnct_inv_arg = fnct_inv_arg
         self._type = type
-        self._fnct_search = fnct_search
         self.store = store
+        if store:
+            self._classic_write = True
+
+        if isinstance(store, dict) and type in ('many2one','many2many','one2many','reference','sparse'):
+            _logger.warning(
+                "use of a `store` dictionary is pointless with relational and sparse fields [string=%r]"
+                % (args.get('string','???'))
+                )
 
         if fnct_inv is True:
             if fnct_inv_arg:
@@ -1184,20 +1234,18 @@ class function(_column):
                         'Cannot use inverse function arguments with simple_set [fnct_inv_arg=%r]'
                         % (fnct_inv_arg, )
                         )
-            self.simple_set = {
-                    'many2one': many2one.set,
-                    'many2many': many2many.set,
-                    'one2many': one2many.set,
-                    }.get(type, _column.set)
+            if type in ('many2one','many2many','one2many','reference','related','sparse'):
+                raise ValueError(
+                        "cannot use `fnct_inv=True` with relational nor sparse fields [string=%r]"
+                        % (args.get('string','???'))
+                        )
+            self.simple_set = _column.set
 
-        if self.store:
-            self._classic_write = True
 
         if type == 'float':
             self._symbol_c = float._symbol_c
             self._symbol_f = float._symbol_f
             self._symbol_set = float._symbol_set
-            # self.digits = args.get('digits', default((16,2)))
             if not args.get('digits_compute'):
                 self.digits_compute = default_none
             if not args.get('digits'):
@@ -1226,6 +1274,8 @@ class function(_column):
             self._symbol_c = char._symbol_c
             self._symbol_f = char._symbol_f
             self._symbol_set = char._symbol_set
+            if not args.get('size'):
+                self.size = 128
 
         if type in ('many2one', 'many2many', 'one2many'):
             if self._obj is None:
@@ -1234,11 +1284,6 @@ class function(_column):
                 _logger.warning('%s field %r does not have the target field defined', type, args.get('string', '???'))
 
     def _finalize(self, cls, name):
-        # TODO: remove below once all float function fields are explicitly typed
-        # if isinstance(self._type, default) and self._type.value == 'float':
-        #     self._symbol_c = float._symbol_c
-        #     self._symbol_f = float._symbol_f
-        #     self._symbol_set = float._symbol_set
 
         _column._finalize(self, cls, name)
 
@@ -1264,6 +1309,7 @@ class function(_column):
                     self._symbol_set = ('%s', lambda x: float_repr(float_round(__builtin__.float(x or 0.0),
                                                                                precision_digits=scale),
                                                                    precision_digits=scale))
+        return self
 
     def search(self, cr, uid, obj, name, args, context=None):
         if not self._fnct_search:
@@ -1298,11 +1344,25 @@ class function(_column):
         return result
 
     def get(self, cr, obj, ids, name, uid=False, context=None, values=None):
-        result = self._fnct(obj, cr, uid, ids, name, self._arg, context)
-        if result is None and ids:
-            raise osv.except_osv('Programming Error', 'Possibly no return for a functional field?')
+        if self.store and values:
+            result = {}
+            if self._multi:
+                names = name
+                for vd in values:
+                    result[vd['id']] = rd = {}
+                    for n in names:
+                        rd[n] = vd[n]
+            else:
+                for vd in values:
+                    result[vd['id']] = vd[name]
+        else:
+            result = self._fnct(obj, cr, uid, ids, name, self._arg, context)
+            if result is None and ids:
+                raise osv.except_osv('Programming Error', 'Possibly no return for a functional field?')
         for id in ids:
             if self._multi and id in result:
+                if not isinstance(result[id], dict):
+                    raise osv.except_osv('Programming Error', 'multi-field function %r should return a dictionary per ip, but received %r' % (self._field_name, result[id]))
                 for field, value in result[id].iteritems():
                     if value:
                         result[id][field] = self.postprocess(cr, uid, obj, field, value, context)
@@ -1323,6 +1383,7 @@ class function(_column):
         # Function fields are supposed to emulate a basic field type,
         # so they can delegate to the basic type for record name rendering
         return globals()[field._type]._as_display_name(field, cr, uid, obj, value, context=context)
+
 
 # ---------------------------------------------------------
 # Related fields
@@ -1678,6 +1739,8 @@ class ref(object):
         if xml_id.count('.') != 1:
             raise ERPError('Bad Reference', 'reference must be <module>.<name>, not %r' % xml_id)
         self.module, self.name = xml_id.split('.')
+    def __repr__(self):
+        return 'fields.ref(%s.%s)' % (self.module, self.name)
     def __call__(self, pool, cr):
         ir_model_data = pool.get('ir.model.data')
         found = ir_model_data.read(
@@ -1686,7 +1749,11 @@ class ref(object):
                 fields=['res_id'],
                 )
         if not found:
-            raise ERPError('Bad Reference', 'unable to find match for <%s.%s>' % (self.module, self.name))
+            if pool._init:
+                _logger.error('Missing reference to <%s.%s> -- stop and restart server' % (self.module, self.name))
+                return 'ref(%s.%s)' % (self.module, self.name)
+            else:
+                raise ERPError('Bad Reference', 'unable to find match for <%s.%s>' % (self.module, self.name))
         elif len(found) > 1:
             raise ERPError('Bad Reference', 'too many matches for <%s.%s>' % (self.module, self.name))
         return found[0]['res_id']
@@ -1699,7 +1766,6 @@ def field_to_dict(model, cr, user, field, context=None):
     the translation).
 
     """
-
     res = {'type': field._type}
     # some attributes for m2m/function field are added as debug info only
     if isinstance(field, function):
@@ -1715,12 +1781,20 @@ def field_to_dict(model, cr, user, field, context=None):
         res['fnct_inv_arg'] = field._fnct_inv_arg or False
     if isinstance(field, one2many):
         res['o2m_order'] = field._order or False
+    if isinstance(field, many2many):
+        (table, col1, col2) = field._sql_names(model)
+        res['m2m_join_columns'] = [col1, col2]
+        res['m2m_join_table'] = table
     for arg in PUBLIC_FIELD_ATTRIBUTES:
         if getattr(field, arg, None):
             res[arg] = getattr(field, arg)
     if hasattr(field, 'selection'):
-        if isinstance(field.selection, (tuple, list)) or issubclass(field.selection, SelectionEnum):
+        if isinstance(field.selection, (tuple, list)):
             res['selection'] = [(s[0], s[1]) for s in field.selection]
+        elif issubclass(field.selection, SelectionEnum):
+            enum = field.selection
+            res['selection'] = [(s[0], s[1]) for s in field.selection]
+            res['enum'] = [enum.__name__] + [(m.name, m.value) for m in enum]
         else:
             # call the 'dynamic selection' function
             res['selection'] = field.selection(model, cr, user, context)
@@ -1847,6 +1921,13 @@ class SelectionEnum(str, Enum):
         return list(cls)[index]
 
     @classmethod
+    def _missing_value_(cls, value):
+        "support look-up by db name"
+        for member in cls:
+            if member.db == value:
+                return member
+
+    @classmethod
     def get_member(cls, text, default=_raise_lookup):
         for member in cls:
             if member.db == text:
@@ -1857,6 +1938,7 @@ class SelectionEnum(str, Enum):
             if default is not _raise_lookup:
                 return default
         raise LookupError('%r not found in %s' % (text, cls.__name__))
+
 
 def apply_groups(columns, groups):
     "convenience method for applying groups to columns"

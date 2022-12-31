@@ -24,6 +24,7 @@ import os
 import re
 from socket import gethostname
 import time
+from textwrap import dedent
 
 from openerp import SUPERUSER_ID
 from openerp import netsvc, tools
@@ -300,10 +301,11 @@ class act_window_view(osv.osv):
         'multi': False,
     }
     def _auto_init(self, cr, context=None):
-        super(act_window_view, self)._auto_init(cr, context)
+        res = super(act_window_view, self)._auto_init(cr, context)
         cr.execute('SELECT indexname FROM pg_indexes WHERE indexname = \'act_window_view_unique_mode_per_action\'')
         if not cr.fetchone():
             cr.execute('CREATE UNIQUE INDEX act_window_view_unique_mode_per_action ON ir_act_window_view (act_window_id, view_mode)')
+        return res
 act_window_view()
 
 class act_wizard(osv.osv):
@@ -767,10 +769,14 @@ class ir_actions_todo(osv.osv):
         'sequence': fields.integer('Sequence'),
         'state': fields.selection(TODO_STATES, string='Status', required=True),
         'name': fields.char('Name', size=64),
-        'type': fields.selection(TODO_TYPES, 'Type', required=True,
-            help="""Manual: Launched manually.
-Automatic: Runs whenever the system is reconfigured.
-Launch Manually Once: after having been launched manually, it sets automatically to Done."""),
+        'type': fields.selection(
+            TODO_TYPES, 'Type', required=True,
+            help=dedent("""\
+                    Manual: Launched manually.
+                    Automatic: Runs whenever the system is reconfigured.
+                    Launch Manually Once: after having been launched manually, it sets automatically to Done.
+                    """
+                    )),
         'groups_id': fields.many2many('res.groups', 'res_groups_action_rel', 'uid', 'gid', 'Groups'),
         'note': fields.text('Text', translate=True),
     }

@@ -1969,6 +1969,8 @@ openerp.mail = function (session) {
      * 
      * Add a link on the top user bar for write a full mail
      */
+    /**
+     * actually, don't
     session.web.ComposeMessageTopButton = session.web.Widget.extend({
         template:'mail.ComposeMessageTopButton',
 
@@ -2002,4 +2004,5 @@ openerp.mail = function (session) {
             });
         },
     });
+    **/
 };

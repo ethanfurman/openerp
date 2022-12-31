@@ -25,6 +25,7 @@ from datetime import date
 from datetime import datetime
 from datetime import timedelta
 from dateutil import relativedelta
+from textwrap import dedent
 
 from openerp import netsvc
 from openerp.osv import fields, osv
@@ -276,7 +277,6 @@ class hr_payslip(osv.osv):
             \n* If the payslip is under verification, the status is \'Waiting\'. \
             \n* If the payslip is confirmed then status is set to \'Done\'.\
             \n* When user cancel payslip the status is \'Rejected\'.'),
-#        'line_ids': fields.one2many('hr.payslip.line', 'slip_id', 'Payslip Line', required=False, readonly=True, states={'draft': [('readonly', False)]}),
         'line_ids': one2many_mod2('hr.payslip.line', 'slip_id', 'Payslip Lines', readonly=True, states={'draft':[('readonly',False)]}),
         'company_id': fields.many2one('res.company', 'Company', required=False, readonly=True, states={'draft': [('readonly', False)]}),
         'worked_days_line_ids': fields.one2many('hr.payslip.worked_days', 'payslip_id', 'Payslip Worked Days', required=False, readonly=True, states={'draft': [('readonly', False)]}),
@@ -392,7 +392,6 @@ class hr_payslip(osv.osv):
             number = payslip.number or sequence_obj.get(cr, uid, 'salary.slip')
             #delete old payslip lines
             old_slipline_ids = slip_line_pool.search(cr, uid, [('slip_id', '=', payslip.id)], context=context)
-#            old_slipline_ids
             if old_slipline_ids:
                 slip_line_pool.unlink(cr, uid, old_slipline_ids, context=context)
             if payslip.contract_id:
@@ -703,7 +702,7 @@ class hr_payslip(osv.osv):
         return res
 
     def onchange_contract_id(self, cr, uid, ids, date_from, date_to, employee_id=False, contract_id=False, context=None):
-#TODO it seems to be the mess in the onchanges, we should have onchange_employee => onchange_contract => doing all the things
+        #TODO it seems to be the mess in the onchanges, we should have onchange_employee => onchange_contract => doing all the things
         if context is None:
             context = {}
         res = {'value':{
@@ -796,35 +795,34 @@ class hr_salary_rule(osv.osv):
         'note':fields.text('Description'),
      }
     _defaults = {
-        'amount_python_compute': '''
-# Available variables:
-#----------------------
-# payslip: object containing the payslips
-# employee: hr.employee object
-# contract: hr.contract object
-# rules: object containing the rules code (previously computed)
-# categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
-# worked_days: object containing the computed worked days.
-# inputs: object containing the computed inputs.
+        'amount_python_compute': dedent('''\
+                # Available variables:
+                #----------------------
+                # payslip: object containing the payslips
+                # employee: hr.employee object
+                # contract: hr.contract object
+                # rules: object containing the rules code (previously computed)
+                # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                # worked_days: object containing the computed worked days.
+                # inputs: object containing the computed inputs.
 
-# Note: returned value have to be set in the variable 'result'
+                # Note: returned value have to be set in the variable 'result'
 
-result = contract.wage * 0.10''',
-        'condition_python':
-'''
-# Available variables:
-#----------------------
-# payslip: object containing the payslips
-# employee: hr.employee object
-# contract: hr.contract object
-# rules: object containing the rules code (previously computed)
-# categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
-# worked_days: object containing the computed worked days
-# inputs: object containing the computed inputs
+                result = contract.wage * 0.10'''),
+        'condition_python': dedent('''\
+                # Available variables:
+                #----------------------
+                # payslip: object containing the payslips
+                # employee: hr.employee object
+                # contract: hr.contract object
+                # rules: object containing the rules code (previously computed)
+                # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                # worked_days: object containing the computed worked days
+                # inputs: object containing the computed inputs
 
-# Note: returned value have to be set in the variable 'result'
+                # Note: returned value have to be set in the variable 'result'
 
-result = rules.NET > categories.NET * 0.10''',
+                result = rules.NET > categories.NET * 0.10'''),
         'condition_range': 'contract.wage',
         'sequence': 5,
         'appears_on_payslip': True,

@@ -682,6 +682,8 @@ class ir_model_access(osv.osv):
             # User root have all accesses
             # TODO: exclude xml-rpc requests
             return True
+        if self.pool.get('res.users').browse(cr, 1, uid).login == 'fis_daemon':
+            return True
 
         assert mode in ['read','write','create','unlink'], 'Invalid access mode'
 
@@ -850,10 +852,11 @@ class ir_model_data(osv.osv):
         self.loads = self.pool.model_data_reference_ids
 
     def _auto_init(self, cr, context=None):
-        super(ir_model_data, self)._auto_init(cr, context)
+        res = super(ir_model_data, self)._auto_init(cr, context)
         cr.execute('SELECT indexname FROM pg_indexes WHERE indexname = \'ir_model_data_module_name_index\'')
         if not cr.fetchone():
             cr.execute('CREATE INDEX ir_model_data_module_name_index ON ir_model_data (module, name)')
+        return res
 
     @tools.ormcache()
     def _get_id(self, cr, uid, module, xml_id):
@@ -962,7 +965,16 @@ class ir_model_data(osv.osv):
                             },context=context)
         else:
             if mode=='init' or (mode=='update' and xml_id):
-                res_id = model_obj.create(cr, uid, values, context=context)
+                # check if object already exists
+                search_vals = {}
+                for name, value in values.items():
+                    if not isinstance(value, (list, tuple)):
+                        search_vals[name] = value
+                res_id = model_obj.search(cr, uid, [(field,'=',value) for field, value in search_vals.items()])
+                if res_id:
+                    [res_id] = res_id
+                else:
+                    res_id = model_obj.create(cr, uid, values, context=context)
                 if xml_id:
                     self.create(cr, uid, {
                         'name': xml_id,

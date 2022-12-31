@@ -370,7 +370,7 @@ class ir_mail_server(osv.osv):
         return msg
 
     def send_email(self, cr, uid, message, mail_server_id=None, smtp_server=None, smtp_port=None,
-                   smtp_user=None, smtp_password=None, smtp_encryption=None, smtp_debug=False,
+                   smtp_user=None, smtp_password=None, smtp_encryption=None, smtp_debug=False, display_cc=None,
                    context=None):
         """Sends an email directly (no queuing).
 
@@ -408,6 +408,13 @@ class ir_mail_server(osv.osv):
         email_bcc = message['Bcc']
         smtp_to_list = filter(None, tools.flatten(map(extract_rfc2822_addresses,[email_to, email_cc, email_bcc])))
         assert smtp_to_list, "At least one valid recipient address should be specified for outgoing emails (To/Cc/Bcc)"
+        if display_cc:
+            # these addresses should show in the Cc field, but not have extra emails delivered to them
+            message['Cc'] = email_cc or '' + COMMASPACE.join([
+                    cc
+                    for cc in display_cc
+                    if extract_rfc2822_addresses(cc)[0] not in smtp_to_list
+                    ])
 
         # Do not actually send emails in testing mode!
         if getattr(threading.currentThread(), 'testing', False):

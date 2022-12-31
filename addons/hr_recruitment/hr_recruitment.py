@@ -505,6 +505,7 @@ class hr_job(osv.osv):
         """Installation hook to create aliases for all jobs and avoid constraint errors."""
         self.pool.get('mail.alias').migrate_to_alias(cr, self._name, self._table, super(hr_job,self)._auto_init,
             self._columns['alias_id'], 'name', alias_prefix='job+', alias_defaults={'job_id': 'id'}, context=context)
+        return super(hr_job, self)._auto_init(cr, context=context)
 
     def create(self, cr, uid, vals, context=None):
         mail_alias = self.pool.get('mail.alias')

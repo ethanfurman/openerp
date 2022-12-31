@@ -25,6 +25,7 @@ import itertools
 import os
 from os.path import join as opj
 import sys
+from textwrap import dedent
 import types
 import zipimport
 
@@ -94,10 +95,10 @@ class AddonsImportHook(object):
             try:
                 # Check if the bare module name clashes with another module.
                 f, path, descr = imp.find_module(module_parts[0])
-                _logger.warning("""
-Ambiguous import: the OpenERP module `%s` is shadowed by another
-module (available at %s).
-To import it, use `import openerp.addons.<module>.`.""" % (module_name, path))
+                _logger.warning(dedent("""\
+                    Ambiguous import: the OpenERP module `%s` is shadowed by another
+                    module (available at %s).
+                    To import it, use `import openerp.addons.<module>.`.""" % (module_name, path)))
                 return
             except ImportError, e:
                 # Using `import <module_name>` instead of

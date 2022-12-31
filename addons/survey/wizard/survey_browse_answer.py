@@ -21,20 +21,23 @@
 
 from openerp.osv import fields, osv
 
-class survey_browse_answer(osv.osv_memory):
+class survey_browse_answer(osv.TransientModel):
     _name = 'survey.browse.answer'
 
     _columns = {
         'survey_id': fields.many2one('survey', "Survey", required="1"),
-        'response_id': fields.many2one("survey.response", "Survey Answers", help="If this field is empty, all answers of the selected survey will be print."),
-    }
+        'response_id': fields.many2one(
+            "survey.response", "Survey Answers",
+            help="If this field is empty, all answers of the selected survey will be print.",
+            ),
+        }
 
     def action_next(self, cr, uid, ids, context=None):
         """
         Open Browse Response wizard. if you select only survey_id then this wizard open with all response_ids and
         if you select survey_id and response_id then open the particular response of the survey.
         """
-        if context is None: context = {}
+        context = context or {}
         record = self.read(cr, uid, ids, [])
         record = record and record[0] or {}
         if record['response_id']:
@@ -42,7 +45,12 @@ class survey_browse_answer(osv.osv_memory):
         else:
             sur_response_obj = self.pool.get('survey.response')
             res_id = sur_response_obj.search(cr, uid, [('survey_id', '=', record['survey_id'][0])])
-        context.update({'active' : True,'survey_id' : record['survey_id'][0], 'response_id' : res_id, 'response_no' : 0})
+        context.update({
+            'active': True,
+            'survey_id': record['survey_id'][0],
+            'response_id': res_id,
+            'response_no': 0,
+            })
         search_obj = self.pool.get('ir.ui.view')
         search_id = search_obj.search(cr,uid,[('model','=','survey.question.wiz'),('name','=','Survey Search')])
         return {
@@ -53,7 +61,4 @@ class survey_browse_answer(osv.osv_memory):
             'target': 'new',
             'search_view_id':search_id[0],
             'context' : context
-         }
-
-survey_browse_answer()
-
+             }

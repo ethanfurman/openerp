@@ -1,12 +1,12 @@
 [submodule "addons/cmms"]
 	path = addons/cmms
-	url = /opt/whc/openerp/addons/cmms
+	url = git@github.com:ethanfurman/openerp_cmms.git
 [submodule "addons/cmms_ip_map"]
 	path = addons/cmms_ip_map
-	url = ./addons/cmms
+	url = git@github.com:ethanfurman/openerp_cmms_ip_network.git
 [submodule "addons/fnx_checklist"]
 	path = addons/fnx_checklist
-	url = /opt/whc/openerp/addons/fnx_checklist
+	url = git@github.com:ethanfurman/openerp_fnx_checklist.git
 [submodule "addons/fnx_fs"]
 	path = addons/fnx_fs
 	url = git@github.com:ethanfurman/openerp_fnx_fs.git
@@ -18,31 +18,31 @@
 	url = git@github.com:ethanfurman/openerp_fnx.git
 [submodule "addons/fnx_qa"]
 	path = addons/fnx_qa
-	url = /opt/whc/openerp/addons/fnx_qa
+	url = git@github.com:ethanfurman/openerp_fnx_qa.git
 [submodule "addons/fnx_sanitation"]
 	path = addons/fnx_sanitation
-	url = /opt/whc/openerp/addons/fnx_sanitation
+	url = git@github.com:ethanfurman/openerp_fnx_sanitation.git
 [submodule "addons/hr_insurance"]
 	path = addons/hr_insurance
-	url = /opt/whc/openerp/addons/hr_insurance
+	url = git@github.com:ethanfurman/openerp_hr_insurance.git
 [submodule "addons/hr_training"]
 	path = addons/hr_training
-	url = /opt/whc/openerp/addons/hr_training
+	url = git@github.com:ethanfurman/openerp_hr_training.git
 [submodule "addons/hr_workers_comp"]
 	path = addons/hr_workers_comp
-	url = /opt/whc/openerp/addons/hr_workers_comp
+	url = git@github.com:ethanfurman/openerp_hr_workers_comp.git
 [submodule "addons/ip_network"]
 	path = addons/ip_network
-	url = /opt/whc/openerp/addons/ip_network
+	url = git@github.com:ethanfurman/openerp_ip_network.git
 [submodule "addons/lockdown"]
 	path = addons/lockdown
-	url = /opt/whc/openerp/addons/lockdown
+	url = git@github.com:ethanfurman/openerp_lockdown.git
 [submodule "addons/safe_quality_food"]
 	path = addons/safe_quality_food
-	url = /opt/whc/openerp/addons/safe_quality_food
+	url = git@github.com:ethanfurman/openerp_safe_quality_food.git
 [submodule "addons/salesinq"]
 	path = addons/salesinq
 	url = git@github.com:ethanfurman/openerp_salesinq.git
 [submodule "addons/wiki"]
 	path = addons/wiki
-	url = /opt/whc/openerp/addons/wiki
+	url = git@github.com:ethanfurman/openerp_wiki.git

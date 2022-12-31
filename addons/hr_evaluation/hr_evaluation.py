@@ -26,6 +26,7 @@ import time
 
 from openerp.osv import fields, osv
 from openerp.tools.translate import _
+from textwrap import dedent
 
 class hr_evaluation_plan(osv.osv):
     _name = "hr_evaluation.plan"
@@ -81,21 +82,21 @@ class hr_evaluation_plan_phase(osv.osv):
     _defaults = {
         'sequence': 1,
         'email_subject': _('''Regarding '''),
-        'mail_body': lambda *a:_('''
-Date: %(date)s
+        'mail_body': lambda *a:_(dedent('''\
+                Date: %(date)s
 
-Dear %(employee_name)s,
+                Dear %(employee_name)s,
 
-I am doing an evaluation regarding %(eval_name)s.
+                I am doing an evaluation regarding %(eval_name)s.
 
-Kindly submit your response.
+                Kindly submit your response.
 
 
-Thanks,
---
-%(user_signature)s
+                Thanks,
+                --
+                %(user_signature)s
 
-        '''),
+                        ''')),
     }
 
 hr_evaluation_plan_phase()

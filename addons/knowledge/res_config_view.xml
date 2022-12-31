@@ -32,6 +32,10 @@
                                 <field name="module_document_page" class="oe_inline"/>
                                 <label for="module_document_page"/>
                             </div>
+                            <div>
+                                <field name="module_wiki" class="oe_inline"/>
+                                <label for="module_wiki"/>
+                            </div>
                         </div>
                     </group>
                 </form>

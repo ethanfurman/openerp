@@ -27,15 +27,12 @@ UTC = pytz.timezone('UTC')
 
 functions = {
     'today': lambda n: (
-            UTC.localize(
-                datetime.datetime.now()
-                ).astimezone(
-                    SERVER_TIMEZONE
-                    ).strftime(
-                        n.get('format', '%Y/%m/%d')
-                        ).decode('latin1')
-                        ),
-    }
+            UTC.localize(datetime.datetime.now())
+            .astimezone(SERVER_TIMEZONE)
+            .strftime(n.get('format', '%Y/%m/%d'))
+            .decode('latin1')
+            ),
+            }
 
 #
 # TODO: call an object internal function too

@@ -22,18 +22,23 @@
 from datetime import datetime, date
 from lxml import etree
 from fnx import date as fnx_date
+from textwrap import dedent
+import logging
 import time
 
 from openerp import SUPERUSER_ID
 from openerp import tools
 from openerp.osv import fields, osv
-from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
+from openerp.tools import DEFAULT_SERVER_DATE_FORMAT, self_ids
+from openerp.tools.misc import stonemark2html
 from openerp.tools.translate import _
 from openerp.exceptions import ERPError
 
 from openerp.addons.base_status.base_stage import base_stage
 from openerp.addons.resource.faces import task as Task
 
+_logger = logging.getLogger(__name__)
+ 
 _TASK_STATE = [('draft', 'New'), ('pending', 'Pending'), ('open', 'In Progress'), ('done', 'Done'), ('cancelled', 'Cancelled')]
 
 class project_task_type(osv.osv):
@@ -457,14 +462,14 @@ class project(osv.osv):
             calendar_id = project.resource_calendar_id and project.resource_calendar_id.id or False
             resource_objs = resource_pool.generate_resources(cr, uid, u_ids, calendar_id, context=context)
             for key, vals in resource_objs.items():
-                result +='''
-class User_%s(Resource):
-    efficiency = %s
-''' % (key,  vals.get('efficiency', False))
-
-        result += '''
-def Project():
-        '''
+                result += dedent('''\
+                    class User_%s(Resource):
+                        efficiency = %s
+                    ''' % (key,  vals.get('efficiency', False))
+                    )
+                result += dedent('''\
+                    def Project():
+                    ''')
         return result
 
     def _schedule_project(self, cr, uid, project, context=None):
@@ -475,21 +480,22 @@ def Project():
         puids = [x.id for x in project.members]
         if project.user_id:
             puids.append(project.user_id.id)
-        result = """
-  def Project_%d():
-    start = \'%s\'
-    working_days = %s
-    resource = %s
-"""       % (
-            project.id,
-            project.date_start or time.strftime('%Y-%m-%d'), working_days,
-            '|'.join(['User_'+str(x) for x in puids])
-        )
+        result = dedent("""\
+            def Project_%d():
+                start = \'%s\'
+                working_days = %s
+                resource = %s
+            """ % (
+                project.id,
+                project.date_start or time.strftime('%Y-%m-%d'), working_days,
+                '|'.join(['User_'+str(x) for x in puids])
+                ))
         vacation = calendar_id and tuple(resource_pool.compute_vacation(cr, uid, calendar_id, context=context)) or False
         if vacation:
-            result+= """
-    vacation = %s
-""" %   ( vacation, )
+            result += dedent("""\
+                vacation = %s
+                """ % ( vacation, )
+                )
         return result
 
     #TODO: DO Resource allocation and compute availability
@@ -587,14 +593,14 @@ class task(base_stage, osv.osv):
             'project.mt_task_awoke': lambda self, cr, uid, obj, ctx=None: obj['kanban_state'] != 'sleeping' and ctx['message_initial']['kanban_state'] == 'sleeping',
             },
         'state': {
-            'project.mt_task_new': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'new',
-            'project.mt_task_started': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'open',
+            'project.mt_task_new': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'draft',
+            'project.mt_task_started': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'pending',
             'project.mt_task_closed': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'done',
-        },
+            },
         'stage_id': {
-            'project.mt_task_stage': lambda self, cr, uid, obj, ctx=None: obj['state'] not in ['new', 'done', 'open'],
-        },
-    }
+            'project.mt_task_stage': lambda self, cr, uid, obj, ctx=None: obj['state'] not in ['draft', 'done', 'pending'],
+            },
+        }
 
     def _get_default_project_id(self, cr, uid, context=None):
         """ Gives default section by checking if present in the context """
@@ -696,13 +702,17 @@ class task(base_stage, osv.osv):
         return {'value':{'remaining_hours': planned - effective}}
 
     def onchange_project(self, cr, uid, id, project_id):
-        if not project_id:
-            return {}
-        data = self.pool.get('project.project').browse(cr, uid, [project_id])
-        partner_id=data and data[0].partner_id
-        if partner_id:
-            return {'value':{'partner_id':partner_id.id}}
-        return {}
+        "update partner and starting stage"
+        res = {}
+        if project_id:
+            value = {}
+            data = self.pool.get('project.project').browse(cr, uid, [project_id])
+            partner_id = data and data[0].partner_id
+            if partner_id:
+                value['partner_id'] = partner_id.id
+            value['stage_id'] = self._get_default_stage_id(cr, uid, context={'default_project_id': project_id})
+            res['value'] = value
+        return res
 
     def onchange_kanban_state(self, cr, uid, ids, kanban_state):
         if kanban_state != 'sleeping':
@@ -770,6 +780,7 @@ class task(base_stage, osv.osv):
         return result
 
     def _post_init(self, pool, cr):
+        super(task, self)._post_init(pool, cr)
         # make sure all tasks with a deadline also have a warning
         ids = self.search(cr, 1, [('date_deadline','!=',False),('date_warning','=',False)])
         res = self._calculate_warning_date(cr, 1, ids, ['date_warning'], None)
@@ -780,10 +791,20 @@ class task(base_stage, osv.osv):
             self.write(cr, 1, ids, {'date_warning': warn})
         return True
 
+
     _columns = {
         'active': fields.function(_is_template, store=True, string='Not a Template Task', type='boolean', help="This field is computed automatically and have the same behavior than the boolean 'active' field: if the task is linked to a template or unactivated project, it will be hidden unless specifically asked."),
         'name': fields.char('Task Summary', size=128, required=True, select=True),
         'description': fields.text('Description'),
+        'description_html': fields.function(
+                stonemark2html,
+                arg='description',
+                type='html',
+                string='Description (HTML)',
+                store={
+                    'project.task': (self_ids, ['description'], 10),
+                    }
+                ),
         'priority': fields.selection([('4','Very Low'), ('3','Low'), ('2','Normal'), ('1','High'), ('0','Highest')], 'Priority', select=True),
         'sequence': fields.integer('Sequence', select=True, help="Gives the sequence order when displaying a list of tasks."),
         'stage_id': fields.many2one('project.task.type', 'Stage', track_visibility='onchange',
@@ -849,7 +870,7 @@ class task(base_stage, osv.osv):
                 'project.task': (lambda self, cr, uid, ids, c={}: ids, ['work_ids', 'remaining_hours', 'planned_hours'], 10),
                 'project.task.work': (_get_task, ['hours'], 10),
             }),
-        'user_id': fields.many2one('res.users', 'Assigned to', track_visibility='onchange'),
+        'user_id': fields.many2one('res.users', 'Assigned to', track_visibility='initial_and_change_only'),
         'delegated_user_id': fields.related('child_ids', 'user_id', type='many2one', relation='res.users', string='Delegated To'),
         'partner_id': fields.many2one('res.partner', 'Customer'),
         'work_ids': fields.one2many('project.task.work', 'task_id', 'Work done'),
@@ -1176,6 +1197,10 @@ class task(base_stage, osv.osv):
             if  vals.get('project_id'):
                 ctx['default_project_id'] = vals['project_id']
             vals['stage_id'] = self._get_default_stage_id(cr, uid, context=ctx)
+        # notify assigned-to user
+        if vals.get('user_id'):
+            assigned_user = self.pool.get('res.users').browse(cr, uid, vals['user_id'], context=context)
+            vals.setdefault('message_notify_ids', []).append(assigned_user.partner_id.id)
         task_id = super(task, self).create(cr, uid, vals, context=context)
         self._store_history(cr, uid, [task_id], context=context)
         return task_id
@@ -1188,6 +1213,10 @@ class task(base_stage, osv.osv):
             if project_id:
                 vals.setdefault('message_follower_ids', [])
                 vals['message_follower_ids'] += [(6, 0,[follower.id]) for follower in project_id.message_follower_ids]
+        # notify assigned-to user
+        if vals.get('user_id'):
+            assigned_user = self.pool.get('res.users').browse(cr, uid, vals['user_id'], context=context)
+            vals.setdefault('message_notify_ids', []).append(assigned_user.partner_id.id)
         result = super(task, self).write(cr, uid, ids, vals, context=context)
         if ('stage_id' in vals) or ('remaining_hours' in vals) or ('user_id' in vals) or ('state' in vals) or ('kanban_state' in vals):
             self._store_history(cr, uid, ids, context=context)
@@ -1207,23 +1236,26 @@ class task(base_stage, osv.osv):
         for task in tasks:
             if task.state in ('done','cancelled'):
                 continue
-            result += '''
-%sdef Task_%s():
-%s  todo = \"%.2fH\"
-%s  effort = \"%.2fH\"''' % (ident,task.id, ident,task.remaining_hours, ident,task.total_hours)
+            result += dedent('''\
+                %sdef Task_%s():
+                %s  todo = \"%.2fH\"
+                %s  effort = \"%.2fH\"
+                '''
+                % (ident,task.id, ident,task.remaining_hours, ident,task.total_hours)
+                )
             start = []
             for t2 in task.parent_ids:
                 start.append("up.Task_%s.end" % (t2.id,))
             if start:
-                result += '''
-%s  start = max(%s)
-''' % (ident,','.join(start))
-
+                result += dedent('''\
+                    %s  start = max(%s)
+                    ''' % (ident,','.join(start))
+                    )
             if task.user_id:
-                result += '''
-%s  resource = %s
-''' % (ident, 'User_'+str(task.user_id.id))
-
+                result += dedent('''\
+                    %s  resource = %s
+                    ''' % (ident, 'User_'+str(task.user_id.id))
+                    )
         result += "\n"
         return result
 

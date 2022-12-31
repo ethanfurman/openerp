@@ -20,6 +20,7 @@
 ##############################################################################
 
 from openerp.osv import fields, osv
+from textwrap import dedent
 
 class res_company(osv.osv):
     _inherit = "res.company"
@@ -37,14 +38,15 @@ class res_company(osv.osv):
     _defaults = {
         'expects_chart_of_accounts': True,
         'tax_calculation_rounding_method': 'round_per_line',
-        'overdue_msg': '''Dear Sir/Madam,
+        'overdue_msg': dedent('''\
+                Dear Sir/Madam,
 
-Our records indicate that some payments on your account are still due. Please find details below.
-If the amount has already been paid, please disregard this notice. Otherwise, please forward us the total amount stated below.
-If you have any queries regarding your account, Please contact us.
+                Our records indicate that some payments on your account are still due. Please find details below.
+                If the amount has already been paid, please disregard this notice. Otherwise, please forward us the total amount stated below.
+                If you have any queries regarding your account, Please contact us.
 
-Thank you in advance for your cooperation.
-Best Regards,'''
+                Thank you in advance for your cooperation.
+                Best Regards,''')
     }
 
 res_company()

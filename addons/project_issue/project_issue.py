@@ -53,14 +53,14 @@ class project_issue(base_stage, osv.osv):
             'project_issue.mt_issue_awoke': lambda self, cr, uid, obj, ctx=None: obj['kanban_state'] != 'sleeping' and ctx['message_initial']['kanban_state'] == 'sleeping',
             },
         'state': {
-            'project_issue.mt_issue_new': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'new',
+            'project_issue.mt_issue_new': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'draft',
+            'project_issue.mt_issue_started': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'pending',
             'project_issue.mt_issue_closed': lambda self, cr, uid, obj, ctx=None:  obj['state'] == 'done',
-            'project_issue.mt_issue_started': lambda self, cr, uid, obj, ctx=None: obj['state'] == 'open',
-        },
+            },
         'stage_id': {
-            'project_issue.mt_issue_stage': lambda self, cr, uid, obj, ctx=None: obj['state'] not in ['new', 'done', 'open'],
-        },
-    }
+            'project_issue.mt_issue_stage': lambda self, cr, uid, obj, ctx=None: obj['state'] not in ['draft', 'done', 'pending'],
+            },
+        }
 
     def create(self, cr, uid, vals, context=None):
         if context is None:
@@ -70,6 +70,10 @@ class project_issue(base_stage, osv.osv):
             if vals.get('project_id'):
                 ctx['default_project_id'] = vals['project_id']
             vals['stage_id'] = self._get_default_stage_id(cr, uid, context=ctx)
+        # notify assigned-to user
+        if vals.get('user_id'):
+            assigned_user = self.pool.get('res.users').browse(cr, uid, vals['user_id'], context=context)
+            vals.setdefault('message_notify_ids', []).append(assigned_user.partner_id.id)
         return super(project_issue, self).create(cr, uid, vals, context=context)
 
     def _get_default_project_id(self, cr, uid, context=None):
@@ -393,7 +397,6 @@ class project_issue(base_stage, osv.osv):
                 context=context)
 
     def write(self, cr, uid, ids, vals, context=None):
-
         #Update last action date every time the user changes the stage
         if 'stage_id' in vals:
             vals['date_action_last'] = time.strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT)
@@ -405,7 +408,11 @@ class project_issue(base_stage, osv.osv):
                 # Change from not done to done: The issue has been closed -> set the closing date
                 if issue.state != 'done' and state == 'done':
                     vals['date_closed'] = time.strftime(tools.DEFAULT_SERVER_DATETIME_FORMAT)
-
+        # notify assigned-to user
+        if 'user_id' in vals:
+            assigned_user = self.pool.get('res.users').browse(cr, uid, vals['user_id'], context=context)
+            vals.setdefault('message_notify_ids', []).append(assigned_user.partner_id.id)
+        #
         return super(project_issue, self).write(cr, uid, ids, vals, context)
 
     def onchange_kanban_state(self, cr, uid, ids, kanban_state):

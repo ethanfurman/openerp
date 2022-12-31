@@ -38,6 +38,7 @@ from openerp import netsvc
 from openerp.osv import fields, osv
 from openerp import tools
 from openerp.tools.translate import _
+from textwrap import dedent
 
 _logger = logging.getLogger(__name__)
 
@@ -110,20 +111,20 @@ class fetchmail_server(osv.osv):
             m = self.pool.get('ir.model')
             r = m.read(cr,uid,[object_id],['model'])
             conf['model']=r[0]['model']
-        values['configuration'] = """Use the below script with the following command line options with your Mail Transport Agent (MTA)
+        values['configuration'] = dedent("""\
+                Use the below script with the following command line options with your Mail Transport Agent (MTA)
 
-openerp_mailgate.py --host=HOSTNAME --port=PORT -u %(uid)d -p PASSWORD -d %(dbname)s
+                openerp_mailgate.py --host=HOSTNAME --port=PORT -u %(uid)d -p PASSWORD -d %(dbname)s
 
-Example configuration for the postfix mta running locally:
+                Example configuration for the postfix mta running locally:
 
-/etc/postfix/virtual_aliases:
-@youdomain openerp_mailgate@localhost
+                /etc/postfix/virtual_aliases:
+                @youdomain openerp_mailgate@localhost
 
-/etc/aliases:
-openerp_mailgate: "|/path/to/openerp-mailgate.py --host=localhost -u %(uid)d -p PASSWORD -d %(dbname)s"
+                /etc/aliases:
+                openerp_mailgate: "|/path/to/openerp-mailgate.py --host=localhost -u %(uid)d -p PASSWORD -d %(dbname)s"
 
-""" % conf
-
+                """ % conf)
         return {'value':values}
 
     def set_draft(self, cr, uid, ids, context=None):

@@ -1,3 +1,5 @@
 addons/project/scripts/project_status
-scripts/oe-graph --no-suid
+scripts/oe-graph
+scripts/oe_sys --suid
+scripts/smoke-test
 tools/check_openerp --suid

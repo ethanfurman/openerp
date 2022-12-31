@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-
-# imports
 ##############################################################################
 #
 #    OpenERP, Open Source Management Solution
@@ -21,6 +19,7 @@
 #
 ##############################################################################
 
+# imports
 from openerp import addons
 import logging
 from openerp.osv import fields, osv
@@ -64,7 +63,7 @@ class hr_employee_category(osv.osv):
         'parent_id': fields.many2one('hr.employee.category', 'Parent Category', select=True),
         'child_ids': fields.one2many('hr.employee.category', 'parent_id', 'Child Categories'),
         'employee_ids': fields.many2many('hr.employee', 'employee_category_rel', 'category_id', 'emp_id', 'Employees'),
-    }
+        }
 
     def _check_recursion(self, cr, uid, ids, context=None):
         level = 100
@@ -78,7 +77,7 @@ class hr_employee_category(osv.osv):
 
     _constraints = [
         (_check_recursion, 'Error! You cannot create recursive Categories.', ['parent_id'])
-    ]
+        ]
 
 
 class hr_employee_issue(osv.osv):
@@ -87,6 +86,10 @@ class hr_employee_issue(osv.osv):
     _inherit = []
 
     _columns = {
+        'name': fields.related(
+                'hr.employee.issue.employee_id', 'hr.employee.resource_id', 'resource.resource.name',
+                readonly=True, store=True, type='char', size=128,
+                ),
         'employee_id': fields.many2one('hr.employee', 'Employee'),
         'reporter_id': fields.many2one('res.users', 'Reported by'),
         'create_date': fields.datetime('Created', readonly=True),
@@ -100,6 +103,9 @@ class hr_employee_issue(osv.osv):
 
 
 class hr_job(osv.osv):
+    _name = "hr.job"
+    _description = "Job Description"
+    _inherit = ['mail.thread']
 
     def _no_of_employee(self, cr, uid, ids, name, args, context=None):
         res = {}
@@ -118,9 +124,6 @@ class hr_job(osv.osv):
                 res.append(employee.job_id.id)
         return res
 
-    _name = "hr.job"
-    _description = "Job Description"
-    _inherit = ['mail.thread']
     _columns = {
         'name': fields.char('Job Name', size=128, required=True, select=True),
         'expected_employees': fields.function(_no_of_employee, string='Total Forecasted Employees',
@@ -146,15 +149,15 @@ class hr_job(osv.osv):
         'company_id': fields.many2one('res.company', 'Company'),
         'state': fields.selection(JobState, 'Status', readonly=True, required=True,
             help="By default 'In position', set it to 'In Recruitment' if recruitment process is going on for this job position."),
-    }
+        }
     _defaults = {
         'company_id': lambda self,cr,uid,c: self.pool.get('res.company')._company_default_get(cr, uid, 'hr.job', context=c),
         'state': 'open',
-    }
+        }
 
     _sql_constraints = [
         ('name_company_uniq', 'unique(name, company_id)', 'The name of the job position must be unique per company!'),
-    ]
+        ]
 
 
     def on_change_expected_employee(self, cr, uid, ids, no_of_recruitment, no_of_employee, context=None):
@@ -273,7 +276,8 @@ class hr_employee(osv.osv):
                 },
             ),
         'employment_agency_id': fields.many2one('res.partner', 'Employment Agency'),
-    }
+        'tests_checks_ids': fields.one2many('hr.test', 'employee_id', 'Tests & Checks'),
+        }
 
     fields.apply_groups(
             _columns,
@@ -294,11 +298,10 @@ class hr_employee(osv.osv):
         if 'image' not in data and not data.get('image_medium'):
             data.pop('image_medium', None)
             data['image'] = self._get_default_image(cr, uid, context=context)
-        employee_id = super(hr_employee, self).create(cr, uid, data, context=context)
         partner_id = data.get('partner_id')
-        if partner_id:
-            self.pool.get('res.partner').write(cr, uid, partner_id, {'employee_id':employee_id, 'employee':True}, context=context)
-        return employee_id
+        if partner_id and not isinstance(partner_id, (int, long)):
+            data.pop('partner_id')
+        return super(hr_employee, self).create(cr, uid, data, context=context)
 
     def write(self, cr, uid, ids, values, context=None):
         if isinstance(ids, (int, long)):
@@ -322,6 +325,8 @@ class hr_employee(osv.osv):
         return super(hr_employee, self).write(cr, uid, ids, values, context=context)
 
     def unlink(self, cr, uid, ids, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
         resource_ids = []
         for employee in self.browse(cr, uid, ids, context=context):
             resource_ids.append(employee.resource_id.id)
@@ -390,7 +395,7 @@ class hr_employee(osv.osv):
         'image': _get_default_image,
         'color': 0,
         'employment_type': EmploymentType.temporary,
-    }
+        }
 
     def _check_recursion(self, cr, uid, ids, context=None):
         level = 100
@@ -404,7 +409,7 @@ class hr_employee(osv.osv):
 
     _constraints = [
         (_check_recursion, 'Error! You cannot create recursive hierarchy of Employee(s).', ['parent_id']),
-    ]
+        ]
 
 
 class hr_department(osv.osv):
@@ -413,7 +418,7 @@ class hr_department(osv.osv):
     _columns = {
         'manager_id': fields.many2one('hr.employee', 'Manager'),
         'member_ids': fields.one2many('hr.employee', 'department_id', 'Members', readonly=True),
-    }
+        }
 
     def copy(self, cr, uid, ids, default=None, context=None):
         if default is None:
@@ -422,12 +427,145 @@ class hr_department(osv.osv):
         default['member_ids'] = []
         return super(hr_department, self).copy(cr, uid, ids, default, context=context)
 
+
+class hr_test_type(osv.Model):
+    _name = 'hr.test.type'
+    _description = 'test and check types run on employees'
+    _columns = {
+        'name': fields.char('Name', size=32),
+        'description': fields.text('Description'),
+        'result_type': fields.selection(ResultType, 'Result Type'),
+        }
+
+
+class hr_test(osv.Model):
+    _name = 'hr.test'
+    _description = 'checks and tests for (potential) employees'
+    _columns = {
+        'name': fields.related('test_type', 'name', string='Name', type='char', store=True),
+        'test_type': fields.many2one('hr.test.type', string='Type', ondelete='restrict', required=True),
+        'result_type': fields.related('test_type', 'result_type', string='Result Type', type='selection', selection=ResultType),
+        'result_description': fields.related('test_type', 'description', string='Description', type='text'),
+        'test_date': fields.date('Date'),
+        'result_pass_fail': fields.selection(ResultPassFail, 'Pass/Fail'),
+        'result_grade': fields.selection(ResultGrade, string='Grade'),
+        'result_percent': fields.integer("%"),
+        'result': fields.char('Result', size=4),
+        'employee_id': fields.many2one('hr.employee', 'Employee', ondelete='cascade'),
+        'notes': fields.text('Notes'),
+        'create_date': fields.datetime('Created on'),
+        }
+
+    def onchange_test(self, cr, uid, ids, test_type, context=None):
+        records = self.pool.get('hr.test.type').read(cr, uid, [('id','=',test_type)], fields=['result_type','description'])
+        result_type = records[0]['result_type']
+        description = records[0]['description']
+        return {
+                'value': {
+                    'result_type': result_type,
+                    'result_description': description,
+                    }}
+
+    def onchange_result(self, cr, uid, ids, result_type, result, context=None):
+        if result_type == 'pass_fail':
+            result = result and ResultPassFail(result).user
+        elif result_type == 'grade':
+            result = result and ResultGrade(result).user
+        elif result_type == 'percent':
+            result = result and str(result)
+        return {
+                'value': {
+                    'result': result,
+                    }}
+
+    def create(self, cr, uid, values, context=None):
+        result_type = values['result_type']
+        if result_type == 'pass_fail':
+            values['result_grade'] = False
+            values['result_percent'] = False
+            result = values.get('result_pass_fail', False)
+            result = result and ResultPassFail(result).user
+        elif result_type == 'grade':
+            values['result_percent'] = False
+            values['result_pass_fail'] = False
+            result = values.get('result_grade', False)
+            result = result and ResultGrade(result).user
+        elif result_type == 'percent':
+            values['result_pass_fail'] = False
+            values['result_grade'] = False
+            result = values.get('result_percent', False)
+            result = result and str(result)
+        values['result'] = result
+        return super(hr_test, self).create(cr, uid, values, context=context)
+
+    def write(self, cr, uid, ids, values, context=None):
+        if isinstance(ids, (int, long)):
+            ids = [ids]
+        result_type = values.get('result_type')
+        if result_type is None:
+            result_type = self.read(cr, uid, ids[0], fields=['result_type'], context=context)['result_type']
+        if result_type == 'pass_fail':
+            values['result_grade'] = False
+            values['result_percent'] = False
+            result = values.get('result_pass_fail', False)
+            result = result and ResultPassFail(result).user
+        elif result_type == 'grade':
+            values['result_percent'] = False
+            values['result_pass_fail'] = False
+            result = values.get('result_grade', False)
+            result = result and ResultGrade(result).user
+        elif result_type == 'percent':
+            values['result_pass_fail'] = False
+            values['result_grade'] = False
+            result = values.get('result_percent', False)
+            result = result and str(result)
+        values['result'] = result
+        return super(hr_test, self).write(cr, uid, ids, values, context=context)
+
+
 class res_partner(osv.Model):
     _name = 'res.partner'
     _inherit = 'res.partner'
 
+    def _calc_changing_res_partner(hr_employee, cr, uid, employee_ids, context=None):
+        # return the ids of any res.partner records that already point to the changed employee records, or
+        # that are pointed to by the changed employee records
+        self = hr_employee.pool.get('res.partner')
+        # first get records already point to the changed employee records
+        ids = self.search(cr, SUPERUSER_ID, [('id','in',employee_ids)], context=context)
+        # then add the ids pointed to by changed employee records
+        ids.extend([
+            r['partner_id'][0]
+            for r in hr_employee.read(
+                    cr, SUPERUSER_ID, employee_ids, fields=['partner_id'], context=context,
+                    )
+            if r['partner_id']
+            ])
+
+        return ids
+
+    def _set_employee_id(self, cr, uid, ids, name, args, context=None):
+        res = {}.fromkeys(ids, False)
+        hr_employee = self.pool.get( 'hr.employee')
+        for rec in hr_employee.read(
+                cr, SUPERUSER_ID,
+                [('partner_id','in',ids)],
+                fields=['id','partner_id'],
+                context=context,
+                ):
+            res[rec['partner_id'][0]] = rec['id']
+        return res
+
+
     _columns = {
-        'employee_id': fields.many2one('hr.employee', 'Employee Record'),
+        'employee_id': fields.function(
+            _set_employee_id,
+            type='many2one',
+            relation='hr.employee',
+            string='Employee Record',
+            store={
+                'hr.employee': (_calc_changing_res_partner, ['partner_id'], 10),
+                }),
         'agency_referred_ids': fields.one2many(
             'hr.employee',
             'employment_agency_id',
