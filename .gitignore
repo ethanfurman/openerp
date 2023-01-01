@@ -43,3 +43,4 @@ hg2git
 original_xml/
 scripts/pulse.pyz
 smoke-test.failures
+*old
