@@ -640,6 +640,7 @@ FIELDS_TO_PGTYPES = {
     fields.integer: 'int4',
     fields.text: 'text',
     fields.html: 'text',
+    fields.raw_html: 'text',
     fields.date: 'date',
     fields.datetime: 'timestamp',
     fields.binary: 'bytea',

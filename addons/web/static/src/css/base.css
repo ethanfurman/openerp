@@ -427,8 +427,14 @@
   background-image: -o-linear-gradient(top, #c52020, #d22323);
   background-image: linear-gradient(to bottom, #c52020, #d22323);
 }
+.openerp .oe_background_white {
+  background: #ffffff !important;
+}
 .openerp .oe_background_grey {
   background: #eeeeee !important;
+}
+.openerp .oe_background_bright_grey {
+  background: #f3f3f3 !important;
 }
 .openerp .oe_form_dirty .oe_highlight_on_dirty {
   color: white;
