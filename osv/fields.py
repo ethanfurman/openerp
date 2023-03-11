@@ -1280,7 +1280,7 @@ class function(_column):
         if type in ('many2one', 'many2many', 'one2many'):
             if self._obj is None:
                 _logger.error('%s field %r does not have target model defined', type, args.get('string', '???'))
-            if type is 'one2many' and 'fields_id' not in args:
+            if type == 'one2many' and 'fields_id' not in args:
                 _logger.warning('%s field %r does not have the target field defined', type, args.get('string', '???'))
 
     def _finalize(self, cls, name):
