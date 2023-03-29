@@ -499,6 +499,10 @@
 .openerp .oe_avatar + div {
   margin-left: 5px;
 }
+.openerp .oe_image_thumbnail > img {
+  max-width: 27px;
+  max-height: 27px;
+}
 .openerp .oe_image_small > img {
   max-width: 50px;
   max-height: 50px;
