@@ -130,7 +130,11 @@ class document(object):
                 value = datetime.datetime.strptime(value, DEFAULT_SERVER_DATETIME_FORMAT)
                 value = UTC.localize(value).astimezone(SERVER_TIMEZONE).strftime(format or DEFAULT_SERVER_DATETIME_FORMAT).decode('latin1')
             elif column_type == 'float':
-                spec = format or '%%%s.%sf' % column.digits
+                try:
+                    spec = format or '%%%s.%sf' % column.digits
+                except Exception:
+                    _logger.error('unable to get convert `column.digits` of %r for %r' % (column.digits, field))
+                    spec = "%16.3f"
                 value = spec % value
         except KeyError:
             if field not in ('name', 'id'):
