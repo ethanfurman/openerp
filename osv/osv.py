@@ -33,6 +33,7 @@ import openerp.netsvc as netsvc
 import openerp.pooler as pooler
 import openerp.sql_db as sql_db
 from openerp import SUPERUSER_ID
+from openerp.tools.misc import shorten
 from openerp.tools.translate import translate
 from openerp.osv.orm import Model, TransientModel, AbstractModel
 from openerp.exceptions import ERPError as except_osv
@@ -186,9 +187,9 @@ class object_proxy(object):
             _logger.error( "%s.%s(" % (object._table, method) )
             _logger.error( "    %r, %r," % (cr, uid) )
             for a in args:
-                _logger.error( "    %r," % (a, ) )
+                _logger.error( "    %r," % (shorten(a), ) )
             for k, v in kw.items():
-                _logger.error( '    %s=%r,' % (k, v) )
+                _logger.error( '    %s=%r,' % (k, shorten(v)) )
             _logger.error( '    )' )
             _logger.error( '*' * 125 )
             raise
