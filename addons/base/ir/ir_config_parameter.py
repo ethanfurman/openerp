@@ -24,12 +24,13 @@ Store database-specific configuration parameters
 
 import uuid
 import datetime
+import os
 import pytz
 from pytz.exceptions import UnknownTimeZoneError
 import sys
 from tempfile import TemporaryFile
 
-from openerp import SUPERUSER_ID
+from openerp import SUPERUSER_ID, VAR_DIR
 from openerp.osv import osv, fields
 from openerp.tools import misc, config
 from openerp.exceptions import ERPError
@@ -117,6 +118,9 @@ class ir_config_parameter(osv.osv):
                 raise ERPError('Bad Value', 'protocol missing (should be "proto:///some/path")')
             proto, path = value.split('://', 1)
             if proto == 'file':
+                # relative path?
+                if path[0] not in "/\\":
+                    path = os.path.join(VAR_DIR, path)
                 try:
                     with TemporaryFile(dir=path):
                         pass
