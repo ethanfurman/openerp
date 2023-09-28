@@ -1,0 +1,43 @@
+!!!xml1.0
+
+-act_window = 'ir.actions.act_window'
+-view = 'ir.ui.view'
+
+
+~openerp
+    ~data noupdate='1'
+
+        // Save Exports
+
+        ~record model=view #base_ir_exports_view_form
+            @name: Exports
+            @model: ir.exports.export
+            @arch type='xml'
+                ~form $Export_Data create='false' version='7.0'
+                    ~group $Export
+                        ~group
+                            @export_id $Name on_change="onchange_export(export_id)"
+                        ~group
+                            @model readonly='1'
+                            @export_fields readonly='1'
+                    ~group $Records
+                        ~group
+                            @selection_id $Filter domain="[('id','=',0)]" on_change="onchange_selection(selection_id)"
+                        ~group
+                            @user_id readonly='1'
+                            @is_default readonly='1'
+                    ~group
+                        @domain
+                    ~button @create_csv $Generate_Export .oe_highlight type='object'
+
+        ~record model=act_window #base_ir_exports_saved_action
+            @name: Export Data
+            @type: ir.actions.act_window
+            @res_model: ir.exports.export
+            @view_type: form
+            @view_id ref='base_ir_exports_view_form'
+            @view_mode: form
+            @target: inline
+
+        ~menuitem @Exports #menu_saved_exports parent='base.menu_reporting' sequence='5'
+        ~menuitem @Export #menu_saved_export parent='menu_saved_exports' action='base_ir_exports_saved_action'

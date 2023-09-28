@@ -56,7 +56,7 @@ class ir_exports_export(osv.osv_memory):
                 obj='ir.exports.line', fields_id='export_id'
                 ),
         'selection_id': fields.many2one('ir.filters', 'Saved Filter', required=True),
-        'domain': fields.related('selection_id', 'domain', string='Domain', type='text'),
+        'domain': fields.text('Domain'),
         'user_id': fields.related('selection_id', 'user_id', string='Private to', type='many2one', obj='res.users'),
         'is_default': fields.related('selection_id', 'is_default', string='Default Filter', type='boolean'),
         }
@@ -115,20 +115,16 @@ class report_spec_sheet(report_int):
             context = {}
         #
         pool = pooler.get_pool(cr.dbname)
-        iree = pool.get('ir.exports.export')
-        irf = pool.get('ir.filters')
+        iee = pool.get('ir.exports.export')
         #
-        export_rec = iree.read(cr, uid, ids[0], context=context)
-        export_rec = iree.browse(cr, uid, ids[0], context=context)
+        export_rec = iee.read(cr, uid, ids[0], context=context)
+        export_rec = iee.browse(cr, uid, ids[0], context=context)
         export_model = pool.get(export_rec.model)
         export_fields = [f.name for f in export_rec.export_fields]
+        export_domain = eval(export_rec.domain)
         self._filename = export_rec.export_id.name.replace(' ','_')
         #
-        filter_rec = irf.read(cr, uid, export_rec.selection_id.id, context=context)
-        filter_rec = irf.browse(cr, uid, export_rec.selection_id.id, context=context)
-        filter_domain = eval(filter_rec.domain)
-        #
-        data_records = export_model.read(cr, uid, filter_domain, fields=export_fields, context=context)
+        data_records = export_model.read(cr, uid, export_domain, fields=export_fields, context=context)
         data = [','.join(export_fields)]
         for rec in data_records:
             line = []
