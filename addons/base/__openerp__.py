@@ -47,6 +47,7 @@ The kernel of OpenERP, needed for all installation.
         'ir/ir_attachment_view.xml',
         'ir/ir_config_parameter_view.xml',
         'ir/ir_cron_view.xml',
+	'ir/ir_exports_view.xaml',
         'ir/ir_filters.xml',
         'ir/ir_mail_server_view.xml',
         'ir/ir_model_view.xml',

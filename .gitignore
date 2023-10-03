@@ -20,6 +20,7 @@
 PKG-INFO
 addons/automated_clearing_house
 addons/automated_clearing_house_hr
+addons/base/ir/ir_exports_view.xml
 addons/fis_integration
 addons/fleet_hr/fleet_hr_view.xml
 addons/fnx_customer_portal
