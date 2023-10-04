@@ -16,13 +16,14 @@
                 ~form $Export_Data create='false' version='7.0'
                     ~group $Export
                         ~group
-                            @export_id $Name on_change="onchange_export(export_id)"
+                            @export_id $Name on_change="onchange_export_settings(export_id, filter_view)"
                         ~group
                             @model readonly='1'
                             @export_fields readonly='1'
                     ~group $Records
                         ~group
                             @selection_id $Filter domain="[('id','=',0)]" on_change="onchange_selection(selection_id)"
+                            @filter_view widget='radio' options="{'horizontal':1}" on_change="onchange_export_settings(export_id, filter_view)"
                         ~group
                             @user_id readonly='1'
                             @is_default readonly='1'
