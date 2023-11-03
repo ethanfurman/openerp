@@ -139,6 +139,7 @@ class object_proxy(object):
                     _logger.exception('Permissions Error')
                     raise except_osv(inst.name, inst.value)
                 except except_osv:
+                    _logger.error('%r, %r, %r', dbname, args, kwargs)
                     _logger.exception('Unhandled Exception')
                     raise
                 except IntegrityError, inst:
