@@ -1408,14 +1408,22 @@ class mail_thread(osv.AbstractModel):
         res_users = self.pool.get('res.users')
         # ensure that SUPERUSER is not in partner_ids
         spid = res_users.read(cr, SUPERUSER_ID, SUPERUSER_ID, ['partner_id'], context=context)['partner_id'][0]
-        partner_ids = [pid for pid in partner_ids if pid != spid]
+        # TODO: remove isinstance check and use non-__getitem__ syntax when bug in fnxsr orders is resolved
+        if isinstance(partner_ids[0], tuple):
+            partner_ids = [pid[0] for pid in partner_ids if pid[0] != spid]
+        else:
+            partner_ids = [pid for pid in partner_ids if pid != spid]
         #
         user_pid = res_users.read(cr, uid, uid, ['partner_id'], context=context)['partner_id'][0]
-        if set(partner_ids) == set([user_pid]):
-            self.check_access_rights(cr, uid, 'read')
-        else:
-            self.check_access_rights(cr, uid, 'write')
-
+        try:
+            if set(partner_ids) == set([user_pid]):
+                self.check_access_rights(cr, uid, 'read')
+            else:
+                self.check_access_rights(cr, uid, 'write')
+        except TypeError:
+            _logger.exception('partner ids: %r', partner_ids)
+            _logger.exception('user pid:    %r', user_pid)
+            raise
         self.write(cr, SUPERUSER_ID, ids, {'message_follower_ids': [(4, pid) for pid in partner_ids]}, context=context)
         # if subtypes are not specified (and not set to a void list), fetch default ones
         if subtype_ids is None:
