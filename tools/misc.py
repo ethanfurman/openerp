@@ -42,7 +42,7 @@ import zipfile
 from aenum import Enum, NoAlias as EnumNoAlias, Unique as EnumUnique, MultiValue as EnumMultiValue
 from collections import defaultdict
 from datetime import datetime, timedelta
-from dbf import Date, IsoDay, RelativeDay
+from dbf.data_types import Date, IsoDay, RelativeDay
 from itertools import islice, izip
 from lxml import etree
 from which import which
