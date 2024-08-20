@@ -19,12 +19,18 @@ Issue an all-clear once OpenERP is up and running again.
 from __future__ import print_function
 
 from scription import *
+from antipathy import Path
+from datetime import timedelta
+from fnx_script_support import Notify
 from openerplib import get_connection, AttrDict
 import os
 import socket
 import time
 
 CONFIG = OrmFile('%s/config/fnx.ini' % os.environ['VIRTUAL_ENV'], section='openerp')
+CRON_BEAT = Path('/home/openerp/sandbox/openerp/var/cron_updates')
+CUT_OFF = timedelta(seconds=7*60+30)
+
 
 def connect():
     OE = AttrDict()
@@ -32,8 +38,10 @@ def connect():
     return OE
 
 @Command()
-def check_openerp():
-    "simple heart-beat test by attempting to connect to OpenERP"
+def server():
+    """
+    simple heart-beat test by attempting to connect to OpenERP
+    """
     now = time.time()
     restart_at = now + 7 * 60
     print('connecting...', end=' ')
@@ -62,5 +70,29 @@ def check_openerp():
             else:
                 # unknown error
                 raise
+
+@Command()
+def cron_update():
+    """
+    update CRON_BEAT file with current time stamp; should be run from OE's scheduler
+    """
+    CRON_BEAT.touch()
+
+
+@Command()
+def cron():
+    """
+    Determine if the OE scheduler is still running.
+    """
+    errors = []
+    if not CRON_BEAT.exists():
+        errors.append('OpenERP cron heartbeat file %s is missing')
+    else:
+        last_update = DateTime.fromtimestamp(CRON_BEAT.stat().st_mtime)
+        if DateTime.now() - last_update > CUT_OFF:
+            errors.append('OpenERP scheduler is no longer functioning; please restart OpenERP')
+    notify = Notify('check_openerp_cron')
+    notify(errors)
+
 
 Main()
