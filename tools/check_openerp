@@ -72,7 +72,7 @@ def server():
                 raise
 
 @Command()
-def cron_update():
+def emit_cron_heartbeat():
     """
     update CRON_BEAT file with current time stamp; should be run from OE's scheduler
     """
