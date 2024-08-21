@@ -21,6 +21,7 @@ from __future__ import print_function
 from scription import *
 from antipathy import Path
 from datetime import timedelta
+from dbf import DateTime
 from fnx_script_support import Notify
 from openerplib import get_connection, AttrDict
 import os
@@ -86,7 +87,7 @@ def cron():
     """
     errors = []
     if not CRON_BEAT.exists():
-        errors.append('OpenERP cron heartbeat file %s is missing')
+        errors.append('OpenERP cron heartbeat file %s is missing' % CRON_BEAT)
     else:
         last_update = DateTime.fromtimestamp(CRON_BEAT.stat().st_mtime)
         if DateTime.now() - last_update > CUT_OFF:
