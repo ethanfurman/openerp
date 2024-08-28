@@ -42,7 +42,7 @@ import zipfile
 from aenum import Enum, NoAlias as EnumNoAlias, Unique as EnumUnique, MultiValue as EnumMultiValue
 from collections import defaultdict
 from datetime import datetime, timedelta
-from dbf import Date, IsoDay, RelativeDay
+from dbf.data_types import Date, IsoDay, RelativeDay
 from itertools import islice, izip
 from lxml import etree
 from which import which
@@ -648,7 +648,8 @@ class tracker(object):
                     if self.compress and isinstance(a, dict) and len(a) >= 7:
                         new_args.append('{...}')
                     else:
-                        new_args.append(a)
+                        new_args.append(shorten(a))
+                new_kwds = shorten(kwds)
                 print(
                     '\n{indent}{cls}.{func}(\n'
                     '{indent}    cr,\n'
@@ -660,7 +661,7 @@ class tracker(object):
                     func=func.__name__,
                     model=model._name,
                     args=(',\n%s    '%indent).join([repr(a) for a in new_args]),
-                    kwds=(',\n%s    '%indent).join(['%s=%r' % (k, v) for k, v in kwds.items()]),
+                    kwds=(',\n%s    '%indent).join(['%s=%r' % (k, v) for k, v in new_kwds.items()]),
                     ), file=sys.stdout)
                 cls.thread_local_storage.indent += 1
             result = func(model, cr, *args, **kwds)
@@ -680,7 +681,28 @@ class tracker(object):
             return result
         return wrapper
 
+    @classmethod
+    def log(cls, text, *args):
+        indent = ' . ' * cls.thread_local_storage.indent + '> '
+        if args:
+            text %= args
+        print(indent + text)
+
+
     # tracker = tracker()
+
+def shorten(d):
+    if not isinstance(d, (basestring, dict)):
+        return d
+    if isinstance(d, dict):
+        new_d = {}
+        for k, v in d.items():
+            new_d[k] = shorten(v)
+        return new_d
+    if len(d) <= 64:
+        return d
+    else:
+        return d[:7] + '...' + d[-7:]
 
 class profile(object):
     def __init__(self, fname=None):

@@ -1180,6 +1180,13 @@ class BaseModel(object):
                     field, op, value = arg
                     if callable(value):
                         value = value(pool, cr)
+                    elif isinstance(value, (list, tuple)):
+                        new_seq = []
+                        for seq in value:
+                            if callable(seq):
+                                seq = seq(pool, cr)
+                            new_seq.append(seq)
+                        value = new_seq
                     new_domain.append((field, op, value))
                 f._domain = new_domain
             def not_this_field(stored_func):

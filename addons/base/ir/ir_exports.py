@@ -59,36 +59,72 @@ class ir_exports_export(osv.osv_memory):
         'domain': fields.text('Domain'),
         'user_id': fields.related('selection_id', 'user_id', string='Private to', type='many2one', obj='res.users'),
         'is_default': fields.related('selection_id', 'is_default', string='Default Filter', type='boolean'),
+        'filter_view': fields.selection(
+            (('all','All'),('public','Public'),('private','Private')),
+            string="Show filters",
+            ),
         }
 
     _defaults = {
+            'filter_view': 'all',
         }
 
     def create_csv(self, cr, uid, ids, context=None):
         return {'type': 'ir.actions.report.xml', 'report_name': 'base.csv_export', 'datas': {}, 'nodestroy': True}
 
-    def onchange_export(self, cr, uid, ids, export_id, context=None):
+    def onchange_export_settings(self, cr, uid, ids, export_id, filter_view, context=None):
         res = {}
         value = res['value'] = {}
         domain = res['domain'] = {}
+        if not export_id:
+            value['model'] = False
+            value['export_fields'] = False
+            value['selection_id'] = False
+            domain['selection_id'] = False
+            return res
         export = self.pool.get('ir.exports').read(cr, uid, export_id, context=context)
+        export_name = export['name']
+        export_name_c = ''.join(export_name.lower().split())
         value['model'] = model = export['resource']
         value['export_fields'] = export['export_fields']
-        domain['selection_id'] = domain = [('model_id','=',model),('user_id','in',[False, uid])]
-        filters = self.pool.get('ir.filters').read(cr, uid, domain, context=context)
+        if filter_view == 'public':
+            filter_domain = [('model_id','=',model),('user_id','=',False)]
+        elif filter_view == 'private':
+            filter_domain = [('model_id','=',model),('user_id','=',uid)]
+        else:
+            filter_domain = [('model_id','=',model),('user_id','in',[False, uid])]
+        domain['selection_id'] = filter_domain
+        filters = self.pool.get('ir.filters').read(cr, uid, filter_domain, context=context)
+        possible = None
         for f in filters:
-            if f['is_default']:
+            if f['name'] == export_name:
                 value['selection_id'] = f['id']
                 break
+            elif ''.join(f['name'].lower().split()) == export_name_c:
+                possible = f['id']
+        else:
+            if possible:
+                value['selection_id'] = possible
+            else:
+                for f in filters:
+                    if f['is_default']:
+                        value['selection_id'] = f['id']
+                        break
+            value['selection_id'] = False
         return res
 
     def onchange_selection(self, cr, uid, ids, selection_id, context=None):
         res = {'domain': {}}
         value = res['value'] = {}
-        filter = self.pool.get('ir.filters').read(cr, uid, selection_id, context=context)
-        value['domain'] = filter['domain']
-        value['is_default'] = filter['is_default']
-        value['user_id'] = filter['user_id']
+        if not selection_id:
+            value['domain'] = []
+            value['is_default'] = False
+            value['user_id'] = False
+        else:
+            filter = self.pool.get('ir.filters').read(cr, uid, selection_id, context=context)
+            value['domain'] = filter['domain']
+            value['is_default'] = filter['is_default']
+            value['user_id'] = filter['user_id']
         return res
 
 

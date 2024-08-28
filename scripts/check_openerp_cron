@@ -1,0 +1,55 @@
+#!/usr/local/bin/suid-python --virtualenv=/opt/openerp
+"""
+Check if OpenERP's cron threads are no longer running.
+"""
+
+from __future__ import print_function
+from scription import *
+from antipathy import Path
+from dbf import DateTime
+from fnx_script_support import Notify
+from openerplib import get_connection, get_records
+import os
+
+virtual_env = os.environ['VIRTUAL_ENV']
+config = '%s/config/fnx.ini' % virtual_env
+
+
+CUT_OFF = DateTime.now().replace(delta_minute=-15).strftime('%Y-%m-%d %H:%M:%S')
+
+@Command(
+        test=('pretend error condition and send mail', FLAG)
+        )
+def check_openerp_cron(test):
+    print('loading settings')
+    cfg = OrmFile(config, types={'_path':Path})
+    oe = get_connection(
+            hostname=cfg.openerp.host,
+            database=cfg.openerp.db,
+            login=cfg.openerp.user,
+            password=cfg.openerp.pw,
+            )
+    errors = []
+    #
+    if test:
+        errors.append('testing notifications')
+    else:
+        print('checking for late jobs')
+        past_due = get_records(
+                oe,
+                'ir.cron',
+                [('state','=','waiting'),('nextcall','<',CUT_OFF)],
+                )
+        if past_due:
+            print('%d jobs are late' % len(past_due))
+            print('\n   '.join(j['name'] for j in past_due), verbose=2)
+            errors.append('OpenERP cron jobs are stalled')
+    #
+    print('calling notify')
+    notify = Notify(script_name)
+    notify(errors)
+    print('done')
+
+Run()
+
+
