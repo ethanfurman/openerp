@@ -414,7 +414,6 @@ class ir_cron(osv.osv):
 
         If a job was processed, returns True, otherwise returns False.
         """
-        _logger.warning('attempting to gather job%s', job_id and (': %s' % job_id) or 's')
         db = openerp.sql_db.db_connect(db_name)
         threading.current_thread().dbname = db_name
         cr = db.cursor()
@@ -442,9 +441,7 @@ class ir_cron(osv.osv):
         finally:
             cr.close()
 
-        _logger.warning('found %d jobs', len(jobs))
         for job in jobs:
-            _logger.warning('attempting to process %r', job['name'])
             lock_cr = db.cursor()
             try:
                 # Try to grab an exclusive lock on the job row from within the task transaction
@@ -493,7 +490,6 @@ class ir_cron(osv.osv):
         if hasattr(threading.current_thread(), 'dbname'): # cron job could have removed it as side-effect
             del threading.current_thread().dbname
 
-        _logger.warning('returning %r', run_any)
         return run_any
 
     def _try_lock(self, cr, uid, ids, context=None):
