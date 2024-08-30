@@ -21,7 +21,8 @@ from __future__ import print_function
 from scription import *
 from antipathy import Path
 from datetime import timedelta
-from fnx_script_support import Notify
+from dbf import DateTime
+from fnx_script_support import Notify, time_stamp, time2seconds
 from openerplib import get_connection, AttrDict
 import os
 import socket
@@ -30,6 +31,8 @@ import time
 CONFIG = OrmFile('%s/config/fnx.ini' % os.environ['VIRTUAL_ENV'], section='openerp')
 CRON_BEAT = Path('/home/openerp/sandbox/openerp/var/cron_updates')
 CUT_OFF = timedelta(seconds=7*60+30)
+NOW = DateTime.now()
+PAUSE_SERVER = Path('/home/openerp/sandbox/openerp/var/pause_server')
 
 
 def connect():
@@ -37,13 +40,41 @@ def connect():
     OE.conn = get_connection(hostname=CONFIG.host, database=CONFIG.db, login=CONFIG.user, password=CONFIG.pw)
     return OE
 
-@Command()
-def server():
+@Command(
+        pause=Spec('amount of time to stop checking for life', OPTION),
+        )
+def server(pause):
     """
     simple heart-beat test by attempting to connect to OpenERP
     """
-    now = time.time()
-    restart_at = now + 7 * 60
+    if pause is not None:
+        pause = time2seconds(pause, negative=False)
+        print('pause: %d seconds' % pause)
+        if pause == 0:
+            # remove file if it exists
+            print('removing file')
+            if PAUSE_SERVER.exists():
+                PAUSE_SERVER.unlink()
+        else:
+            # create file and exit
+            print('creating file')
+            future = time_stamp(NOW.replace(delta_second=pause))
+            PAUSE_SERVER.touch((future, future)) 
+        return
+    elif PAUSE_SERVER.exists():
+        # have we passed the pause file's time?
+        last_modified = DateTime.fromtimestamp(PAUSE_SERVER.stat().st_mtime)
+        print('now: %s' % NOW)
+        print('file: %s' % last_modified)
+        if NOW < last_modified:
+            print('still paused')
+            return
+        else:
+            print('removing file')
+            PAUSE_SERVER.unlink()
+    #
+    # check for signs of life
+    restart_at = NOW.replace(delta_minute=7)
     print('connecting...', end=' ')
     first_time = True
     while 'waiting for signs of life':
@@ -58,9 +89,9 @@ def server():
                     first_time = False
                 else:
                     print()
-                if time.time() < restart_at:
+                if DateTime.now() < restart_at:
                     print('    waiting a bit...', end=' ')
-                    time.sleep(60)
+                    time.sleep(61)
                     continue
                 else:
                     print('\n    restarting.')
