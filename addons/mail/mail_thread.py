@@ -1409,7 +1409,7 @@ class mail_thread(osv.AbstractModel):
         # ensure that SUPERUSER is not in partner_ids
         spid = res_users.read(cr, SUPERUSER_ID, SUPERUSER_ID, ['partner_id'], context=context)['partner_id'][0]
         # TODO: remove isinstance check and use non-__getitem__ syntax when bug in fnxsr orders is resolved
-        if isinstance(partner_ids[0], tuple):
+        if not isinstance(partner_ids[0], (int, long)):
             partner_ids = [pid[0] for pid in partner_ids if pid[0] != spid]
         else:
             partner_ids = [pid for pid in partner_ids if pid != spid]

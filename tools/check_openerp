@@ -22,7 +22,7 @@ from scription import *
 from antipathy import Path
 from datetime import timedelta
 from dbf import DateTime
-from fnx_script_support import Notify
+from fnx_script_support import Notify, seconds2time
 from openerplib import get_connection, AttrDict
 import os
 import socket
@@ -80,20 +80,34 @@ def emit_cron_heartbeat():
     CRON_BEAT.touch()
 
 
-@Command()
-def cron():
+@Command(
+        status=Spec('show status only', FLAG),
+        )
+def cron(status):
     """
     Determine if the OE scheduler is still running.
     """
+    global script_verbosity
+    if status and script_verbosity == 0:
+        script_verbosity = 1
     errors = []
+    print('looking for file...', end=' ')
     if not CRON_BEAT.exists():
+        print('missing')
         errors.append('OpenERP cron heartbeat file %s is missing' % CRON_BEAT)
     else:
+        print('found')
+        print('getting last update...', end=' ')
         last_update = DateTime.fromtimestamp(CRON_BEAT.stat().st_mtime)
+        print(last_update)
+        print('calculating delta... %s' % seconds2time(DateTime.now() - last_update))
         if DateTime.now() - last_update > CUT_OFF:
+            print('OpenERP scheduler is down')
             errors.append('OpenERP scheduler is no longer functioning; please restart OpenERP')
-    notify = Notify('check_openerp_cron')
-    notify(errors)
+    if not status:
+        notify = Notify('check_openerp_cron')
+        print('notifying with %r' % errors)
+        notify(errors)
 
 
 Main()
