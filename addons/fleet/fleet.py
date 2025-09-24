@@ -407,6 +407,8 @@ class fleet_vehicle(osv.Model):
         'dmv_reg_expiry': fields.date('DMV Registration Expires'),
         'dmv_reg_warning': fields.function(_get_dmv_expiry, type='char', string='Days until dmv expiry'),
         'gps_unit': fields.char('GPS Unit ID', size=64),
+        'smog_check_date': fields.date('Smogged Date', required=False),
+        'notes': fields.text('Notes', required=False),
         }
 
     _defaults = {
