@@ -28,7 +28,6 @@ import openerp
 from openerp import SUPERUSER_ID
 from openerp import pooler, tools
 from openerp.osv import osv, fields
-from openerp.tools import tracker
 from openerp.tools.translate import _
 
 class format_address(object):
@@ -438,7 +437,6 @@ class res_partner(osv.osv, format_address):
             name, email = text, ''
         return name, email
 
-    @tracker()
     def name_create(self, cr, uid, name, context=None):
         """ Override of orm's name_create method for partners. The purpose is
             to handle some basic formats to create partners using the
