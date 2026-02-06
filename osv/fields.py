@@ -440,6 +440,8 @@ class datetime(_column):
                     _logger.warning("failed to compute context/client-specific timestamp, "
                                   "using the UTC value",
                                   exc_info=True)
+        if kwds.get('as_datetime'):
+            return tz_timestamp or timestamp
         return (tz_timestamp or timestamp).strftime( tools.DEFAULT_SERVER_DATETIME_FORMAT)
 
     @staticmethod
@@ -447,7 +449,7 @@ class datetime(_column):
         """Returns the given timestamp converted to the client's timezone.
            This method is *not* meant for use as a _defaults initializer,
            because datetime fields are automatically converted upon
-           display on client side. For _defaults you :meth:`fields.datetime.now`
+           display on client side. For _defaults :meth:`fields.datetime.now`
            should be used instead.
 
            :param datetime timestamp: naive datetime value (expressed in UTC)
