@@ -291,7 +291,7 @@ class mail_thread(osv.AbstractModel):
         context['message_track'] = False
         # subscribe uid unless asked not to
         # do not subscribe Administrator (ever!)
-        if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
+        if context.get('mail_create_subscribe'):
             self.message_subscribe_users(cr, uid, [thread_id], [uid], context=context)
         if followers:
             self.message_subscribe(cr, uid, [thread_id], followers, context=context)
@@ -322,7 +322,7 @@ class mail_thread(osv.AbstractModel):
             initial_values = self._get_current_values(cr, uid, ids, tracked_fields, context=context)
         # Perform write, update followers
         result = super(mail_thread, self).write(cr, uid, ids, values, context=context)
-        if not context.get('mail_create_nosubscribe') and uid != SUPERUSER_ID:
+        if context.get('mail_create_subscribe'):
             self.message_subscribe_users(cr, uid, ids, [uid], context=context)
         self.message_auto_subscribe(cr, uid, ids, values.keys(), context=context)
 
@@ -894,7 +894,7 @@ class mail_thread(osv.AbstractModel):
 
                 # disabled subscriptions during message_new/update to avoid having the system user running the
                 # email gateway become a follower of all inbound messages
-                nosub_ctx = dict(context, mail_create_nosubscribe=True)
+                nosub_ctx = dict(context, mail_create_subscribe=False)
                 if thread_id and hasattr(model_pool, 'message_update'):
                     model_pool.message_update(cr, user_id, [thread_id], msg, context=nosub_ctx)
                 else:
@@ -1360,7 +1360,7 @@ class mail_thread(osv.AbstractModel):
         # Create and auto subscribe the author
         msg_id = mail_message.create(cr, uid, values, context=context)
         message = mail_message.browse(cr, uid, msg_id, context=context)
-        if message.author_id and thread_id and type != 'notification' and not context.get('mail_create_nosubscribe'):
+        if message.author_id and thread_id and type != 'notification' and context.get('mail_create_subscribe'):
             self.message_subscribe(cr, uid, [thread_id], [message.author_id.id], context=context)
         return msg_id
 
