@@ -268,12 +268,44 @@ class html(text):
     def _symbol_f(x):
         if x is None or x == False:
             return None
-        return html_sanitize(x)
+        return local_link(html_sanitize(x))
 
     _symbol_set = (_symbol_c, _symbol_f)
 
 class raw_html(text):
     _type = 'html'
+
+
+def local_link(text):
+    """
+    transform a header of
+
+        ---
+        model: <model_name>
+        id: <id>
+        ---
+        some text [a]link text[/a]
+
+    into
+
+        some text <a href="#id=<id>&view_type=form&model=<model_name>>link text</a>
+    """
+    lines = text.split('\n')
+    if (len(lines) > 4
+        and lines[0] == '<p>---'
+        and lines[1].startswith('model:')
+        and lines[2].startswith('id:')
+        and lines[3] == '---'
+        ):
+        model = lines[1][6:].strip()
+        rec_id = lines[2][3:].strip()
+        text = ('<span>' +
+                '\n'.join(lines[4:])
+                .replace('[a]', '<a href="#id=%s&amp;view_type=form&amp;model=%s">' % (rec_id, model))
+                .replace('[/a]', '</a>')
+                .replace('</p>', '</span>')
+                )
+    return text
 
 import __builtin__
 
