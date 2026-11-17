@@ -143,7 +143,7 @@ class _column(object):
         for a, v in self.__dict__.items():
             if isinstance(v, default):
                 if v.value is UnInit:
-                    raise ValueError("%s.%s:%s -- %r is a required field" % (cls.__module__, cls.__name__, name, a))
+                    raise ValueError("%s:%s:%s -- %r is a required field" % (cls.__module__, cls.__name__, name, a))
                 setattr(self, a, v.value)
         return self
 

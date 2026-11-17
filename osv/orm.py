@@ -3224,7 +3224,8 @@ class BaseModel(object):
 
     def _check_selection_field_value(self, cr, uid, field, value, context=None):
         """Raise except_orm if value is not among the valid values for the selection field"""
-        if self._columns[field]._type == 'reference':
+        _type = self._columns[field]._type
+        if _type == 'reference':
             val_model, val_id_str = value.split(',', 1)
             val_id = False
             try:
@@ -3238,11 +3239,16 @@ class BaseModel(object):
         else:
             val = value
         selection = self._columns[field].selection
+
         if isinstance(selection, (tuple, list)) or issubclass(selection, SelectionEnum):
             if val in dict(selection):
                 return
-        elif val in dict(selection(self, cr, uid, context=context)):
-            return
+        else:
+            choices = selection(self, cr, uid, context=context)
+            if _type == 'reference' and choices and isinstance(choices[0], tuple):
+                return any(v[0] == value for v in choices)
+            else:
+                return value in choices
         raise except_orm(_('ValidateError'),
                          _('The value "%s" for the field "%s.%s" is not in the selection') % (value, self._table, field))
 
